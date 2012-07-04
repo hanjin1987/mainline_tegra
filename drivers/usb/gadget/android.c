@@ -72,13 +72,12 @@
 #include "f_accessory.c"
 
 #ifdef CONFIG_LGE_USB_GADGET_DRIVER
-#include "f_ecm.c"
-#include "u_ether.c"
-#else
 #define USB_ETH_RNDIS y
+#include "f_ecm.c"
 #include "f_rndis.c"
 #include "rndis.c"
 #include "u_ether.c"
+//#include "u_ether.c"
 #endif
 
 MODULE_AUTHOR("Mike Lockwood");
@@ -575,7 +574,7 @@ static struct android_usb_function ptp_function = {
 	.ctrlrequest	= ptp_function_ctrlrequest,
 };
 
-#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+#if 0 //def CONFIG_LGE_USB_GADGET_DRIVER
 struct ecm_function_config {
 	u8      ethaddr[ETH_ALEN];
 	u32     vendorID;
@@ -903,6 +902,7 @@ static struct android_usb_function rndis_function = {
 	.attributes	= rndis_function_attributes,
 };
 #endif
+#endif
 
 struct mass_storage_function_config {
 	struct fsg_config fsg;
@@ -1192,12 +1192,12 @@ static struct android_usb_function *supported_functions[] = {
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
 	&cdrom_storage_function,
 #endif
-#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+#if 0 //def CONFIG_LGE_USB_GADGET_DRIVER
 	&ecm_function,
 #endif
 	&mtp_function,
 	&ptp_function,
-#ifndef CONFIG_LGE_USB_GADGET_DRIVER
+#if 1 //ndef CONFIG_LGE_USB_GADGET_DRIVER
 	&rndis_function,
 #endif
 #ifdef CONFIG_LGE_USB_GADGET_DRIVER

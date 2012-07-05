@@ -1,4 +1,4 @@
-/* 
+/*
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -40,7 +40,7 @@
 #define LM3533_BL_DEFAULT_BRIGHTNESS 	0x33 // 0x7F	// max brightness
 #define LM3533_BL_MIN_BRIGHTNESS	0x02 // 0x7F	// by data sheet
 
-#define CONFIG_LM3533_LEDS_CLASS	
+#define CONFIG_LM3533_LEDS_CLASS
 
 #ifdef CONFIG_LM3533_LEDS_CLASS
 #define LEDS_BACKLIGHT_NAME 		"lcd-backlight"
@@ -96,17 +96,17 @@ static int lm3533_bl_write_reg(struct i2c_client *client,
 	int err;
 	u8 buf[2];
 
-	struct i2c_msg msg = {	
-		client->addr, 0, 2, buf 
+	struct i2c_msg msg = {
+		client->addr, 0, 2, buf
 	};
 
 	buf[0] = reg;
 	buf[1] = val;
-	
+
 	if ((err = i2c_transfer(client->adapter, &msg, 1)) < 0) {
 		dev_err(&client->dev, "i2c write error\n");
 	}
-	
+
 	return 0;
 }
 
@@ -133,7 +133,7 @@ static void lm3533_set_main_current_level(struct i2c_client *client, int level)
 //	int max_current = dev->max_current;
 	int gpio = dev->hwen_gpio;
 
-	printk("lm3533_level[BL]: %d \n", level);
+	pr_debug("lm3533_level[BL]: %d \n", level);
 
 	//dev->cur_main_lcd_level = level;
 	//dev->saved_main_lcd_level = dev->cur_main_lcd_level;
@@ -191,7 +191,7 @@ static void lm3533_backlight_on(struct i2c_client *client, int level)
 
 	lm3533_bl_write_reg(client, 0x10, 0x0); // HVLED 1 & 2 are controlled by Bank A
 
-#if defined(ENABLE_PWM_SIGNAL)        
+#if defined(ENABLE_PWM_SIGNAL)
 	lm3533_bl_write_reg(client, 0x14, 0x1);
 #else
 	lm3533_bl_write_reg(client, 0x14, 0x0); // PWM input is disabled for CABC
@@ -199,10 +199,10 @@ static void lm3533_backlight_on(struct i2c_client *client, int level)
 	lm3533_bl_write_reg(client, 0x1A, 0x2); // Linear & Control Bank A is configured for register Current control
 	lm3533_bl_write_reg(client, 0x1F, 0x13); // Full-Scale Current (20.2mA)
 	lm3533_bl_write_reg(client, 0x27, 0x1); // Control Bank A is enable
-#if !defined(CONFIG_MACH_HD5_LGD)        
+#if !defined(CONFIG_MACH_HD5_LGD)
 	lm3533_bl_write_reg(client, 0x2C, 0x0A);
 #else
-	lm3533_bl_write_reg(client, 0x2C, 0x0C); // Active High, OVP(24V), Boost Frequency(500 khz)  
+	lm3533_bl_write_reg(client, 0x2C, 0x0C); // Active High, OVP(24V), Boost Frequency(500 khz)
 #endif
 
 	lm3533_set_main_current_level(client, level);
@@ -228,7 +228,7 @@ static void lm3533_backlight_off(struct i2c_client *client)
 	lm3533_set_main_current_level(client, 0);
 
 	gpio_set_value(gpio, 0);
-	
+
 	dev->bl_status = BL_OFF;
 
 	mdelay(10);
@@ -241,10 +241,10 @@ static void lm3533_lcd_backlight_set_level(struct i2c_client *client, int level)
 	if (level > LM3533_BL_MAX_BRIGHTNESS)
 		level = LM3533_BL_MAX_BRIGHTNESS;
 
-	if (client != NULL) {		
+	if (client != NULL) {
 		if (level == 0) {
 			lm3533_backlight_off(client);
-		} 
+		}
 		else {
 			lm3533_backlight_on(client, level);
 		}
@@ -261,33 +261,33 @@ static ssize_t lm3533_bl_show_lvl(struct device *dev,
 				  char *buf)
 {
 	int r;
-	struct i2c_client *client = to_i2c_client(dev); 
+	struct i2c_client *client = to_i2c_client(dev);
 	struct lm3533_device *lm3533_dev = i2c_get_clientdata(client);
 
-	r = snprintf(buf, PAGE_SIZE, 
-			"LCD Backlight Level is : %d\n", 
+	r = snprintf(buf, PAGE_SIZE,
+			"LCD Backlight Level is : %d\n",
 			lm3533_dev->cur_main_lcd_level);
-	
+
 	return r;
 }
 
 static ssize_t lm3533_bl_store_lvl(struct device *dev,
-					 struct device_attribute *attr, 
-					 const char *buf, 
+					 struct device_attribute *attr,
+					 const char *buf,
 					 size_t count)
 {
 	int level;
-	struct i2c_client *client = to_i2c_client(dev); 
+	struct i2c_client *client = to_i2c_client(dev);
 
 	if (!count) {
 		dev_err(&client->dev, "Invalid argument while storing level\n");
 		return -EINVAL;
 	}
-	
+
 	level = simple_strtoul(buf, NULL, 10);
 
 	lm3533_lcd_backlight_set_level(client, level);
-	
+
 	return count;
 }
 
@@ -295,12 +295,12 @@ static ssize_t lm3533_bl_show_on_off(struct device *dev,
 				     struct device_attribute *attr,
 				     char *buf)
 {
-	struct i2c_client *client = to_i2c_client(dev); 
+	struct i2c_client *client = to_i2c_client(dev);
 	struct lm3533_device *lm3533_dev = i2c_get_clientdata(client);
 	int r;
 
-	r = snprintf(buf, PAGE_SIZE, 
-			"Previous Backlight Status : %s\n", 
+	r = snprintf(buf, PAGE_SIZE,
+			"Previous Backlight Status : %s\n",
 			lm3533_dev->bl_status ? "On" : "Off");
 
 	dev_dbg(&client->dev, "previous backlight_status : %s\n",
@@ -311,7 +311,9 @@ static ssize_t lm3533_bl_show_on_off(struct device *dev,
 
 struct device* lm3533_bl_dev(void)
 {
-	if(lm3533dev != NULL && lm3533dev->client != NULL)	return &lm3533dev->client->dev;
+	if (lm3533dev != NULL && lm3533dev->client != NULL)
+		return &lm3533dev->client->dev;
+
 	return NULL;
 }
 
@@ -370,27 +372,27 @@ int lm3533_bl_onoff_ForHM(struct device *dev,int on_off)
 }
 EXPORT_SYMBOL(lm3533_bl_onoff_ForHM);
 
-static ssize_t lm3533_bl_store_on_off(struct device *dev, 
+static ssize_t lm3533_bl_store_on_off(struct device *dev,
 				      struct device_attribute *attr,
-				      const char *buf, 
+				      const char *buf,
 				      size_t count)
 {
 	int on_off;
-	struct i2c_client *client = to_i2c_client(dev); 
+	struct i2c_client *client = to_i2c_client(dev);
 	struct lm3533_device *lm3533_dev = i2c_get_clientdata(client);
 
 	if (!count) {
 		dev_err(&client->dev, "Invalide arguemnt..\n");
 		return -EINVAL;
 	}
-	
+
 	dev_dbg(&client->dev, "previous backlight_status: %s\n", 
 			lm3533_dev->bl_status ? "On" : "Off");
-	
+
 	on_off = simple_strtoul(buf, NULL, 10);
-	
+
 	dev_dbg(&client->dev, "stored argument is %d", on_off);
-	
+
 	if (on_off == 1) {
 		mutex_lock(&lm3533dev->bl_mutex_saved);
 		lm3533_backlight_on(client, lm3533_dev->saved_main_lcd_level);
@@ -399,7 +401,7 @@ static ssize_t lm3533_bl_store_on_off(struct device *dev,
 	else if (on_off == 0) {
 		lm3533_backlight_off(client);
 	}
-	
+
 	return count;
 }
 DEVICE_ATTR(lm3533_bl_level, 0660, lm3533_bl_show_lvl, lm3533_bl_store_lvl);
@@ -456,13 +458,13 @@ static int lm3533_bl_get_intensity(struct backlight_device *bd)
 	struct lm3533_device *dev = i2c_get_clientdata(client);
 
 	dev_dbg(&client->dev, "get_intensity = %d\n", bd->props.brightness);
-	dev_dbg(&client->dev, "dev->cur_main_lcd_level = %d\n", 
+	dev_dbg(&client->dev, "dev->cur_main_lcd_level = %d\n",
 			dev->cur_main_lcd_level);
 
 	return dev->cur_main_lcd_level;
 }
 
-static struct backlight_ops lm3533_bl_ops = { 
+static struct backlight_ops lm3533_bl_ops = {
 	.update_status	= lm3533_bl_set_intensity,
 	.get_brightness	= lm3533_bl_get_intensity,
 };
@@ -590,7 +592,7 @@ static struct i2c_driver lm3533_driver = {
 	.probe		= lm3533_bl_probe,
 	.remove		= __devexit_p(lm3533_bl_remove),
 	.shutdown	= lm3533_bl_shutdown,
-	.id_table	= lm3533_bl_id, 
+	.id_table	= lm3533_bl_id,
 };
 
 static int __init lm3533_init(void)
@@ -602,7 +604,7 @@ static void __exit lm3533_exit(void)
 {
 	i2c_del_driver(&lm3533_driver);
 }
- 
+
 module_init(lm3533_init);
 module_exit(lm3533_exit);
 

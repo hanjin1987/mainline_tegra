@@ -1251,12 +1251,12 @@ static int usb_resume_both(struct usb_device *udev, pm_message_t msg)
 	int			i;
 	struct usb_interface	*intf;
 
-#ifdef CONFIG_MACH_X3
+#if 0 //def CONFIG_MACH_X3
 	printk(KERN_INFO"%s ++(%d) udev->reset_resume=%d kobject_name(&dev->kobj)=%s udev->state=%d\n",
 			__func__, __LINE__, udev->reset_resume,
 			kobject_name(&udev->dev.kobj), udev->state);
 #endif
-                                   
+
 	if (udev->state == USB_STATE_NOTATTACHED) {
 		status = -ENODEV;
 		goto done;
@@ -1287,7 +1287,7 @@ static int usb_resume_both(struct usb_device *udev, pm_message_t msg)
 	if (!status)
 		udev->reset_resume = 0;
 
-#ifdef CONFIG_MACH_X3
+#if 0 //def CONFIG_MACH_X3
 	printk(KERN_INFO"%s --(%d) udev->reset_resume=%d kobject_name(&dev->kobj)=%s udev->state=%d status=%d\n",
 			__func__, __LINE__, udev->reset_resume,
 			kobject_name(&udev->dev.kobj), udev->state,status);

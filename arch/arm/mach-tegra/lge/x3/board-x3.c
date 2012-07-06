@@ -576,8 +576,9 @@ static void __init tegra_x3_init(void)
 #if defined(CONFIG_BCM4330_RFKILL)
 	x3_bt_rfkill();
 #endif
-	//x3_setup_bluesleep();
-
+#if !defined(CONFIG_BRCM_LPM)
+	x3_setup_bluesleep();
+#endif
 	x3_gps_init();
 
 	x3_emc_init();

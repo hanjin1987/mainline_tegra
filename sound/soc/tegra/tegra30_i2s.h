@@ -274,8 +274,17 @@ struct codec_config {
 	int channels;
 	int bitsize;
 	int is_i2smaster;
-	int is_format_dsp;
+	int i2s_mode;
+	int bit_clk;
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	unsigned int dam_gain[2];
+#endif
 };
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+void tegra30_set_dam_ifc_gain(struct codec_config *codec_info);
+void tegra30_set_dam_ifc_gain_of_call_record(struct codec_config *codec_info, int rx_gain, int tx_gain);
+#endif
 
 int tegra30_make_voice_call_connections(struct codec_config *codec_info,
 			struct codec_config *bb_info);

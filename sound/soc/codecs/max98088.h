@@ -118,6 +118,11 @@
 
 /* M98088_REG_18_DAI1_FILTERS, M98088_REG_20_DAI2_FILTERS */
        #define M98088_DAI_DHF                  (1<<3)
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+       #define M98088_DAI_AVFLT_MASK           (7<<4)
+       #define M98088_DAI_AVFLT_SHIFT          4
+       #define M98088_DAI_MODE                 (1<<7)
+#endif
 
 /* M98088_REG_22_MIX_DAC */
        #define M98088_DAI1L_TO_DACL            (1<<7)

@@ -66,7 +66,12 @@
 #define DAI_LINK_BTSCO		2
 #define DAI_LINK_VOICE_CALL	3
 #define DAI_LINK_BT_VOICE_CALL	4
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+#define DAI_LINK_FM_RADIO	5
+#define NUM_DAI_LINKS	6
+#else
 #define NUM_DAI_LINKS	5
+#endif
 
 #ifndef CONFIG_ARCH_TEGRA_2x_SOC
 const char *tegra_max98088_i2s_dai_name[TEGRA30_NR_I2S_IFC] = {
@@ -80,6 +85,10 @@ const char *tegra_max98088_i2s_dai_name[TEGRA30_NR_I2S_IFC] = {
 
 extern int g_is_call_mode;
 
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+struct headset_switch_data *headset_sw_data;
+#endif
+
 struct tegra_max98088 {
 	struct tegra_asoc_utils_data util_data;
 	struct tegra_asoc_platform_data *pdata;
@@ -87,6 +96,11 @@ struct tegra_max98088 {
 	bool init_done;
 	int is_call_mode;
 	int is_device_bt;
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	int is_radio_mode;
+	int call_record_tx_gain;
+	int call_record_rx_gain;
+#endif
 #ifndef CONFIG_ARCH_TEGRA_2x_SOC
 	struct codec_config codec_info[NUM_I2S_DEVICES];
 #endif
@@ -94,6 +108,108 @@ struct tegra_max98088 {
 	struct snd_soc_card *pcard;
 	volatile int clock_enabled;
 };
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+static int volume_get_voice_record(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *soc_codec = snd_kcontrol_chip(kcontrol);
+	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(soc_codec->card);
+	struct soc_mixer_control *mc = (struct soc_mixer_control *) kcontrol->private_value;
+
+	if (mc->shift == 0)	// voice dl
+		ucontrol->value.integer.value[0] = machine->call_record_rx_gain;
+	else			// voice ul
+		ucontrol->value.integer.value[0] = machine->call_record_tx_gain;
+
+	return 0;
+}
+
+static int volume_put_voice_record(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *soc_codec = snd_kcontrol_chip(kcontrol);
+	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(soc_codec->card);
+	struct soc_mixer_control *mc = (struct soc_mixer_control *) kcontrol->private_value;
+
+	if (mc->shift == 0)
+		machine->call_record_rx_gain = ucontrol->value.integer.value[0];
+	else
+		machine->call_record_tx_gain = ucontrol->value.integer.value[0];
+
+	if (machine->is_device_bt)
+		tegra30_set_dam_ifc_gain_of_call_record(&machine->codec_info[BT_SCO],
+			machine->call_record_rx_gain, machine->call_record_tx_gain);
+	else
+		tegra30_set_dam_ifc_gain_of_call_record(&machine->codec_info[HIFI_CODEC],
+			machine->call_record_rx_gain, machine->call_record_tx_gain);
+
+	return 1;
+}
+
+static int volume_get_voice(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *soc_codec = snd_kcontrol_chip(kcontrol);
+	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(soc_codec->card);
+	struct soc_mixer_control *mc = (struct soc_mixer_control *) kcontrol->private_value;
+
+	if (mc->shift == 0)	// voice dl
+		ucontrol->value.integer.value[0] = machine->codec_info[HIFI_CODEC].dam_gain[TEGRA30_DAM_CHIN0_SRC];
+	else			// voice ul
+		ucontrol->value.integer.value[0] = machine->codec_info[BASEBAND].dam_gain[TEGRA30_DAM_CHIN0_SRC];
+	
+	return 0;
+}
+
+static int volume_put_voice(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *soc_codec = snd_kcontrol_chip(kcontrol);
+	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(soc_codec->card);
+	struct soc_mixer_control *mc = (struct soc_mixer_control *) kcontrol->private_value;
+
+	if (mc->shift == 0) {
+		machine->codec_info[HIFI_CODEC].dam_gain[TEGRA30_DAM_CHIN0_SRC] = ucontrol->value.integer.value[0];
+		machine->codec_info[BT_SCO].dam_gain[TEGRA30_DAM_CHIN0_SRC] = ucontrol->value.integer.value[0];
+
+		tegra30_set_dam_ifc_gain(&machine->codec_info[HIFI_CODEC]);
+		tegra30_set_dam_ifc_gain(&machine->codec_info[BT_SCO]);
+	} else {
+		machine->codec_info[BASEBAND].dam_gain[TEGRA30_DAM_CHIN0_SRC] = ucontrol->value.integer.value[0];
+
+		tegra30_set_dam_ifc_gain(&machine->codec_info[BASEBAND]);
+	}
+	
+	return 1;
+}
+
+static int volume_get_multi_dl(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *soc_codec = snd_kcontrol_chip(kcontrol);
+	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(soc_codec->card);
+
+	ucontrol->value.integer.value[0] = machine->codec_info[HIFI_CODEC].dam_gain[TEGRA30_DAM_CHIN1];
+
+	return 0;
+}
+
+static int volume_put_multi_dl(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *soc_codec = snd_kcontrol_chip(kcontrol);
+	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(soc_codec->card);
+
+	machine->codec_info[HIFI_CODEC].dam_gain[TEGRA30_DAM_CHIN1] = ucontrol->value.integer.value[0];
+	machine->codec_info[BT_SCO].dam_gain[TEGRA30_DAM_CHIN1] = ucontrol->value.integer.value[0];
+	
+	tegra30_set_dam_ifc_gain(&machine->codec_info[HIFI_CODEC]);
+	tegra30_set_dam_ifc_gain(&machine->codec_info[BT_SCO]);
+	
+	return 1;
+}
+#endif
 
 static int tegra_call_mode_info(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_info *uinfo)
@@ -122,6 +238,9 @@ static int tegra_call_mode_put(struct snd_kcontrol *kcontrol,
 	int is_call_mode_new = ucontrol->value.integer.value[0];
 	int codec_index;
 	unsigned int i;
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	extern int set_suspend_mode(const char* buf);
+#endif
 
 	if (machine->is_call_mode == is_call_mode_new)
 		return 0;
@@ -136,6 +255,10 @@ static int tegra_call_mode_put(struct snd_kcontrol *kcontrol,
 		if (machine->codec_info[codec_index].rate == 0 ||
 			machine->codec_info[codec_index].channels == 0)
 				return -EINVAL;
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+		set_suspend_mode("lp1");
+#endif
 
 		for (i = 0; i < machine->pcard->num_links; i++)
 			machine->pcard->dai_link[i].ignore_suspend = 1;
@@ -152,6 +275,10 @@ static int tegra_call_mode_put(struct snd_kcontrol *kcontrol,
 
 		for (i = 0; i < machine->pcard->num_links; i++)
 			machine->pcard->dai_link[i].ignore_suspend = 0;
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+		set_suspend_mode("lp0");
+#endif
 #endif
 	}
 
@@ -176,7 +303,9 @@ static int tegra_max98088_set_dam_cif(int dam_ifc, int srate,
 			int channels, int bit_size, int src_on, int src_srate,
 			int src_channels, int src_bit_size)
 {
+#if !defined(CONFIG_MACH_X3) && !defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
 	tegra30_dam_set_gain(dam_ifc, TEGRA30_DAM_CHIN1, 0x1000);
+#endif
 	tegra30_dam_set_samplerate(dam_ifc, TEGRA30_DAM_CHOUT,
 				srate);
 	tegra30_dam_set_samplerate(dam_ifc, TEGRA30_DAM_CHIN1,
@@ -198,7 +327,9 @@ static int tegra_max98088_set_dam_cif(int dam_ifc, int srate,
 #endif
 
 	if (src_on) {
+#if !defined(CONFIG_MACH_X3) && !defined(CONFIG_MACH_LX) && !defined(CONFIG_MACH_VU10)
 		tegra30_dam_set_gain(dam_ifc, TEGRA30_DAM_CHIN0_SRC, 0x1000);
+#endif
 		tegra30_dam_set_samplerate(dam_ifc, TEGRA30_DAM_CHIN0_SRC,
 			src_srate);
 #ifndef CONFIG_ARCH_TEGRA_3x_SOC
@@ -395,7 +526,10 @@ static int tegra_bt_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_card *card = rtd->card;
 	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(card);
 	struct tegra_asoc_platform_data *pdata = machine->pdata;
-	int err, srate, mclk, min_mclk, sample_size;
+	int err, srate, mclk, sample_size;
+#if !defined(CONFIG_MACH_X3) && !defined(CONFIG_MACH_LX) && !defined(CONFIG_MACH_VU10)
+	int min_mclk;
+#endif
 	int i2s_daifmt;
 
 	switch (params_format(params)) {
@@ -416,6 +550,9 @@ static int tegra_bt_hw_params(struct snd_pcm_substream *substream,
 		break;
 	case 8000:
 	case 16000:
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	case 24000:
+#endif
 	case 32000:
 	case 48000:
 	case 64000:
@@ -423,13 +560,24 @@ static int tegra_bt_hw_params(struct snd_pcm_substream *substream,
 		mclk = 12288000;
 		break;
 	default:
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+		mclk = 12000000;
+		break;
+#else
 		return -EINVAL;
+#endif
 	}
+#if !defined(CONFIG_MACH_X3) && !defined(CONFIG_MACH_LX) && !defined(CONFIG_MACH_VU10)
 	min_mclk = 64 * srate;
+#endif
 
 	err = tegra_asoc_utils_set_rate(&machine->util_data, srate, mclk);
 	if (err < 0) {
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+		if (!(machine->util_data.set_mclk % mclk))
+#else
 		if (!(machine->util_data.set_mclk % min_mclk))
+#endif
 			mclk = machine->util_data.set_mclk;
 		else {
 			dev_err(card->dev, "Can't configure clocks\n");
@@ -486,9 +634,140 @@ static int tegra_hw_free(struct snd_pcm_substream *substream)
 	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(rtd->card);
 
 	tegra_asoc_utils_lock_clk_rate(&machine->util_data, 0);
+	return 0;
+}
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+static int tegra_voice_call_startup(struct snd_pcm_substream *substream)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+
+	// playback
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "DACL1", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "DACR1", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "DACL2", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "DACR2", 1);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left SPK Mixer", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right SPK Mixer", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left HP Mixer", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right HP Mixer", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left REC Mixer", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right REC Mixer", 1);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HP Left Out", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HP Right Out", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPK Left Out", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPK Right Out", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "REC Left Out", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "REC Right Out", 1);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HPL", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HPR", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPKL", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPKR", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "RECL", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "RECR", 1);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Int Spk", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Headphone Jack", 1);		
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Earpiece", 1);		
+
+	// capture
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "ADCL", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "ADCR", 1);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left ADC Mixer", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right ADC Mixer", 1);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INA1 Input", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INA2 Input", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "MIC1 Input", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "MIC2 Input", 1);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INA1", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "MIC1", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "MIC2", 1);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "MICBIAS", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SUBMICBIAS", 1);		
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Mic Jack", 1);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Int Mic", 1);		
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Int Sub Mic", 1);		
 
 	return 0;
 }
+
+static int tegra_fmradio_startup(struct snd_pcm_substream *substream)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(rtd->card);
+	int i;
+
+	machine->is_radio_mode = true;
+	printk("[chahee.kim] tegra_fmradio_startup start !!\n");
+
+	if (machine->is_call_mode == false) {
+		for (i = 0; i < machine->pcard->num_links; i++)
+			machine->pcard->dai_link[i].ignore_suspend = 1;
+
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left SPK Mixer", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right SPK Mixer", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left HP Mixer", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right HP Mixer", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HP Left Out", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HP Right Out", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPK Left Out", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPK Right Out", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HPL", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HPR", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPKL", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPKR", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INB1", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INB2", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Int Spk", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Headphone Jack", 1);		
+	}
+
+	printk("[chahee.kim] tegra_fmradio_startup end !!\n");
+	return 0;
+}
+
+static void tegra_fmradio_shutdown(struct snd_pcm_substream *substream)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(rtd->card);
+	int i;
+
+	if (machine->is_call_mode == false) {
+		for (i = 0; i < machine->pcard->num_links; i++)
+			machine->pcard->dai_link[i].ignore_suspend = 0;
+
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left SPK Mixer", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right SPK Mixer", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left HP Mixer", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right HP Mixer", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HP Left Out", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HP Right Out", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPK Left Out", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPK Right Out", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HPL", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HPR", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPKL", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPKR", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INB1", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INB2", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Int Spk", 0);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Headphone Jack", 0); 	
+	}
+
+	machine->is_radio_mode = false;
+//	wake_unlock(&machine->fmradio_lock);
+
+	return;
+}
+#endif
 
 #ifndef CONFIG_ARCH_TEGRA_2x_SOC
 static int tegra_max98088_startup(struct snd_pcm_substream *substream)
@@ -513,6 +792,11 @@ static int tegra_max98088_startup(struct snd_pcm_substream *substream)
 		tegra30_dam_allocate_channel(i2s->dam_ifc, TEGRA30_DAM_CHIN1);
 		i2s->dam_ch_refcount++;
 		tegra30_dam_enable_clock(i2s->dam_ifc);
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+//		tegra30_dam_set_gain(i2s->dam_ifc, TEGRA30_DAM_CHIN1, 0x1000);
+		tegra30_set_dam_ifc_gain(&machine->codec_info[HIFI_CODEC]);
+		tegra30_set_dam_ifc_gain(&machine->codec_info[BT_SCO]);
+#endif
 
 		tegra30_ahub_set_rx_cif_source(TEGRA30_AHUB_RXCIF_DAM0_RX1 +
 				(i2s->dam_ifc*2), i2s->txcif);
@@ -560,6 +844,11 @@ static int tegra_max98088_startup(struct snd_pcm_substream *substream)
 			codec_info->rate, codec_info->channels,
 			codec_info->bitsize, 1, bb_info->rate,
 			bb_info->channels, bb_info->bitsize);
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+		// tune audio gain
+		tegra30_set_dam_ifc_gain_of_call_record(codec_info, machine->call_record_rx_gain, machine->call_record_tx_gain);
+#endif
 
 		/* setup the connections for voice call record */
 
@@ -730,6 +1019,10 @@ static int tegra_voice_call_hw_params(struct snd_pcm_substream *substream,
 	/* codec configuration */
 	machine->codec_info[HIFI_CODEC].rate = params_rate(params);
 	machine->codec_info[HIFI_CODEC].channels = params_channels(params);
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	machine->codec_info[BASEBAND].rate = pdata->i2s_param[BASEBAND].rate;
+	machine->codec_info[BASEBAND].channels = pdata->i2s_param[BASEBAND].channels;
+#endif
 #endif
 
 	machine->is_device_bt = 0;
@@ -746,6 +1039,89 @@ static void tegra_voice_call_shutdown(struct snd_pcm_substream *substream)
 #ifndef CONFIG_ARCH_TEGRA_2x_SOC
 	machine->codec_info[HIFI_CODEC].rate = 0;
 	machine->codec_info[HIFI_CODEC].channels = 0;
+#endif
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	// playback
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "DACL1", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "DACR1", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "DACL2", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "DACR2", 0);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left SPK Mixer", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right SPK Mixer", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left HP Mixer", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right HP Mixer", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left REC Mixer", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right REC Mixer", 0);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HP Left Out", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HP Right Out", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPK Left Out", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPK Right Out", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "REC Left Out", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "REC Right Out", 0);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HPL", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HPR", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPKL", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPKR", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "RECL", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "RECR", 0);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Int Spk", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Headphone Jack", 0);		
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Earpiece", 0);		
+
+	// capture
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "ADCL", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "ADCR", 0);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left ADC Mixer", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right ADC Mixer", 0);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INA1 Input", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INA2 Input", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "MIC1 Input", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "MIC2 Input", 0);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INA1", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "MIC1", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "MIC2", 0);
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "MICBIAS", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SUBMICBIAS", 0);		
+
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Mic Jack", 0);
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Int Mic", 0);		
+	snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Int Sub Mic", 0);		
+          
+	// if FM radio is ON
+	if (machine->is_radio_mode == true) {
+		// just call tegra_fmradio_startup()
+		int i;
+		for (i = 0; i < machine->pcard->num_links; i++)
+			machine->pcard->dai_link[i].ignore_suspend = 1;
+
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left SPK Mixer", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right SPK Mixer", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Left HP Mixer", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Right HP Mixer", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HP Left Out", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HP Right Out", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPK Left Out", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPK Right Out", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HPL", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "HPR", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPKL", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "SPKR", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INB1", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "INB2", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Int Spk", 1);
+		snd_soc_dapm_ignore_suspend(&rtd->codec->dapm, "Headphone Jack", 1);		
+        
+		printk("FM RADIO is on - register dapm's to ignore_suspend again... \n");
+	}
 #endif
 
 	return;
@@ -796,6 +1172,10 @@ static int tegra_bt_voice_call_hw_params(struct snd_pcm_substream *substream,
 	/* codec configuration */
 	machine->codec_info[BT_SCO].rate = params_rate(params);
 	machine->codec_info[BT_SCO].channels = params_channels(params);
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	machine->codec_info[BASEBAND].rate = params_rate(params);
+	machine->codec_info[BASEBAND].channels = params_channels(params);
+#endif
 #endif
 
 	machine->is_device_bt = 1;
@@ -832,6 +1212,9 @@ static struct snd_soc_ops tegra_spdif_ops = {
 };
 
 static struct snd_soc_ops tegra_voice_call_ops = {
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	.startup = tegra_voice_call_startup,
+#endif
 	.hw_params = tegra_voice_call_hw_params,
 	.shutdown = tegra_voice_call_shutdown,
 	.hw_free = tegra_hw_free,
@@ -842,6 +1225,13 @@ static struct snd_soc_ops tegra_bt_voice_call_ops = {
 	.shutdown = tegra_bt_voice_call_shutdown,
 	.hw_free = tegra_hw_free,
 };
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+static struct snd_soc_ops tegra_fm_radio_ops = {
+	.startup = tegra_fmradio_startup,
+	.shutdown = tegra_fmradio_shutdown,
+};
+#endif
 
 static struct snd_soc_ops tegra_bt_ops = {
 	.hw_params = tegra_bt_hw_params,
@@ -854,6 +1244,21 @@ static struct snd_soc_ops tegra_bt_ops = {
 
 static struct snd_soc_jack tegra_max98088_hp_jack;
 
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+static struct snd_soc_jack_pin tegra_max98088_hp_jack_pins[] = {
+	{
+		.pin = "Headphone Jack",
+		.mask = SND_JACK_HEADPHONE,
+	},
+};
+
+static struct snd_soc_jack_gpio tegra_max98088_hp_jack_gpio = {
+	.name = "headphone detect",
+	.report = SND_JACK_HEADPHONE,
+	.debounce_time = 150,
+	.invert = 1,
+};
+#else
 #ifdef CONFIG_SWITCH
 static struct switch_dev wired_switch_dev = {
 	.name = "h2w",
@@ -898,6 +1303,7 @@ static struct snd_soc_jack_pin tegra_max98088_hp_jack_pins[] = {
 	},
 };
 #endif
+#endif
 
 static int tegra_max98088_event_int_spk(struct snd_soc_dapm_widget *w,
 					struct snd_kcontrol *k, int event)
@@ -939,6 +1345,9 @@ static const struct snd_soc_dapm_widget tegra_max98088_dapm_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone Jack", tegra_max98088_event_hp),
 	SND_SOC_DAPM_MIC("Mic Jack", NULL),
 	SND_SOC_DAPM_INPUT("Int Mic"),
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	SND_SOC_DAPM_INPUT("Int Sub Mic"),
+#endif
 };
 
 static const struct snd_soc_dapm_route enterprise_audio_map[] = {
@@ -948,9 +1357,16 @@ static const struct snd_soc_dapm_route enterprise_audio_map[] = {
 	{"Earpiece", NULL, "RECR"},
 	{"Headphone Jack", NULL, "HPL"},
 	{"Headphone Jack", NULL, "HPR"},
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	{"INA1", NULL, "Mic Jack"},
+	{"MIC2", NULL, "SUBMICBIAS"},
+	{"MICBIAS", NULL, "Int Mic"},
+	{"SUBMICBIAS", NULL, "Int Sub Mic"},
+#else
 	{"MICBIAS", NULL, "Mic Jack"},
 	{"MIC2", NULL, "MICBIAS"},
 	{"MICBIAS", NULL, "Int Mic"},
+#endif
 	{"MIC1", NULL, "MICBIAS"},
 };
 
@@ -960,7 +1376,36 @@ static const struct snd_kcontrol_new tegra_max98088_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Headphone Jack"),
 	SOC_DAPM_PIN_SWITCH("Mic Jack"),
 	SOC_DAPM_PIN_SWITCH("Int Mic"),
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	SOC_DAPM_PIN_SWITCH("Int Sub Mic"),
+	
+	SOC_SINGLE_EXT("Voice DL Volume", 0, 0, 0x1000, 0, volume_get_voice, volume_put_voice),
+	SOC_SINGLE_EXT("Voice UL Volume", 0, 1, 0x1000, 0, volume_get_voice, volume_put_voice),
+	SOC_SINGLE_EXT("Multi DL Volume", 0, 0, 0x1000, 0, volume_get_multi_dl, volume_put_multi_dl),
+	SOC_SINGLE_EXT("Call Record DL Volume", 0, 0, 0x7000, 0, volume_get_voice_record, volume_put_voice_record),
+	SOC_SINGLE_EXT("Call Record UL Volume", 0, 1, 0x7000, 0, volume_get_voice_record, volume_put_voice_record),
+#endif
 };
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+static ssize_t switch_gpio_print_state(struct switch_dev *sdev, char *buf)
+{
+
+//	printk(KERN_ERR "##(Headset_det.c)## switch_gpio_print_state() => sdev->state(%d), headset_sw_data->state_on(%d)/state_off(%d)\n",
+//		sdev->state, headset_sw_data->state_on, headset_sw_data->state_off);
+
+	const char *state;
+	if (switch_get_state(sdev))
+		state = headset_sw_data->state_on;
+	else
+		state = headset_sw_data->state_off;
+
+	if (state)
+		return sprintf(buf, "%s\n", state);
+
+	return -1;
+}
+#endif
 
 static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 {
@@ -973,6 +1418,10 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 	struct tegra30_i2s *i2s = snd_soc_dai_get_drvdata(rtd->cpu_dai);
 #endif
 	int ret;
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	struct headset_switch_data *switch_data;
+	struct input_dev *ip_dev;  
+#endif
 
 #ifndef CONFIG_ARCH_TEGRA_2x_SOC
 	if (machine->codec_info[BASEBAND].i2s_id != -1)
@@ -987,6 +1436,30 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 	machine->pcard = card;
 	machine->bias_level = SND_SOC_BIAS_STANDBY;
 	machine->clock_enabled = 1;
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	switch_data = kzalloc(sizeof(struct headset_switch_data), GFP_KERNEL);
+	switch_data->sdev.name = pdata->name;
+	switch_data->gpio = pdata->gpio_hp_det;
+	switch_data->name_on = NULL;
+	switch_data->name_off = NULL;
+	switch_data->state_on = NULL;
+	switch_data->state_off = NULL;
+	switch_data->sdev.print_state = switch_gpio_print_state;
+	switch_data->hook_gpio = pdata->gpio_hook;
+	switch_data->ear_mic = pdata->gpio_ear_mic;
+
+	ret = switch_dev_register(&switch_data->sdev);
+	ip_dev = input_allocate_device();
+	switch_data->ip_dev = ip_dev;
+	set_bit(EV_SYN, switch_data->ip_dev->evbit);
+	set_bit(EV_KEY, switch_data->ip_dev->evbit);
+	set_bit(KEY_HOOK, switch_data->ip_dev->keybit); 
+
+	switch_data->ip_dev->name = "tegra-snd-max98088";
+	input_register_device(switch_data->ip_dev);  
+	headset_sw_data = switch_data;   
+#endif
 
 	if (gpio_is_valid(pdata->gpio_spkr_en)) {
 		ret = gpio_request(pdata->gpio_spkr_en, "spkr_en");
@@ -1010,6 +1483,10 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 		gpio_direction_output(pdata->gpio_hp_mute, 0);
 	}
 
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	tegra_gpio_enable(pdata->gpio_int_mic_en);
+#endif
+
 	if (gpio_is_valid(pdata->gpio_int_mic_en)) {
 		ret = gpio_request(pdata->gpio_int_mic_en, "int_mic_en");
 		if (ret) {
@@ -1019,7 +1496,11 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 		machine->gpio_requested |= GPIO_INT_MIC_EN;
 
 		/* Disable int mic; enable signal is active-high */
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+		gpio_direction_output(pdata->gpio_int_mic_en, 1);
+#else
 		gpio_direction_output(pdata->gpio_int_mic_en, 0);
+#endif
 	}
 
 	if (gpio_is_valid(pdata->gpio_ext_mic_en)) {
@@ -1031,7 +1512,11 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 		machine->gpio_requested |= GPIO_EXT_MIC_EN;
 
 		/* Enable ext mic; enable signal is active-low */
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+		gpio_direction_output(pdata->gpio_ext_mic_en, 1);
+#else
 		gpio_direction_output(pdata->gpio_ext_mic_en, 0);
+#endif
 	}
 
 	ret = snd_soc_add_card_controls(card, tegra_max98088_controls,
@@ -1045,6 +1530,19 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_add_routes(dapm, enterprise_audio_map,
 					ARRAY_SIZE(enterprise_audio_map));
 
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	if (gpio_is_valid(pdata->gpio_hp_det)) {
+		tegra_max98088_hp_jack_gpio.gpio = pdata->gpio_hp_det;
+		snd_soc_jack_new(codec, "Headphone Jack", SND_JACK_HEADPHONE,
+			&tegra_max98088_hp_jack);
+		snd_soc_jack_add_pins(&tegra_max98088_hp_jack,
+			ARRAY_SIZE(tegra_max98088_hp_jack_pins),
+			tegra_max98088_hp_jack_pins);
+		snd_soc_jack_add_gpios(&tegra_max98088_hp_jack,
+			1,
+			&tegra_max98088_hp_jack_gpio);
+   }
+#else
 	ret = snd_soc_jack_new(codec, "Headset Jack", SND_JACK_HEADSET,
 			&tegra_max98088_hp_jack);
 	if (ret < 0)
@@ -1061,6 +1559,7 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 
 	max98088_headset_detect(codec, &tegra_max98088_hp_jack,
 		SND_JACK_HEADSET);
+#endif
 
        /* Add call mode switch control */
 	ret = snd_ctl_add(codec->card->snd_card,
@@ -1072,10 +1571,12 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 	if (ret < 0)
 		return ret;
 
+#if !defined(CONFIG_MACH_X3) && !defined(CONFIG_MACH_LX) && !defined(CONFIG_MACH_VU10)
 	snd_soc_dapm_nc_pin(dapm, "INA1");
 	snd_soc_dapm_nc_pin(dapm, "INA2");
 	snd_soc_dapm_nc_pin(dapm, "INB1");
 	snd_soc_dapm_nc_pin(dapm, "INB2");
+#endif
 	snd_soc_dapm_sync(dapm);
 
 	return 0;
@@ -1087,6 +1588,9 @@ static struct snd_soc_dai_link tegra_max98088_dai[NUM_DAI_LINKS] = {
 			.stream_name = "MAX98088 HIFI",
 			.codec_name = "max98088.0-0010",
 			.platform_name = "tegra-pcm-audio",
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+			.cpu_dai_name = "tegra30-i2s.0",
+#endif
 			.codec_dai_name = "HiFi",
 			.init = tegra_max98088_init,
 			.ops = &tegra_max98088_ops,
@@ -1105,6 +1609,9 @@ static struct snd_soc_dai_link tegra_max98088_dai[NUM_DAI_LINKS] = {
 			.stream_name = "BT SCO PCM",
 			.codec_name = "spdif-dit.1",
 			.platform_name = "tegra-pcm-audio",
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+			.cpu_dai_name = "tegra30-i2s.3",
+#endif
 			.codec_dai_name = "dit-hifi",
 			.init = tegra_max98088_init,
 			.ops = &tegra_bt_ops,
@@ -1115,7 +1622,11 @@ static struct snd_soc_dai_link tegra_max98088_dai[NUM_DAI_LINKS] = {
 			.codec_name = "max98088.0-0010",
 			.platform_name = "tegra-pcm-audio",
 			.cpu_dai_name = "dit-hifi",
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+			.codec_dai_name = "CALL",
+#else
 			.codec_dai_name = "HiFi",
+#endif
 			.ops = &tegra_voice_call_ops,
 		},
 	[DAI_LINK_BT_VOICE_CALL] = {
@@ -1127,6 +1638,17 @@ static struct snd_soc_dai_link tegra_max98088_dai[NUM_DAI_LINKS] = {
 			.codec_dai_name = "dit-hifi",
 			.ops = &tegra_bt_voice_call_ops,
 		},
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	[DAI_LINK_FM_RADIO] = {
+			.name = "FM RADIO",
+			.stream_name = "FM RADIO ANALOG",
+			.codec_name = "max98088.0-0010",
+			.platform_name = "tegra-pcm-audio",
+			.cpu_dai_name = "dit-hifi",
+			.codec_dai_name = "FM",
+			.ops = &tegra_fm_radio_ops,
+		},
+#endif
 };
 
 static int tegra30_soc_set_bias_level(struct snd_soc_card *card,
@@ -1165,6 +1687,18 @@ static int tegra30_soc_set_bias_level_post(struct snd_soc_card *card,
 static int tegra_max98088_suspend_post(struct snd_soc_card *card)
 {
 	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(card);
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	struct tegra_asoc_platform_data *pdata = machine->pdata;
+
+	if (machine->is_call_mode == false) {
+		if (machine->gpio_requested & GPIO_EXT_MIC_EN)
+			gpio_direction_output(pdata->gpio_ext_mic_en, 0);
+		if (machine->gpio_requested & GPIO_INT_MIC_EN)
+			gpio_direction_output(pdata->gpio_int_mic_en, 0);
+		
+		//gpio_set_value(headset_sw_data->ear_mic, 0);
+	}
+#endif
 
 	if (machine->clock_enabled)
 		tegra_asoc_utils_clk_disable(&machine->util_data);
@@ -1176,6 +1710,16 @@ static int tegra_max98088_suspend_post(struct snd_soc_card *card)
 static int tegra_max98088_resume_pre(struct snd_soc_card *card)
 {
 	struct tegra_max98088 *machine = snd_soc_card_get_drvdata(card);
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	struct tegra_asoc_platform_data *pdata = machine->pdata;
+
+	if (machine->gpio_requested & GPIO_EXT_MIC_EN)
+		gpio_direction_output(pdata->gpio_ext_mic_en, 1);
+	if (machine->gpio_requested & GPIO_INT_MIC_EN)
+		gpio_direction_output(pdata->gpio_int_mic_en, 1);
+	
+	gpio_set_value(headset_sw_data->ear_mic, 1);
+#endif
 
 	if (!machine->clock_enabled)
 		tegra_asoc_utils_clk_enable(&machine->util_data);
@@ -1215,6 +1759,12 @@ static __devinit int tegra_max98088_driver_probe(struct platform_device *pdev)
 
 	machine->pdata = pdata;
 
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	// call record gain
+	machine->call_record_rx_gain = 0x1000;
+	machine->call_record_tx_gain = 0x1000;
+#endif
+	
 	ret = tegra_asoc_utils_init(&machine->util_data, &pdev->dev, card);
 	if (ret)
 		goto err_free_machine;
@@ -1223,6 +1773,7 @@ static __devinit int tegra_max98088_driver_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, card);
 	snd_soc_card_set_drvdata(card, machine);
 
+#if !defined(CONFIG_MACH_X3) && !defined(CONFIG_MACH_LX) && !defined(CONFIG_MACH_VU10)
 #ifdef CONFIG_SWITCH
 	/* Add h2w switch class support */
 	ret = tegra_asoc_switch_register(&wired_switch_dev);
@@ -1231,9 +1782,14 @@ static __devinit int tegra_max98088_driver_probe(struct platform_device *pdev)
 		goto err_fini_utils;
 	}
 #endif
+#endif
 
 #ifndef CONFIG_ARCH_TEGRA_2x_SOC
 	for (i = 0; i < NUM_I2S_DEVICES ; i++) {
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+		machine->codec_info[i].dam_gain[0] = 0x1000;
+		machine->codec_info[i].dam_gain[1] = 0x1000;
+#endif
 		machine->codec_info[i].i2s_id =
 			pdata->i2s_param[i].audio_port_id;
 		machine->codec_info[i].bitsize =
@@ -1250,11 +1806,13 @@ static __devinit int tegra_max98088_driver_probe(struct platform_device *pdev)
 			pdata->i2s_param[i].bit_clk;
 	}
 
+#if !defined(CONFIG_MACH_X3) && !defined(CONFIG_MACH_LX) && !defined(CONFIG_MACH_VU10)
 	tegra_max98088_dai[DAI_LINK_HIFI].cpu_dai_name =
 	tegra_max98088_i2s_dai_name[machine->codec_info[HIFI_CODEC].i2s_id];
 
 	tegra_max98088_dai[DAI_LINK_BTSCO].cpu_dai_name =
 	tegra_max98088_i2s_dai_name[machine->codec_info[BT_SCO].i2s_id];
+#endif
 #endif
 
 	card->dapm.idle_bias_off = 1;
@@ -1285,11 +1843,13 @@ static __devinit int tegra_max98088_driver_probe(struct platform_device *pdev)
 err_unregister_card:
 	snd_soc_unregister_card(card);
 err_switch_unregister:
+#if !defined(CONFIG_MACH_X3) && !defined(CONFIG_MACH_LX) && !defined(CONFIG_MACH_VU10)
 #ifdef CONFIG_SWITCH
 	tegra_asoc_switch_unregister(&wired_switch_dev);
 #endif
 err_fini_utils:
 	tegra_asoc_utils_fini(&machine->util_data);
+#endif	
 err_free_machine:
 	kfree(machine);
 	return ret;
@@ -1303,8 +1863,12 @@ static int __devexit tegra_max98088_driver_remove(struct platform_device *pdev)
 
 	snd_soc_unregister_card(card);
 
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	switch_dev_unregister(&headset_sw_data->sdev);
+#else
 #ifdef CONFIG_SWITCH
 	tegra_asoc_switch_unregister(&wired_switch_dev);
+#endif
 #endif
 
 	tegra_asoc_utils_fini(&machine->util_data);

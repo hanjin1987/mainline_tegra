@@ -3135,8 +3135,13 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_get_pin_status);
  * normal means at suspend time, it will not be turned on if it was not
  * already enabled.
  */
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+int snd_soc_dapm_ignore_suspend(struct snd_soc_dapm_context *dapm,
+				const char *pin, int ignore)
+#else
 int snd_soc_dapm_ignore_suspend(struct snd_soc_dapm_context *dapm,
 				const char *pin)
+#endif
 {
 	struct snd_soc_dapm_widget *w = dapm_find_widget(dapm, pin, false);
 
@@ -3145,7 +3150,11 @@ int snd_soc_dapm_ignore_suspend(struct snd_soc_dapm_context *dapm,
 		return -EINVAL;
 	}
 
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	w->ignore_suspend = ignore;
+#else
 	w->ignore_suspend = 1;
+#endif
 
 	return 0;
 }

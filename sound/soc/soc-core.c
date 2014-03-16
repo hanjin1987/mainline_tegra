@@ -602,9 +602,22 @@ int snd_soc_suspend(struct device *dev)
 					break;
 				}
 			case SND_SOC_BIAS_OFF:
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+				if (!card->rtd[0].dai_link->ignore_suspend) {     
+					//printk("(soc-core) %s() [%s] SSP Go codec suspend codec->dapm.bias_level? (%d).###\n",
+					//	__func__, codec->name, codec->dapm.bias_level);
+					codec->driver->suspend(codec);
+					codec->suspended = 1;
+					codec->cache_sync = 1;
+				} else {
+					printk("(soc-core) %s() [%s] SSP (ignore) Don't let go codec suspend @@@@###\n",
+						__func__);                
+				}
+#else
 				codec->driver->suspend(codec);
 				codec->suspended = 1;
 				codec->cache_sync = 1;
+#endif
 				break;
 			default:
 				dev_dbg(codec->dev, "CODEC is on over suspend\n");

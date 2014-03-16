@@ -162,6 +162,11 @@ int tegra_pcm_allocate(struct snd_pcm_substream *substream,
 	if (prtd == NULL)
 		return -ENOMEM;
 
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	init_timer(&prtd->pcm_timeout);
+	prtd->callback_time = 0;
+#endif
+	
 	runtime->private_data = prtd;
 	prtd->substream = substream;
 
@@ -222,6 +227,11 @@ int tegra_pcm_close(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct tegra_runtime_data *prtd = runtime->private_data;
+
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	del_timer_sync(&prtd->pcm_timeout);
+	prtd->callback_time = 0;
+#endif
 
 	if (prtd->dma_chan)
 		tegra_dma_free_channel(prtd->dma_chan);

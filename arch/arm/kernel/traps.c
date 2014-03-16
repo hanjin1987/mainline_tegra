@@ -38,6 +38,16 @@
 
 #include "signal.h"
 
+#if defined(CONFIG_MACH_X3)  || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+#include "../arch/arm/mach-tegra/gpio-names.h"
+#include "../arch/arm/mach-tegra/lge/x3/include/lge/board-x3-nv.h"
+#include "../arch/arm/mach-tegra/lge/x3/include/lge/board-x3.h"
+
+#if defined(CONFIG_MFD_MAX77663)
+#include <linux/mfd/max77663-core.h>
+#endif
+#endif
+
 static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
 
 void *vectors_page;
@@ -283,6 +293,20 @@ void die(const char *str, struct pt_regs *regs, int err)
 	bust_spinlocks(0);
 	add_taint(TAINT_DIE);
 	spin_unlock_irq(&die_lock);
+
+#if defined(CONFIG_MACH_X3)  || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+#if defined(CONFIG_MFD_MAX77663_FOR_USED_SCRATCH_REGISTER)
+	max77663_set_ScratchRegister(MAX77663_SCRATCH_REG_RESET);
+#else
+	unsigned char bootcause[1] = {LGE_NVDATA_RESET_CAUSE_VAL_USER_RESET};
+	lge_nvdata_write(LGE_NVDATA_RESET_CAUSE_OFFSET, bootcause, 1);                               
+#endif
+	gpio_set_value(TEGRA_GPIO_PN6, 0);	// backlight
+	gpio_set_value(MODEM_PWR_ON, 0);
+	udelay(200);
+	gpio_set_value(MODEM_RESET, 0);
+#endif
+
 	oops_exit();
 
 	if (in_interrupt())

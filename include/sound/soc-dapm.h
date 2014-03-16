@@ -378,8 +378,15 @@ int snd_soc_dapm_get_pin_status(struct snd_soc_dapm_context *dapm,
 int snd_soc_dapm_sync(struct snd_soc_dapm_context *dapm);
 int snd_soc_dapm_force_enable_pin(struct snd_soc_dapm_context *dapm,
 				  const char *pin);
+//                                         
+#if defined(CONFIG_MACH_X3)  || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+int snd_soc_dapm_ignore_suspend(struct snd_soc_dapm_context *dapm,
+				const char *pin, int ignore);
+#else
 int snd_soc_dapm_ignore_suspend(struct snd_soc_dapm_context *dapm,
 				const char *pin);
+#endif
+//                                         
 
 /* dapm widget types */
 enum snd_soc_dapm_type {

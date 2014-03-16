@@ -65,4 +65,7 @@ int is_tegra_camera_on(void) { return 0; }
 	_IOWR('i', 3, struct tegra_camera_clk_info)
 #define TEGRA_CAMERA_IOCTL_RESET		_IOWR('i', 4, uint)
 
+//                                                                                          
+int tegra_camera_set_size(int xres, int yres);
+
 #endif

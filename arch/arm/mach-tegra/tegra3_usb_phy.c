@@ -1972,9 +1972,15 @@ static void uhsic_setup_pmc_wake_detect(struct tegra_usb_phy *phy)
 	val |= UHSIC_MASTER_ENABLE;
 	writel(val, pmc_base + PMC_SLEEP_CFG);
 
+#ifdef CONFIG_MACH_X3
+	val = readl(base + UHSIC_PMC_WAKEUP0);
+	val &= ~EVENT_INT_ENB;
+	writel(val, base + UHSIC_PMC_WAKEUP0);
+#else
 	val = readl(base + UHSIC_PMC_WAKEUP0);
 	val |= EVENT_INT_ENB;
 	writel(val, base + UHSIC_PMC_WAKEUP0);
+#endif
 
 	DBG("%s:PMC enabled for HSIC remote wakeup\n", __func__);
 }
@@ -2076,6 +2082,7 @@ static void uhsic_phy_restore_start(struct tegra_usb_phy *phy)
 	val = readl(pmc_base + UTMIP_UHSIC_STATUS);
 
 	/* check whether we wake up from the remote resume */
+#ifndef CONFIG_MACH_X3 // NV Patch (1175097) - [X3/AP33/JB/USB-HSIC] reproduce USB protocol error (-71) [START]
 	if (UHSIC_WALK_PTR_VAL & val) {
 		phy->remote_wakeup = true;
 	} else {
@@ -2084,6 +2091,12 @@ static void uhsic_phy_restore_start(struct tegra_usb_phy *phy)
 		val |= UHSIC_PRETEND_CONNECT_DETECT;
 		writel(val, base + UHSIC_CMD_CFG0);
 	}
+#else
+	DBG("%s(%d): setting pretend connect\n", __func__, __LINE__);
+	val = readl(base + UHSIC_CMD_CFG0);
+	val |= UHSIC_PRETEND_CONNECT_DETECT;
+	writel(val, base + UHSIC_CMD_CFG0);
+#endif // NV Patch (1175097) - [X3/AP33/JB/USB-HSIC] reproduce USB protocol error (-71) [END]
 }
 
 static void uhsic_phy_restore_end(struct tegra_usb_phy *phy)

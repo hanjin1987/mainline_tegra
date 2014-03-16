@@ -56,6 +56,13 @@ static inline int tegra_emc_disable_eack(void) {
 	return 0;
 }
 #else
+
+#ifdef CONFIG_MACH_X3
+#define LGE_RESTRICT_POWER_DURING_SLEEP
+void tegra_auto_hotplug_set_min_cpus(int num_cpus);  // sujeong.kwon@lge.com 2012-04-20: power: Add set_min_cpus function from NV.
+void tegra_auto_hotplug_set_max_cpus(int num_cpus);
+#endif
+
 static inline void tegra_sdmmc_tap_delay(struct clk *c, int delay)
 {
 }

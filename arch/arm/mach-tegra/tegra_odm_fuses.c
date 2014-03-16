@@ -690,11 +690,19 @@ int tegra_fuse_program(struct fuse_data *pgm_data, u32 flags)
 		pr_err("fuse write disabled");
 		return -ENODEV;
 	}
+     
 
+#ifndef CONFIG_MACH_LGE
 	if (fuse_odm_prod_mode() && (flags != FLAGS_ODMRSVD)) {
 		pr_err("reserved odm fuses aren't allowed in secure mode");
 		return -EPERM;
 	}
+#else
+	if (fuse_odm_prod_mode() && (flags & (FLAGS_SBK | FLAGS_DEVKEY)) ) {
+		pr_err("SBK and DK fuses aren't allowed in secure mode");
+		return -EPERM;
+	}
+#endif
 
 	if ((flags & FLAGS_ODM_PROD_MODE) &&
 		(flags & (FLAGS_SBK | FLAGS_DEVKEY))) {
@@ -821,10 +829,17 @@ static ssize_t fuse_store(struct kobject *kobj, struct kobj_attribute *attr,
 		return -EINVAL;
 	}
 
+#ifndef CONFIG_MACH_LGE
 	if (fuse_odm_prod_mode()) {
 		pr_err("%s: device locked. odm fuse already blown\n", __func__);
 		return -EPERM;
 	}
+#else
+	if (fuse_odm_prod_mode()  && (param != ODM_RSVD) ) {
+		pr_err("%s: device locked. odm fuse already blown\n", __func__);
+		return -EPERM;
+	}
+#endif
 
 	count--;
 	if (DIV_ROUND_UP(count, 2) > fuse_info_tbl[param].sz) {

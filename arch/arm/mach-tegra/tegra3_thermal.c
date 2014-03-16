@@ -313,6 +313,11 @@ static int tegra_skin_device_register(struct tegra_thermal_device *device)
 	struct therm_est_subdevice *skin_dev =
 		kzalloc(sizeof(struct therm_est_subdevice), GFP_KERNEL);
 
+        if (skin_dev == NULL) {
+       	         pr_err("%s: skin_dev unable to alloc data struct.\n", __func__);
+               	 return -ENOMEM;
+       	}
+
 	for (i = 0; i < therm->skin_devs_size; i++) {
 		if (therm->skin_devs[i].id == device->id) {
 			memcpy(skin_dev->coeffs,
@@ -337,8 +342,14 @@ static int tegra_skin_device_register(struct tegra_thermal_device *device)
 					skin_devs_count,
 					therm->skin_temp_offset,
 					therm->skin_period);
-		thermal_skin_device = kzalloc(sizeof(struct tegra_thermal_device),
-							GFP_KERNEL);
+		thermal_skin_device = kzalloc(sizeof(struct tegra_thermal_device), GFP_KERNEL);
+
+	        if (thermal_skin_device == NULL) {
+        	         pr_err("%s: thermal_skin_device unable to alloc data struct.\n", __func__);
+                	 return -ENOMEM;
+         	}
+ 
+
 		thermal_skin_device->name = "skin_pred";
 		thermal_skin_device->id = THERMAL_DEVICE_ID_SKIN;
 		thermal_skin_device->data = skin_estimator;
@@ -384,9 +395,9 @@ int tegra_thermal_device_register(struct tegra_thermal_device *device)
 #endif
 #ifdef CONFIG_TEGRA_SKIN_THROTTLE
 	if (device->id == therm->skin_device_id) {
-		t1 = 0;
-		t2 = 1;
-		pdelay = 5000;
+		t1 = therm->tc1_skin;
+		t2 = therm->tc2_skin;
+		pdelay = therm->passive_delay_skin;
 		create_thz = true;
 	}
 #endif
@@ -522,7 +533,6 @@ static int __init temp_tj_debug_init(void)
 	return 0;
 }
 late_initcall(temp_tj_debug_init);
-
 
 #define TEGRA_THERM_DEBUGFS(_name, _device_id, throttle, shutdown) \
 	static int tegra_thermal_##_name##_set(void *data, u64 val) \

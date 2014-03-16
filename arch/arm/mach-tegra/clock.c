@@ -286,7 +286,9 @@ EXPORT_SYMBOL(clk_enable);
 static void clk_disable_locked(struct clk *c)
 {
 	if (c->refcnt == 0) {
+#ifndef CONFIG_MACH_LGE
 		WARN(1, "Attempting to disable clock %s with refcnt 0", c->name);
+#endif
 		return;
 	}
 	if (c->refcnt == 1) {

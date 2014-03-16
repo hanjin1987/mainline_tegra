@@ -187,6 +187,15 @@ struct platform_device tegra_i2c_device5 = {
 };
 #endif
 
+#if defined(CONFIG_MACH_LGE)
+#ifdef CONFIG_I2C_GPIO
+struct platform_device tegra_gpio_i2c = {
+	.name		= "i2c-gpio",
+	.id		= 5,
+};
+#endif
+#endif
+
 static struct resource spi_resource1[] = {
 	[0] = {
 		.start	= INT_SPI_1,
@@ -1208,7 +1217,7 @@ static u64 tegra_udc_dmamask = DMA_BIT_MASK(32);
 
 struct platform_device tegra_udc_device = {
 	.name	= "tegra-udc",
-	.id	= 0,
+	.id	= 0,    
 	.dev	= {
 		.dma_mask	= &tegra_udc_dmamask,
 		.coherent_dma_mask = DMA_BIT_MASK(32),

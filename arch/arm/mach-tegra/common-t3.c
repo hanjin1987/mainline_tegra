@@ -175,6 +175,8 @@ static void unthrottle_prints(struct work_struct *work)
 
 	spin_lock_irqsave(&mc_lock, flags);
 	error_count = 0;
+	writel(MC_INT_DECERR_EMEM | MC_INT_SECURITY_VIOLATION |
+				MC_INT_INVALID_SMMU_PAGE, mc + MC_INT_MASK);
 	spin_unlock_irqrestore(&mc_lock, flags);
 }
 
@@ -208,6 +210,7 @@ static irqreturn_t tegra_mc_error_isr(int irq, void *data)
 	if (count >= MAX_PRINTS) {
 		if (count == MAX_PRINTS)
 			pr_err("Too many MC errors; throttling prints\n");
+		writel(0, mc + MC_INT_MASK);
 		schedule_delayed_work(&unthrottle_prints_work, HZ/2);
 		goto out;
 	}

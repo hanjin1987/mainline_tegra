@@ -32,9 +32,29 @@ struct i2s_config {
 	int sample_size;
 	int rate;
 	int channels;
+	int bit_clk;
 };
 
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+struct hifi_config {
+	int i2s_num;
+	int rate;
+	int channels;
+};
+
+struct bt_config {
+	int i2s_num;
+	int rate;
+	int channels;
+};
+#endif
+
 struct tegra_asoc_platform_data {
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	const char *name;
+	int gpio_hook;
+	int gpio_ear_mic;
+#endif
 	const char *codec_name;
 	const char *codec_dai_name;
 	int gpio_spkr_en;
@@ -43,5 +63,9 @@ struct tegra_asoc_platform_data {
 	int gpio_int_mic_en;
 	int gpio_ext_mic_en;
 	unsigned int debounce_time_hp;
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+	struct hifi_config hifi_param;
+	struct bt_config bt_param;
+#endif
 	struct i2s_config i2s_param[NUM_I2S_DEVICES];
 };

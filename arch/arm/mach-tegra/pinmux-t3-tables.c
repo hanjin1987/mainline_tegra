@@ -415,8 +415,13 @@ const int gpio_to_pingroup[TEGRA_MAX_GPIO] = {
 
 #ifdef CONFIG_PM_SLEEP
 
+#if defined(CONFIG_MACH_DUMP_GPIO)
+/*static*/ u32 pinmux_reg[TEGRA_MAX_PINGROUP +
+			ARRAY_SIZE(tegra_soc_drive_pingroups)];
+#else
 static u32 pinmux_reg[TEGRA_MAX_PINGROUP +
 			ARRAY_SIZE(tegra_soc_drive_pingroups)];
+#endif
 
 static inline unsigned long pg_readl(unsigned long offset)
 {

@@ -46,6 +46,10 @@
 
 #define PMC_MAX_WAKE_COUNT 64
 
+#ifdef CONFIG_MACH_X3
+extern unsigned long long wake_status_backup;
+#endif
+
 static void __iomem *pmc = IO_ADDRESS(TEGRA_PMC_BASE);
 
 static u64 tegra_lp0_wake_enb;
@@ -238,6 +242,9 @@ static void tegra_pm_irq_syscore_resume_helper(
 static void tegra_pm_irq_syscore_resume(void)
 {
 	unsigned long long wake_status = read_pmc_wake_status();
+#ifdef CONFIG_MACH_X3
+	wake_status_backup = wake_status;
+#endif
 
 	pr_info(" legacy wake status=0x%x\n", (u32)wake_status);
 	tegra_pm_irq_syscore_resume_helper((unsigned long)wake_status, 0);
@@ -295,7 +302,10 @@ static int tegra_pm_irq_syscore_suspend(void)
 #endif
 
 	write_pmc_wake_level(wake_level);
-
+#ifdef CONFIG_MACH_X3
+	// seongjun.cho@lge.com why ics 2 write_level
+	write_pmc_wake_level(wake_level);
+#endif
 	write_pmc_wake_mask(wake_enb);
 
 	return 0;

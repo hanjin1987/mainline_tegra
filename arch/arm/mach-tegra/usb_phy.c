@@ -144,11 +144,28 @@ static irqreturn_t usb_phy_dev_vbus_pmu_irq_thr(int irq, void *pdata)
 		mdelay(15);
 	}
 
+#if defined(CONFIG_MFD_MAX77663)
+	if (irq == phy->pdata->u_data.dev.vbus_pmu_irq) {
+	        pr_info("%s_f++\n", __func__);
+		gpio_set_value_cansleep(phy->pdata->u_data.dev.vbus_gpio, 0);
+	        pr_info("%s_f--\n", __func__);
+		return IRQ_HANDLED;
+	}
+#endif
+
 	/* clk is disabled during phy power off and not here*/
 	if (!phy->ctrl_clk_on) {
 		clk_enable(phy->ctrlr_clk);
 		phy->ctrl_clk_on = true;
 	}
+
+#if defined(CONFIG_MFD_MAX77663)
+	if (irq == phy->pdata->u_data.dev.vbus_pmu_irq + 1) {
+	        pr_info("%s_r++\n", __func__);
+		gpio_set_value_cansleep(phy->pdata->u_data.dev.vbus_gpio, 1);
+        	pr_info("%s_r--\n", __func__);
+	}
+#endif
 
 	return IRQ_HANDLED;
 }
@@ -294,6 +311,14 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct platform_device *pdev)
 
 	if (phy->pdata->op_mode == TEGRA_USB_OPMODE_DEVICE) {
 		if (phy->pdata->u_data.dev.vbus_pmu_irq) {
+#if defined(CONFIG_MFD_MAX77663)
+			gpio_request(phy->pdata->u_data.dev.vbus_gpio, "usb_phy_vbus_ctl");
+			err |= gpio_direction_output(phy->pdata->u_data.dev.vbus_gpio, 1);
+			err = request_threaded_irq(
+					phy->pdata->u_data.dev.vbus_pmu_irq,
+					NULL, usb_phy_dev_vbus_pmu_irq_thr,
+					IRQF_SHARED, "usb_pmu_vbus_irq_f", phy);
+#else
 			err = request_threaded_irq(
 					phy->pdata->u_data.dev.vbus_pmu_irq,
 					NULL, usb_phy_dev_vbus_pmu_irq_thr,
@@ -303,6 +328,18 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct platform_device *pdev)
 								phy->inst);
 				goto fail_init;
 			}
+#endif			
+#if defined(CONFIG_MFD_MAX77663)
+			err = request_threaded_irq(
+					phy->pdata->u_data.dev.vbus_pmu_irq + 1,
+					NULL, usb_phy_dev_vbus_pmu_irq_thr,
+					IRQF_SHARED, "usb_pmu_vbus_irq_r", phy);
+			if (err) {
+				ERR("inst:[%d] Failed to register IRQ\n",
+								phy->inst);
+				goto fail_init;
+			}
+#endif
 		} else {
 			clk_enable(phy->ctrlr_clk);
 		}

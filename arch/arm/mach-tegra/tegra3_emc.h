@@ -30,6 +30,10 @@
 extern u8 tegra_emc_bw_efficiency;
 extern u8 tegra_emc_bw_efficiency_boost;
 
+#if defined(CONFIG_MACH_LGE)
+extern unsigned long tegra_emc_bw_min_rate;
+#endif
+
 struct tegra_emc_table {
 	u8 rev;
 	unsigned long rate;

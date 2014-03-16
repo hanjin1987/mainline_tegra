@@ -106,6 +106,12 @@ bool is_tegra_debug_uartport_hs(void);
 int get_tegra_uart_debug_port_id(void);
 int arb_lost_recovery(int scl_gpio, int sda_gpio);
 
+#ifdef CONFIG_MACH_LGE
+int is_tegra_bootmode(void);
+int is_tegra_batteryexistWhenBoot(void);
+int is_tegra_batteryVerified(void);
+#endif
+
 extern unsigned long tegra_bootloader_fb_start;
 extern unsigned long tegra_bootloader_fb_size;
 extern unsigned long tegra_fb_start;

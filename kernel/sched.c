@@ -6290,6 +6290,15 @@ static void migrate_tasks(unsigned int dead_cpu)
 	 */
 	rq->stop = NULL;
 
+#ifdef CONFIG_MACH_X3
+	/* ICS Stability patch #41 */
+	/*
+	 * Ensure rt_rq is not throttled so its threads can be migrated using
+	 * pick_next_task_rt
+	 */
+	rq->rt.rt_throttled = 0;
+#endif
+
 	for ( ; ; ) {
 		/*
 		 * There's this thread running, bail when that's the only

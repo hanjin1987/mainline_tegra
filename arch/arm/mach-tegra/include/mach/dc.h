@@ -503,6 +503,9 @@ struct tegra_dc_out {
 
 	int	(*enable)(struct device *);
 	int	(*postpoweron)(void);
+#ifdef CONFIG_MACH_X3
+	int	(*prepoweron)(void); /* wakeup time from LP0 ** Nvidia patch */	
+#endif
 	int	(*prepoweroff)(void);
 	int	(*disable)(void);
 
@@ -756,6 +759,32 @@ struct tegra_dc_edid {
 };
 struct tegra_dc_edid *tegra_dc_get_edid(struct tegra_dc *dc);
 void tegra_dc_put_edid(struct tegra_dc_edid *edid);
+
+#ifdef CONFIG_MACH_X3
+void tegra_dc_set_out_pin_polars(struct tegra_dc *dc,
+				const struct tegra_dc_out_pin *pins,
+				const unsigned int n_pins);
+
+#define GAMMA_NV_ERROR 0
+#define GAMMA_NV_ENABLED 1
+#define GAMMA_NV_DISABLED 2
+#define GAMMA_NV_ENABLED_SEND 3
+#define GAMMA_NV_SAVED_SEND 4
+#define GAMMA_NV_SEND 5
+#define GAMMA_NV_SAVED 6
+#define GAMMA_NV_RETURNED 7
+
+int dc_set_gamma_rgb(int window_n, int red,int green,int blue);
+
+struct lcd_gamma_rgb {
+	unsigned char red;
+	unsigned char green;
+	unsigned char blue;
+	unsigned char table_type;
+};
+
+extern struct lcd_gamma_rgb cmdlineRGBvalue;
+#endif
 
 int tegra_dc_set_flip_callback(void (*callback)(void));
 int tegra_dc_unset_flip_callback(void);

@@ -147,6 +147,8 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += tegra2_throttle.o
 obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += tegra3_throttle.o
 obj-$(CONFIG_ARCH_TEGRA_11x_SOC)        += tegra3_throttle.o
 endif
+obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += tegra3_thermal.o
+#obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += tegra3_skin.o
 obj-$(CONFIG_TEGRA_IOVMM)               += iovmm.o
 obj-$(CONFIG_TEGRA_IOVMM_GART)          += iovmm-gart.o
 obj-$(CONFIG_TEGRA_IOVMM_SMMU)          += iovmm-smmu.o
@@ -345,3 +347,14 @@ obj-${CONFIG_MACH_ROTH}                 += board-roth-panel.o
 obj-${CONFIG_MACH_ROTH}                 += board-roth-kbc.o
 obj-${CONFIG_MACH_ROTH}                 += board-roth-sensors.o
 obj-${CONFIG_MACH_ROTH}                 += board-roth-fan.o
+
+#===============#
+#  For the LGE  #
+#===============#
+
+obj-$(CONFIG_MACH_X3)			+= lge/x3/
+obj-$(CONFIG_MACH_LX)			+= lge/lx/
+obj-$(CONFIG_MACH_VU10)			+= lge/vu10/
+subdir-ccflags-$(CONFIG_MACH_X3)	+= -Iarch/arm/mach-tegra/lge/x3/include
+subdir-ccflags-$(CONFIG_MACH_LX)	+= -Iarch/arm/mach-tegra/lge/lx/include
+subdir-ccflags-$(CONFIG_MACH_VU10)	+= -Iarch/arm/mach-tegra/lge/vu10/include

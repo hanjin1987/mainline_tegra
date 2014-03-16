@@ -374,6 +374,15 @@ struct platform_device tegra11_i2c_device5 = {
 };
 #endif
 
+#if defined(CONFIG_MACH_LGE)
+#ifdef CONFIG_I2C_GPIO
+struct platform_device tegra_gpio_i2c = {
+	.name		= "i2c-gpio",
+	.id		= 5,
+};
+#endif
+#endif
+
 static struct resource spi_resource1[] = {
 	[0] = {
 		.start	= INT_SPI_1,

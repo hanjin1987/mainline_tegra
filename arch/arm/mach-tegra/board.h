@@ -129,6 +129,12 @@ static inline void __init tegra_ram_console_debug_init(void)
 {}
 #endif
 
+#ifdef CONFIG_MACH_LGE
+int is_tegra_bootmode(void);
+int is_tegra_batteryexistWhenBoot(void);
+int is_tegra_batteryVerified(void);
+#endif
+
 extern unsigned long tegra_bootloader_fb_start;
 extern unsigned long tegra_bootloader_fb_size;
 extern unsigned long tegra_bootloader_fb2_start;

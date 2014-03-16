@@ -605,11 +605,18 @@ int tegra_fuse_program(struct fuse_data *pgm_data, u32 flags)
 		return -ENODEV;
 	}
 
+#ifndef CONFIG_MACH_LGE
 	if (fuse_odm_prod_mode() && (flags != FLAGS_ODMRSVD)) {
 		pr_err("Non ODM reserved fuses cannot be burnt after "
 			"ODM production mode/secure mode fuse is burnt");
 		return -EPERM;
 	}
+#else
+	if (fuse_odm_prod_mode() && (flags & (FLAGS_SBK | FLAGS_DEVKEY)) ) {
+		pr_err("SBK and DK fuses aren't allowed in secure mode");
+		return -EPERM;
+	}
+#endif
 
 	if ((flags & FLAGS_ODM_PROD_MODE) &&
 		(flags & (FLAGS_SBK | FLAGS_DEVKEY))) {

@@ -53,6 +53,11 @@ module_param(emc_enable, bool, 0644);
 u8 tegra_emc_bw_efficiency = 35;
 u8 tegra_emc_bw_efficiency_boost = 45;
 
+#if defined(CONFIG_MACH_LGE)
+unsigned long tegra_emc_bw_min_rate = 204000000;
+//unsigned long tegra_emc_bw_min_rate;
+#endif
+
 #define EMC_MIN_RATE_DDR3		25500000
 #define EMC_STATUS_UPDATE_TIMEOUT	100
 #define TEGRA_EMC_TABLE_MAX_SIZE	16
@@ -988,6 +993,10 @@ static bool is_emc_bridge(void)
 static int tegra_emc_suspend_notify(struct notifier_block *nb,
 				unsigned long event, void *data)
 {
+#if defined(CONFIG_MACH_LGE)
+	printk("%s start [%d]\n", __func__, event);  // for debug
+#endif
+
 	if (event != PM_SUSPEND_PREPARE)
 		return NOTIFY_OK;
 
@@ -1009,6 +1018,10 @@ static struct notifier_block tegra_emc_suspend_nb = {
 static int tegra_emc_resume_notify(struct notifier_block *nb,
 				unsigned long event, void *data)
 {
+#if defined(CONFIG_MACH_LGE)
+	printk("%s start [%d]\n", __func__, event);  // for debug
+#endif
+
 	if (event != PM_POST_SUSPEND)
 		return NOTIFY_OK;
 
@@ -1609,6 +1622,24 @@ static int efficiency_boost_set(void *data, u64 val)
 DEFINE_SIMPLE_ATTRIBUTE(efficiency_boost_fops, efficiency_boost_get,
 			efficiency_boost_set, "%llu\n");
 
+#if defined(CONFIG_MACH_LGE)
+static int bw_min_rate_get(void *data, u64 *val)
+{
+	*val = tegra_emc_bw_min_rate;
+	return 0;
+}
+static int bw_min_rate_set(void *data, u64 val)
+{
+	tegra_emc_bw_min_rate = val;
+	if (emc)
+		tegra_clk_shared_bus_update(emc);
+
+	return 0;
+}
+DEFINE_SIMPLE_ATTRIBUTE(bw_min_rate_fops, bw_min_rate_get,
+			bw_min_rate_set, "%llu\n");
+#endif
+
 static int __init tegra_emc_debug_init(void)
 {
 	if (!tegra_emc_table)
@@ -1641,6 +1672,12 @@ static int __init tegra_emc_debug_init(void)
 	if (!debugfs_create_file("efficiency_boost", S_IRUGO | S_IWUSR,
 				 emc_debugfs_root, NULL, &efficiency_boost_fops))
 		goto err_out;
+
+#if defined(CONFIG_MACH_LGE)
+	if (!debugfs_create_file("bw_min_rate", S_IRUGO | S_IWUSR,
+				 emc_debugfs_root, NULL, &bw_min_rate_fops))
+		goto err_out;
+#endif
 
 	return 0;
 

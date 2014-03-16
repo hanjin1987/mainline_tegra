@@ -38,6 +38,7 @@ unsigned long tegra_cpu_highest_speed(void);
 int tegra_auto_hotplug_init(struct mutex *cpulock);
 void tegra_auto_hotplug_exit(void);
 void tegra_auto_hotplug_governor(unsigned int cpu_freq, bool suspend);
+long tegra_get_cur_skin_temp();
 #else
 static inline int tegra_auto_hotplug_init(struct mutex *cpu_lock)
 { return 0; }
@@ -57,6 +58,11 @@ static inline bool tegra_cpu_edp_favor_up(unsigned int n, int mp_overhead)
 static inline bool tegra_cpu_edp_favor_down(unsigned int n, int mp_overhead)
 { return false; }
 #endif
+
+/*********************************************************************
+ *                     VOTE MAX FREQ                       *
+ *********************************************************************/
+#define LOAD_SHAPER_BY_VOTE_MAX_FREQ
 
 #ifdef CONFIG_CPU_FREQ
 int tegra_suspended_target(unsigned int target_freq);

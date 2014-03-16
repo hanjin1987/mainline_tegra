@@ -38,9 +38,28 @@ struct tegra_cooling_device {
 
 struct throttle_table {
 	unsigned long cap_freqs[NUM_OF_CAP_FREQS];
+#if 0
+	unsigned long cpu_freq;
+	unsigned long cbus_freq;
+	unsigned long sclk_freq;
+	unsigned long emc_freq;
+#endif
 };
 
+#if 0
+#define NO_CAP			0 /* no cap. only use for cbus, sclk, emc. */
+#define CPU_THROT_LOW		0 /* lowest throttle freq. only use for CPU */
+#define MAX_THROT_TABLE_SIZE	(32)
+#endif
+
+
 struct balanced_throttle {
+#if 0
+	enum balanced_throttle_id id;
+
+	unsigned long cur_state;
+	unsigned int cpu_cap_freq;
+#endif
 	struct thermal_cooling_device *cdev;
 	struct list_head node;
 	unsigned long cur_state;

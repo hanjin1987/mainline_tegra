@@ -56,4 +56,7 @@ struct tegra_bb_pdata {
 	/* HSIC rail regulator name. Provide a name if --
 	rail is shared and the co-owner will turn it off when done */
 	char *regulator;
+#if defined(CONFIG_MACH_PEGASUS)
+	int *attr_load_val_ptr; // dalyong.cha
+#endif
 };

@@ -217,6 +217,10 @@ static int tegra_cpuidle_register_device(unsigned int cpu)
 static int tegra_cpuidle_pm_notify(struct notifier_block *nb,
 	unsigned long event, void *dummy)
 {
+#ifdef CONFIG_MACH_X3
+	printk("%s start [%d]\n", __func__, event);  // for debug
+#endif
+
 #ifdef CONFIG_PM_SLEEP
 	if (event == PM_SUSPEND_PREPARE)
 		pd_disabled_by_suspend = true;

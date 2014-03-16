@@ -58,6 +58,14 @@
 #include "fuse.h"
 #include "pm.h"
 #include "reset.h"
+
+#ifdef CONFIG_MACH_LGE
+#include "gpio-names.h"
+#if defined(CONFIG_MFD_MAX77663)
+#include <linux/mfd/max77663-core.h>
+#endif
+#endif
+
 #include "devices.h"
 #include "pmc.h"
 #include "common.h"
@@ -170,6 +178,11 @@ u32 tegra_uart_config[3] = {
 
 #define NEVER_RESET 0
 
+#ifdef CONFIG_MACH_LGE
+static int bootmode = 1;      
+int is_tegra_bootmode(void);
+#endif
+
 void tegra_assert_system_reset(char mode, const char *cmd)
 {
 #if defined(CONFIG_TEGRA_FPGA_PLATFORM) || NEVER_RESET
@@ -213,6 +226,10 @@ static int emc_max_dvfs;
 static unsigned int memory_type;
 static int usb_port_owner_info;
 static int pmic_rst_reason;
+#ifdef CONFIG_MACH_LGE
+static int bootbatteryexist = 1;
+static int bootbatteryVerified = 1;
+#endif
 
 /* WARNING: There is implicit client of pllp_out3 like i2c, uart, dsi
  * and so this clock (pllp_out3) should never be disabled.
@@ -282,10 +299,17 @@ static __initdata struct tegra_clk_init_table tegra30_clk_init_table[] = {
 	{ "kfuse",	NULL,		0,		true },
 	{ "fuse",	NULL,		0,		true },
 #ifdef CONFIG_TEGRA_SILICON_PLATFORM
+#ifdef CONFIG_MACH_X3
+	{ "pll_p",	NULL,		408000000,	true },
+	{ "pll_p_out1",	"pll_p",	9600000,	true },
+	{ "pll_p_out2",	"pll_p",	48000000,	true },
+	{ "pll_p_out3",	"pll_p",	102000000,	true },
+#else
 	{ "pll_p",	NULL,		0,		true },
 	{ "pll_p_out1",	"pll_p",	0,		false },
 	{ "pll_p_out2",	"pll_p",	48000000,	false },
 	{ "pll_p_out3",	"pll_p",	0,		true },
+#endif
 	{ "pll_m_out1",	"pll_m",	275000000,	false },
 	{ "pll_p_out4",	"pll_p",	102000000,	true },
 	{ "sclk",	"pll_p_out4",	102000000,	true },
@@ -305,12 +329,19 @@ static __initdata struct tegra_clk_init_table tegra30_clk_init_table[] = {
 #ifdef CONFIG_TEGRA_SLOW_CSITE
 	{ "csite",	"clk_m",	1000000,	true },
 #else
+#ifdef CONFIG_MACH_X3
+	{ "csite",	NULL,		4250000,	true },
+#else
 	{ "csite",      NULL,           0,              true },
+#endif /* CONFIG_MACH_X3 */
 #endif
 	{ "pll_u",	NULL,		480000000,	false },
 	{ "sdmmc1",	"pll_p",	48000000,	false},
 	{ "sdmmc3",	"pll_p",	48000000,	false},
 	{ "sdmmc4",	"pll_p",	48000000,	false},
+#ifdef CONFIG_MACH_LGE
+	{ "vi_sensor",	"pll_p",	0,		false },
+#endif	
 	{ "sbc1.sclk",	NULL,		40000000,	false},
 	{ "sbc2.sclk",	NULL,		40000000,	false},
 	{ "sbc3.sclk",	NULL,		40000000,	false},
@@ -698,6 +729,32 @@ static void __init tegra_init_ahb_gizmo_settings(void)
 #endif
 }
 
+#if 0 //def CONFIG_MACH_LGE
+static bool console_flushed;
+
+static void tegra_pm_flush_console(void)
+{
+	if (console_flushed)
+		return;
+	console_flushed = true;
+
+	pr_emerg("Restarting %s\n", linux_banner);
+	if (console_trylock()) {
+		console_unlock();
+		return;
+	}
+
+	mdelay(50);
+
+	local_irq_disable();
+	if (!console_trylock())
+		pr_emerg("%s: Console was locked! Busting\n", __func__);
+	else
+		pr_emerg("%s: Console was locked!\n", __func__);
+	console_unlock();
+}
+#endif
+
 #ifdef CONFIG_ARCH_TEGRA_2x_SOC
 void __init tegra20_init_early(void)
 {
@@ -1051,6 +1108,61 @@ int get_tegra_uart_debug_port_id(void)
 	return debug_uart_port_id;
 }
 __setup("debug_uartport=", tegra_debug_uartport);
+
+#if defined(CONFIG_MACH_LGE)
+static int __init tegra_bootmode(char *info)
+{
+	char *p = info;
+
+	if (!strncmp(p, "normal", 6)) {
+		bootmode = 1;
+	}
+	else if (!strncmp(p, "charger", 7)) {
+		bootmode = 0;
+	}
+
+	return 1;
+}
+
+int is_tegra_bootmode(void)
+{
+	printk("%s [%d] \n", __func__, bootmode);
+	return bootmode;
+}
+__setup("androidboot.mode=", tegra_bootmode);
+
+static int __init tegra_batteryexist(char *options)
+{
+	char *p = options;
+	bootbatteryexist = memparse(p, &p);
+
+	printk("%s [%d]\n", __func__, bootbatteryexist);
+	return 1;
+}
+
+int is_tegra_batteryexistWhenBoot(void)
+{
+	//printk("%s [%d]\n", __func__, bootbatteryexist);
+	return bootbatteryexist;
+}
+__setup("batteryexist=", tegra_batteryexist);
+
+static int __init tegra_batteryVerified(char *options)
+{
+	char *p = options;
+	bootbatteryVerified = memparse(p, &p);
+
+	printk("%s [%d]\n", __func__, bootbatteryVerified);
+	return 1;
+}
+__setup("batteryVerified=", tegra_batteryVerified);
+
+int is_tegra_batteryVerified(void)
+{
+	printk("%s [%d]\n", __func__, bootbatteryVerified);
+	return bootbatteryVerified;
+}
+#endif
 
 static int __init tegra_image_type(char *options)
 {
@@ -1683,6 +1795,10 @@ void __init tegra_ram_console_debug_reserve(unsigned long ram_console_size)
 	ret = persistent_ram_early_init(&ram);
 	if (ret)
 		goto fail;
+
+#ifdef CONFIG_REBOOT_MONITOR
+	res->end = res->start + ram_console_size / 2 -1;
+#endif
 
 	return;
 

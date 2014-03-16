@@ -31,6 +31,10 @@ extern u8 tegra_emc_bw_efficiency_boost;
 
 int tegra30_init_emc(void);
 
+#if defined(CONFIG_MACH_LGE)
+extern unsigned long tegra_emc_bw_min_rate;
+#endif
+
 #define EMC_INTSTATUS				0x0
 #define EMC_INTSTATUS_CLKCHANGE_COMPLETE	(0x1 << 4)
 

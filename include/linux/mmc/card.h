@@ -237,6 +237,7 @@ struct mmc_card {
 #define MMC_CARD_REMOVED	(1<<9)		/* card has been removed */
 #define MMC_STATE_HIGHSPEED_200	(1<<10)		/* card is in HS200 mode */
 #define MMC_STATE_SLEEP		(1<<11)		/* card is in sleep state */
+#define MMC_STATE_INSERTED	(1<<8)		/* card present in the slot */
 
 	unsigned int		quirks; 	/* card quirks */
 #define MMC_QUIRK_LENIENT_FN0	(1<<0)		/* allow SDIO FN0 writes outside of the VS CCCR range */

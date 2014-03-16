@@ -337,6 +337,8 @@ struct spi_master {
 	 */
 	int			(*transfer)(struct spi_device *spi,
 						struct spi_message *mesg);
+	int			(*clock_control)(struct spi_device *spi,
+						int enable);
 
 	/* called on release() to free memory provided by spi_master */
 	void			(*cleanup)(struct spi_device *spi);
@@ -394,6 +396,7 @@ extern int spi_master_resume(struct spi_master *master);
 /* Calls the driver make to interact with the message queue */
 extern struct spi_message *spi_get_next_queued_message(struct spi_master *master);
 extern void spi_finalize_current_message(struct spi_master *master);
+extern int spi_clock_control(struct spi_device *spi, int enable);
 
 /* the spi driver core manages memory for the spi_master classdev */
 extern struct spi_master *

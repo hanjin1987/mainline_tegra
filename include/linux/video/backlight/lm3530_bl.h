@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2010-2011 NVIDIA Corporation
+/* 
+ * Copyright (C) 2011 LG Electronics, Inc
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -12,16 +12,13 @@
  *
  */
 
-#ifndef __TEGRA_BPC_MGMT_H
-#define __TEGRA_BPC_MGMT_H
-#include <linux/cpumask.h>
-#include <linux/earlysuspend.h>
+#ifndef __LM3530_BL_H__
+#define __LM3530_BL_H__
 
-struct tegra_bpc_mgmt_platform_data {
-	int gpio_trigger;
-	struct cpumask affinity_mask;
-	struct early_suspend bpc_mgmt_early_suspend;
-	int bpc_mgmt_timeout;
+struct lm3530_bl_platform_data {
+	u32	hwen_gpio;
+	u32	max_current;	
+	u32	min_brightness;
 };
 
-#endif /*__TEGRA_BPC_MGMT_H*/
+#endif // __LM3530_BL_H__

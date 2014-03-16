@@ -30,6 +30,12 @@
 
 #include "power.h"
 
+#ifdef CONFIG_MACH_X3
+#include <linux/rtc.h>
+
+static int sleepEnter = 0;
+#endif
+
 const char *const pm_states[PM_SUSPEND_MAX] = {
 	[PM_SUSPEND_STANDBY]	= "standby",
 	[PM_SUSPEND_MEM]	= "mem",
@@ -174,6 +180,8 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 			events_check_enabled = false;
 		}
 		syscore_resume();
+#ifdef CONFIG_MACH_X3
+		sleepEnter = 1;
 	}
 
 	arch_suspend_enable_irqs();
@@ -233,6 +241,21 @@ int suspend_devices_and_enter(suspend_state_t state)
  Resume_devices:
 	suspend_test_start();
 	dpm_resume_end(PMSG_RESUME);
+
+#ifdef CONFIG_MACH_X3
+	if (sleepEnter == 1) {
+		struct timespec ts;
+        	struct rtc_time tm;
+		getnstimeofday(&ts);
+		rtc_time_to_tm(ts.tv_sec, &tm);
+		printk(KERN_UTC_WAKEUP "%d-%02d-%02d %02d:%02d:%02d.%06lu\n",
+			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec/1000);
+
+		sleepEnter = 0;
+	}
+#endif
+
 	suspend_test_finish("resume devices");
 	ftrace_start();
 	resume_console();

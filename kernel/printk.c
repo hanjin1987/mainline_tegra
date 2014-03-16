@@ -41,6 +41,9 @@
 #include <linux/cpu.h>
 #include <linux/notifier.h>
 #include <linux/rculist.h>
+#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+#include <linux/ktime.h>
+#endif
 
 #include <asm/uaccess.h>
 
@@ -636,6 +639,11 @@ static size_t log_prefix(const char *p, unsigned int *level, char *special)
 	if (p[2] == '>') {
 		/* usual single digit level number or special char */
 		switch (p[1]) {
+#ifdef CONFIG_MACH_X3
+		case 'B':   // boot
+		case 'W':   // wakeup
+		case 'S':   // start logging
+#endif
 		case '0' ... '7':
 			lev = p[1] - '0';
 			break;
@@ -995,6 +1003,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 			}
 
 			if (printk_time) {
+#if !(defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10))
 				/* Add the current time stamp */
 				char tbuf[50], *tp;
 				unsigned tlen;
@@ -1007,6 +1016,22 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 						(unsigned long) t,
 						nanosec_rem / 1000);
 
+#else
+                char tbuf[50], *tp;
+                unsigned tlen;
+                struct timespec time;
+                struct tm tmresult;
+                time = __current_kernel_time();
+                time_to_tm(time.tv_sec, sys_tz.tz_minuteswest * 60 * (-1), &tmresult);
+                tlen = sprintf(tbuf, "[%02d:%02d:%02d %02d:%02d:%02d.%03lu] ",
+                               (int)tmresult.tm_year%100,
+                               tmresult.tm_mon+1,
+                               tmresult.tm_mday,
+                               tmresult.tm_hour,
+                               tmresult.tm_min,
+                               tmresult.tm_sec,
+                               (unsigned long) time.tv_nsec / 1000000);
+#endif
 				for (tp = tbuf; tp < tbuf + tlen; tp++)
 					emit_log_char(*tp);
 				printed_len += tlen;

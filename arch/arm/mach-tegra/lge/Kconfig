@@ -154,8 +154,6 @@ config BD_ADDRESS
 
 #source "drivers/misc/k3gtr/Kconfig"
 
-source "drivers/misc/inv_mpu/Kconfig"
-
 comment "Battery / Charger / Muic driver Selection"
 
 config LGE_BATTERY

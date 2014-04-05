@@ -15,6 +15,10 @@
  * version 2 of that License.
  */
 
+#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+#define DEBUG
+#endif
+
 #include <linux/kernel.h>
 #include <linux/utsname.h>
 #include <linux/device.h>
@@ -155,6 +159,9 @@ static int __init nokia_bind(struct usb_composite_dev *cdev)
 	struct usb_gadget	*gadget = cdev->gadget;
 	int			status;
 
+#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+	printk("nokia_bind called!!!!\n");
+#endif
 	status = gphonet_setup(cdev->gadget);
 	if (status < 0)
 		goto err_phonet;
@@ -213,7 +220,9 @@ static int __init nokia_bind(struct usb_composite_dev *cdev)
 			nokia_bind_config);
 	if (status < 0)
 		goto err_usb;
-
+#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+	usb_gadget_connect(cdev->gadget);
+#endif
 	dev_info(&gadget->dev, "%s\n", NOKIA_LONG_NAME);
 
 	return 0;
@@ -233,7 +242,9 @@ static int __exit nokia_unbind(struct usb_composite_dev *cdev)
 	gphonet_cleanup();
 	gserial_cleanup();
 	gether_cleanup();
-
+#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+	usb_gadget_disconnect(cdev->gadget);
+#endif
 	return 0;
 }
 
@@ -247,6 +258,9 @@ static struct usb_composite_driver nokia_driver = {
 
 static int __init nokia_init(void)
 {
+#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+	printk("nokia_init called!!!!\n");
+#endif
 	return usb_composite_probe(&nokia_driver, nokia_bind);
 }
 module_init(nokia_init);

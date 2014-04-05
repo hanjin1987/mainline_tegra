@@ -252,9 +252,10 @@ static ssize_t logger_read(struct file *file, char __user *buf,
 
 start:
 	while (1) {
+		mutex_lock(&log->mutex);
+
 		prepare_to_wait(&log->wq, &wait, TASK_INTERRUPTIBLE);
 
-		mutex_lock(&log->mutex);
 		ret = (log->w_off == reader->r_off);
 		mutex_unlock(&log->mutex);
 		if (!ret)
@@ -509,14 +510,17 @@ static int logger_open(struct inode *inode, struct file *file)
 		reader->r_all = in_egroup_p(inode->i_gid) ||
 			capable(CAP_SYSLOG);
 
-		INIT_LIST_HEAD(&reader->list);
-
 		mutex_lock(&log->mutex);
+		INIT_LIST_HEAD(&reader->list);
 		reader->r_off = log->head;
 		list_add_tail(&reader->list, &log->readers);
 		mutex_unlock(&log->mutex);
 
 		file->private_data = reader;
+
+		task_lock(current);
+		pr_info("===== %s : task(%s) pid(%d)\n", __func__, current->comm, current->pid);
+		task_unlock(current);
 	} else
 		file->private_data = log;
 
@@ -528,12 +532,22 @@ static int logger_open(struct inode *inode, struct file *file)
  *
  * Note this is a total no-op in the write-only case. Keep it that way!
  */
-static int logger_release(struct inode *ignored, struct file *file)
+static int logger_release(struct inode *inode, struct file *file)
 {
 	if (file->f_mode & FMODE_READ) {
 		struct logger_reader *reader = file->private_data;
+		struct logger_log *log;
+		log = get_log_from_minor(MINOR(inode->i_rdev));
+		mutex_lock(&log->mutex);
 		list_del(&reader->list);
 		kfree(reader);
+		mutex_unlock(&log->mutex);
+		task_lock(current);
+		pr_info("===== %s: task(%s) pid(%d) !!\n",
+			__func__,
+			current->comm,
+			current->pid);
+		task_unlock(current);
 	}
 
 	return 0;
@@ -695,7 +709,7 @@ static struct logger_log VAR = { \
 	.size = SIZE, \
 };
 
-DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 256*1024)
+DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 512*1024)
 DEFINE_LOGGER_DEVICE(log_events, LOGGER_LOG_EVENTS, 256*1024)
 DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 256*1024)
 DEFINE_LOGGER_DEVICE(log_system, LOGGER_LOG_SYSTEM, 256*1024)

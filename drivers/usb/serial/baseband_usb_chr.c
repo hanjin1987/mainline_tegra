@@ -395,13 +395,24 @@ retry:
 
 	/* wait for rx buffer available */
 	if (!read_count) {
+#ifdef CONFIG_MACH_X3
+		if (wait_event_interruptible_timeout(ipc->rx.wait,
+			!list_empty(&ipc->rx.buf), msecs_to_jiffies(50))) {
+#else
 		if (wait_event_interruptible(ipc->rx.wait,
 			!list_empty(&ipc->rx.buf))) {
+#endif
 			pr_err("baseband_ipc_file_read - "
 				"interrupted wait\n");
 			return -ERESTARTSYS;
 		}
+#ifdef CONFIG_MACH_X3
+		pr_err("*** baseband_ipc_file_read - "
+			"interrupted wait\n");
+		return -ERESTARTSYS;
+#else
 		goto retry;
+#endif
 	}
 
 	return read_count;

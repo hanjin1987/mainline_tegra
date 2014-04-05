@@ -58,4 +58,6 @@ obj-$(CONFIG_REGULATOR_TPS62360) += tps62360-regulator.o
 obj-$(CONFIG_REGULATOR_TPS6238X0) += tps6238x0-regulator.o
 obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
 obj-$(CONFIG_REGULATOR_FAN53555) += fan53555-regulator.o
+obj-$(CONFIG_REGULATOR_GPIO_SWITCH) += gpio-switch-regulator.o
+obj-$(CONFIG_REGULATOR_CAM_SUBPMIC_LP8720) += lp8720.o
 ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG

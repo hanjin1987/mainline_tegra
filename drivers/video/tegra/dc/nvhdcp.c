@@ -25,6 +25,11 @@
 #include <linux/workqueue.h>
 #include <asm/atomic.h>
 
+#ifdef CONFIG_MACH_X3
+#include <linux/gpio.h>
+#include "../../../../arch/arm/mach-tegra/lge/x3/include/mach-tegra/gpio-names.h"
+#endif
+
 #include <mach/dc.h>
 #include <mach/kfuse.h>
 
@@ -119,6 +124,9 @@ static int nvhdcp_i2c_read(struct tegra_nvhdcp *nvhdcp, u8 reg,
 {
 	int status;
 	int retries = 15;
+#ifdef CONFIG_MACH_X3
+	int hdmi_hpd_status = 1;
+#endif
 	struct i2c_msg msg[] = {
 		{
 			.addr = 0x74 >> 1, /* primary link */
@@ -139,6 +147,13 @@ static int nvhdcp_i2c_read(struct tegra_nvhdcp *nvhdcp, u8 reg,
 			nvhdcp_err("disconnect during i2c xfer\n");
 			return -EIO;
 		}
+#ifdef CONFIG_MACH_X3
+		hdmi_hpd_status = gpio_get_value(TEGRA_GPIO_PN7);
+		if (hdmi_hpd_status != 1) {
+			printk("nvhdcp: hdmi hpd is already low. (hpd = %d) disconnect during i2c read xfer.\n", hdmi_hpd_status);
+			return -EIO;
+		}
+#endif
 		status = i2c_transfer(nvhdcp->client->adapter,
 			msg, ARRAY_SIZE(msg));
 		if ((status < 0) && (retries > 1))
@@ -158,6 +173,9 @@ static int nvhdcp_i2c_write(struct tegra_nvhdcp *nvhdcp, u8 reg,
 {
 	int status;
 	u8 buf[len + 1];
+#ifdef CONFIG_MACH_X3
+	int hdmi_hpd_status = 1;
+#endif
 	struct i2c_msg msg[] = {
 		{
 			.addr = 0x74 >> 1, /* primary link */
@@ -176,6 +194,13 @@ static int nvhdcp_i2c_write(struct tegra_nvhdcp *nvhdcp, u8 reg,
 			nvhdcp_err("disconnect during i2c xfer\n");
 			return -EIO;
 		}
+#ifdef CONFIG_MACH_X3
+		hdmi_hpd_status = gpio_get_value(TEGRA_GPIO_PN7);
+		if (hdmi_hpd_status != 1) {
+			printk("nvhdcp: hdmi hpd is already low. (hpd = %d) disconnect during i2c read xfer.\n", hdmi_hpd_status);
+			return -EIO;
+		}
+#endif
 		status = i2c_transfer(nvhdcp->client->adapter,
 			msg, ARRAY_SIZE(msg));
 		if ((status < 0) && (retries > 1))

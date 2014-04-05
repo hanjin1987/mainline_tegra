@@ -23,8 +23,13 @@
 #ifndef __BASEBAND_USB_CHR_H__
 #define __BASEBAND_USB_CHR_H__
 
+#ifndef CONFIG_MACH_X3
+#define BASEBAND_USB_CHR_DEV_NAME		"ttyACMX"
+#define BASEBAND_USB_CHR_DEV_MAJOR		150
+#else
 #define BASEBAND_USB_CHR_DEV_NAME		"baseband_usb_chr"
 #define BASEBAND_USB_CHR_DEV_MAJOR		66
+#endif
 
 #ifndef USB_CHR_RX_BUFSIZ
 #define USB_CHR_RX_BUFSIZ			(32*1024)

@@ -31,6 +31,12 @@
 
 #define DRIVER_NAME "sdhci"
 
+#ifdef CONFIG_MACH_X3
+#ifndef CONFIG_WIFI_SDIO
+//#define CONFIG_WIFI_SDIO
+#endif
+#endif
+
 #define DBG(f, x...) \
 	pr_debug(DRIVER_NAME " [%s()]: " f, __func__,## x)
 
@@ -2335,7 +2341,11 @@ int sdhci_suspend_host(struct sdhci_host *host, pm_message_t state)
 			host->tuning_count * HZ);
 	}
 
+#ifdef CONFIG_WIFI_SDIO
+	if (mmc->card && (mmc->card->type != MMC_TYPE_SDIO)) {
+#else
 	if (mmc->card) {
+#endif
 		/*
 		 * If eMMC cards are put in sleep state, Vccq can be disabled
 		 * but Vcc would still be powered on. In resume, we only restore
@@ -2399,17 +2409,30 @@ int sdhci_resume_host(struct sdhci_host *host)
 	sdhci_init(host, (host->mmc->pm_flags & MMC_PM_KEEP_POWER));
 	mmiowb();
 
+#ifdef CONFIG_WIFI_SDIO	
+	if (mmc->card) {
+		if (mmc->card->type != MMC_TYPE_SDIO) {
+			ret = mmc_resume_host(host->mmc);
+		} else {
+			/* Enable card interrupt as it is overwritten in sdhci_init */
+			if ((mmc->caps & MMC_CAP_SDIO_IRQ) &&
+				(mmc->pm_flags & MMC_PM_KEEP_POWER))
+				if (host->card_int_set)
+					mmc->ops->enable_sdio_irq(mmc, true);
+		}
+	}
+#else
 	if (mmc->card) {
 		ret = mmc_resume_host(host->mmc);
 		/* Enable card interrupt as it is overwritten in sdhci_init */
 		if ((mmc->caps & MMC_CAP_SDIO_IRQ) &&
 			(mmc->pm_flags & MMC_PM_KEEP_POWER))
-				if (host->card_int_set)
-					mmc->ops->enable_sdio_irq(mmc, true);
+			if (host->card_int_set)
+				mmc->ops->enable_sdio_irq(mmc, true);
 	}
-
-	sdhci_enable_card_detection(host);
-
+#endif
+	sdhci_enable_card_detection(host);	
+	
 	/* Set the re-tuning expiration flag */
 	if ((host->version >= SDHCI_SPEC_300) && host->tuning_count &&
 	    (host->tuning_mode == SDHCI_TUNING_MODE_1))

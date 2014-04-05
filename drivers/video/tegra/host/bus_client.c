@@ -117,12 +117,13 @@ struct nvhost_channel_userctx {
 	u32 timeout;
 	u32 priority;
 	int clientid;
+	struct mutex mutex;
 };
 
 static int nvhost_channelrelease(struct inode *inode, struct file *filp)
 {
 	struct nvhost_channel_userctx *priv = filp->private_data;
-
+    mutex_lock(&priv->mutex);
 	trace_nvhost_channel_release(priv->ch->dev->name);
 
 	filp->private_data = NULL;
@@ -137,6 +138,7 @@ static int nvhost_channelrelease(struct inode *inode, struct file *filp)
 		nvhost_job_put(priv->job);
 
 	mem_op().put_mgr(priv->memmgr);
+	mutex_unlock(&priv->mutex);
 	kfree(priv);
 	return 0;
 }
@@ -158,6 +160,9 @@ static int nvhost_channelopen(struct inode *inode, struct file *filp)
 		return -ENOMEM;
 	}
 	filp->private_data = priv;
+    mutex_init(&priv->mutex);
+
+	mutex_lock(&priv->mutex);
 	priv->ch = ch;
 	if(nvhost_module_add_client(ch->dev, priv))
 		goto fail;
@@ -171,10 +176,12 @@ static int nvhost_channelopen(struct inode *inode, struct file *filp)
 	priv->clientid = atomic_add_return(1,
 			&nvhost_get_host(ch->dev)->clientid);
 	priv->timeout = CONFIG_TEGRA_GRHOST_DEFAULT_TIMEOUT;
+	mutex_unlock(&priv->mutex);
 
 	return 0;
 fail:
 	nvhost_channelrelease(inode, filp);
+	mutex_unlock(&priv->mutex);
 	return -ENOMEM;
 }
 
@@ -192,6 +199,11 @@ static int set_submit(struct nvhost_channel_userctx *ctx)
 	if (!ctx->memmgr) {
 		dev_err(&ndev->dev, "no nvmap context set\n");
 		return -EFAULT;
+	}
+
+	if (ctx->job) {
+		dev_err(&ndev->dev, "performing channel submit when a job already exists\n");
+		nvhost_job_put(ctx->job);
 	}
 
 	ctx->job = nvhost_job_alloc(ctx->ch,
@@ -212,6 +224,8 @@ static int set_submit(struct nvhost_channel_userctx *ctx)
 
 static void reset_submit(struct nvhost_channel_userctx *ctx)
 {
+	pr_info("%s ctx %p from %pS", __func__, ctx, __builtin_return_address(0));
+
 	ctx->hdr.num_cmdbufs = 0;
 	ctx->hdr.num_relocs = 0;
 	ctx->num_relocshifts = 0;
@@ -229,13 +243,20 @@ static ssize_t nvhost_channelwrite(struct file *filp, const char __user *buf,
 	struct nvhost_channel_userctx *priv = filp->private_data;
 	size_t remaining = count;
 	int err = 0;
-	struct nvhost_job *job = priv->job;
-	struct nvhost_submit_hdr_ext *hdr = &priv->hdr;
-	const char *chname = priv->ch->dev->name;
+	struct nvhost_job *job;
+	struct nvhost_submit_hdr_ext *hdr;
+	const char *chname;
 
-	if (!job)
+	mutex_lock(&priv->mutex);
+
+	job = priv->job;
+	hdr = &priv->hdr;
+	chname = priv->ch->dev->name;
+
+	if (!job) {
+		mutex_unlock(&priv->mutex);
 		return -EIO;
-
+	}
 	while (remaining) {
 		size_t consumed;
 		if (!hdr->num_relocs &&
@@ -337,9 +358,11 @@ static ssize_t nvhost_channelwrite(struct file *filp, const char __user *buf,
 	if (err < 0) {
 		dev_err(&priv->ch->dev->dev, "channel write error\n");
 		reset_submit(priv);
+		mutex_unlock(&priv->mutex);
 		return err;
 	}
 
+	mutex_unlock(&priv->mutex);
 	return count - remaining;
 }
 
@@ -364,8 +387,8 @@ static int nvhost_ioctl_channel_flush(
 
 	err = nvhost_job_pin(ctx->job, &nvhost_get_host(ndev)->syncpt);
 	if (err) {
-		dev_warn(&ndev->dev, "nvhost_job_pin failed: %d\n", err);
-		return err;
+		dev_err(&ndev->dev, "nvhost_job_pin failed: %d\n", err);
+		goto fail;
 	}
 
 	if (nvhost_debug_null_kickoff_pid == current->tgid)
@@ -380,6 +403,10 @@ static int nvhost_ioctl_channel_flush(
 	/* context switch if needed, and submit user's gathers to the channel */
 	err = nvhost_channel_submit(ctx->job);
 	args->value = ctx->job->syncpt_end;
+	if (err)
+		dev_err(&ndev->dev, "nvhost_channel_submit failed: %d\n", err);
+
+fail:
 	if (err)
 		nvhost_job_unpin(ctx->job);
 
@@ -404,15 +431,21 @@ static long nvhost_channelctl(struct file *filp,
 	u8 buf[NVHOST_IOCTL_CHANNEL_MAX_ARG_SIZE];
 	int err = 0;
 
+	mutex_lock(&priv->mutex);
+
 	if ((_IOC_TYPE(cmd) != NVHOST_IOCTL_MAGIC) ||
 		(_IOC_NR(cmd) == 0) ||
 		(_IOC_NR(cmd) > NVHOST_IOCTL_CHANNEL_LAST) ||
-		(_IOC_SIZE(cmd) > NVHOST_IOCTL_CHANNEL_MAX_ARG_SIZE))
+		(_IOC_SIZE(cmd) > NVHOST_IOCTL_CHANNEL_MAX_ARG_SIZE)) {
+		mutex_unlock(&priv->mutex);
 		return -EFAULT;
+	}
 
 	if (_IOC_DIR(cmd) & _IOC_WRITE) {
-		if (copy_from_user(buf, (void __user *)arg, _IOC_SIZE(cmd)))
+		if (copy_from_user(buf, (void __user *)arg, _IOC_SIZE(cmd))) {
+			mutex_unlock(&priv->mutex);
 			return -EFAULT;
+		}
 	}
 
 	switch (cmd) {
@@ -531,6 +564,7 @@ static long nvhost_channelctl(struct file *filp,
 	if ((err == 0) && (_IOC_DIR(cmd) & _IOC_READ))
 		err = copy_to_user((void __user *)arg, buf, _IOC_SIZE(cmd));
 
+	mutex_unlock(&priv->mutex);
 	return err;
 }
 

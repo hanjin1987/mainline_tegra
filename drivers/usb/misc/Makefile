@@ -27,3 +27,5 @@ obj-$(CONFIG_USB_SEVSEG)		+= usbsevseg.o
 obj-$(CONFIG_USB_YUREX)			+= yurex.o
 
 obj-$(CONFIG_USB_SISUSBVGA)		+= sisusbvga/
+
+obj-$(CONFIG_USB_RENESAS_MODEM)		+= boot_hsic_class.o

@@ -362,6 +362,9 @@ static int config_buf(struct usb_configuration *config,
 		enum usb_device_speed speed, void *buf, u8 type)
 {
 	struct usb_config_descriptor	*c = buf;
+#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+	struct usb_cdc_union_desc *union_desc = NULL;
+#endif
 	void				*next = buf + USB_DT_CONFIG_SIZE;
 	int				len = USB_BUFSIZ - USB_DT_CONFIG_SIZE;
 	struct usb_function		*f;
@@ -1096,6 +1099,11 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	u16				w_length = le16_to_cpu(ctrl->wLength);
 	struct usb_function		*f = NULL;
 	u8				endp;
+#if 0 //def CONFIG_LGE_USB_GADGET_DRIVER // ndef ??
+	int cnt = 0;
+	int tmp = intf;
+	int id = 0;
+#endif
 
 	/* partial re-init of the response message; the function or the
 	 * gadget might need to intercept e.g. a control-OUT completion
@@ -1198,12 +1206,34 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			goto unknown;
 		if (!cdev->config || intf >= MAX_CONFIG_INTERFACES)
 			break;
+#if 0 //ndef CONFIG_LGE_USB_GADGET_DRIVER
+		/* Find correct function */
+		for (id = 0, cnt = 0; id < MAX_CONFIG_INTERFACES; id++) {
+			f = cdev->config->interface[id];
+			if (!f)
+				break;
+			if (!tmp)
+				break;
+			tmp--;
+		}
+
+		if (tmp)
+			f = NULL;
+
+		DBG(cdev, "USB_REQ_SET_INTERFACE:(%s) intf = %d, w_value = %d, \
+				cnt = %d\n", (f ? f->name : "null"), intf, w_value, cnt);
+#else
 		f = cdev->config->interface[intf];
+#endif
 		if (!f)
 			break;
 		if (w_value && !f->set_alt)
 			break;
+#if 0 //ndef CONFIG_LGE_USB_GADGET_DRIVER
+		value = f->set_alt(f, w_index + cnt, w_value);
+#else
 		value = f->set_alt(f, w_index, w_value);
+#endif
 		if (value == USB_GADGET_DELAYED_STATUS) {
 			DBG(cdev,
 			 "%s: interface %d (%s) requested delayed status\n",
@@ -1300,9 +1330,29 @@ unknown:
 		 */
 		switch (ctrl->bRequestType & USB_RECIP_MASK) {
 		case USB_RECIP_INTERFACE:
+#if 0 //ndef CONFIG_LGE_USB_GADGET_DRIVER
+			if (cdev->config == NULL)
+				return value;
+
+			if (w_index >= cdev->config->next_interface_id)
+				return value;
+			/* Find correct function */
+			for (id = 0; id < MAX_CONFIG_INTERFACES; id++) {
+				f = cdev->config->interface[id];
+				if (!f)
+		                	break;
+				if (!tmp)
+					break;
+				tmp--;
+			}
+
+			if (tmp)
+				f = NULL;
+#else
 			if (!cdev->config || intf >= MAX_CONFIG_INTERFACES)
 				break;
 			f = cdev->config->interface[intf];
+#endif
 			break;
 
 		case USB_RECIP_ENDPOINT:

@@ -586,4 +586,8 @@ source "drivers/misc/inv_mpu/Kconfig"
 source "drivers/misc/tegra-baseband/Kconfig"
 source "drivers/misc/tegra-cec/Kconfig"
 
+# LGE_CHANGE_S [suchul.lee] 2011-07-03
+source "drivers/misc/ts0710mux/Kconfig"
+# LGE_CHANGE_E [suchul.lee] 2011-07-03
+
 endif # MISC_DEVICES

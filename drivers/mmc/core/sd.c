@@ -18,11 +18,24 @@
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
 
+#ifdef CONFIG_MACH_X3
+#define CHECK_SD_DETECT_PIN
+#if defined(CHECK_SD_DETECT_PIN)	 
+#include <linux/gpio.h>
+#include <mach/gpio.h>
+#endif
+#endif
+
 #include "core.h"
 #include "bus.h"
 #include "mmc_ops.h"
 #include "sd.h"
 #include "sd_ops.h"
+
+#ifdef CONFIG_MACH_X3
+#define TEGRA_GPIO_PW5	181
+#define SD_MMC_NAME	"mmc2"
+#endif
 
 static const unsigned int tran_exp[] = {
 	10000,		100000,		1000000,	10000000,
@@ -740,6 +753,7 @@ int mmc_sd_get_cid(struct mmc_host *host, u32 ocr, u32 *cid, u32 *rocr)
 	if (!err)
 		ocr |= SD_OCR_CCS;
 
+#ifndef CONFIG_MACH_X3
 	/*
 	 * If the host supports one of UHS-I modes, request the card
 	 * to switch to 1.8V signaling level.
@@ -752,6 +766,7 @@ int mmc_sd_get_cid(struct mmc_host *host, u32 ocr, u32 *cid, u32 *rocr)
 	if (host->caps & (MMC_CAP_SET_XPC_330 | MMC_CAP_SET_XPC_300 |
 	    MMC_CAP_SET_XPC_180))
 		ocr |= SD_OCR_XPC;
+#endif
 
 try_again:
 	err = mmc_send_app_op_cond(host, ocr, rocr);
@@ -1064,6 +1079,14 @@ static void mmc_sd_detect(struct mmc_host *host)
 #ifdef CONFIG_MMC_PARANOID_SD_INIT
 	while(retries) {
 		err = mmc_send_status(host->card, NULL);
+#if defined(CHECK_SD_DETECT_PIN)	 
+		if ((!strncmp(mmc_hostname(host), SD_MMC_NAME, 4)) && (gpio_get_value(TEGRA_GPIO_PW5) == 1)) { // case poped
+			printk(KERN_INFO "%s(%s) card_detect(TEGRA_GPIO_PW5) == %d \n",
+				__func__, mmc_hostname(host), gpio_get_value(TEGRA_GPIO_PW5));
+
+			err = 1; // sdcard is pulled out, sdcard shall be removed
+		}
+#endif
 		if (err) {
 			retries--;
 			udelay(5);
@@ -1077,6 +1100,14 @@ static void mmc_sd_detect(struct mmc_host *host)
 	}
 #else
 	err = mmc_send_status(host->card, NULL);
+#if defined(CHECK_SD_DETECT_PIN)	 
+	if ((!strncmp(mmc_hostname(host), SD_MMC_NAME, 4)) && (gpio_get_value(TEGRA_GPIO_PW5) == 1)) { // case poped
+		printk(KERN_INFO "%s(%s) card_detect(TEGRA_GPIO_PW5) == %d \n",
+				__func__, mmc_hostname(host), gpio_get_value(TEGRA_GPIO_PW5));
+
+		err = 1; // sdcard is pulled out, sdcard shall be removed
+	}
+#endif
 #endif
 	mmc_release_host(host);
 
@@ -1198,6 +1229,15 @@ int mmc_attach_sd(struct mmc_host *host)
 
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
+#if defined(CHECK_SD_DETECT_PIN)	 
+		if ((!strncmp(mmc_hostname(host), SD_MMC_NAME, 4)) && (gpio_get_value(TEGRA_GPIO_PW5) == 1)) { // case poped
+			printk(KERN_INFO "%s(%s) card_detect(TEGRA_GPIO_PW5) == %d \n",
+				__func__, mmc_hostname(host), gpio_get_value(TEGRA_GPIO_PW5));
+		
+			err = 1; // sdcard is pulled out, sdcard shall be removed
+			return err;
+		}
+#endif
 
 	/* Make sure we are at 3.3V signalling voltage */
 	err = mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_330, false);
@@ -1290,6 +1330,10 @@ int mmc_attach_sd(struct mmc_host *host)
 	return 0;
 
 remove_card:
+#ifdef CONFIG_MACH_X3
+	printk(KERN_ERR "%s(%s): error %d whilst adding SD card\n",
+		__func__, mmc_hostname(host), err);
+#endif
 	mmc_release_host(host);
 	mmc_remove_card(host->card);
 	host->card = NULL;

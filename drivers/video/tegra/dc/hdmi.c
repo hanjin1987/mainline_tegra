@@ -2498,3 +2498,17 @@ void tegra_dc_put_edid(struct tegra_dc_edid *edid)
 	tegra_edid_put_data(edid);
 }
 EXPORT_SYMBOL(tegra_dc_put_edid);
+
+#if defined(CONFIG_MACH_LGE)
+void hdmi_common_send_uevent(char *buf)
+{
+	char *envp[2];   
+	struct tegra_dc_hdmi_data *hdmi = dc_hdmi;
+	if (hdmi) {
+		envp[0] = buf;       
+		envp[1] = NULL;    
+		kobject_uevent_env(&(hdmi->dc->ndev->dev.kobj), KOBJ_CHANGE, envp); 
+	}
+}
+EXPORT_SYMBOL(hdmi_common_send_uevent);
+#endif

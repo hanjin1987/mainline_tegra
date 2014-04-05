@@ -47,15 +47,44 @@ static irqreturn_t tegra_bpc_mgmt_bh(int irq, void *data)
 	}
 
 	tegra_system_edp_alarm(false);
-
+#ifdef CONFIG_MACH_X3
+	pr_err("[BPC_MGMT]: %s(), line=%d, Current Alram Done.\n", __func__, __LINE__);
+#endif
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t tegra_bpc_mgmt_isr(int irq, void *data)
 {
 	tegra_edp_throttle_cpu_now(2);
+#ifdef CONFIG_MACH_X3
+	pr_err("[BPC_MGMT]: %s(), line=%d, Current Alram Start!\n", __func__, __LINE__);
+#endif
 	return IRQ_WAKE_THREAD;
 }
+
+#ifdef CONFIG_MACH_X3
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void tegra_bpc_mgmt_early_suspend(struct early_suspend *h)
+{
+	struct tegra_bpc_mgmt_platform_data *bpc_platform_data
+			= container_of(h, struct tegra_bpc_mgmt_platform_data, bpc_mgmt_early_suspend);
+
+	disable_irq(gpio_to_irq(bpc_platform_data->gpio_trigger));
+
+	//return 0;
+}
+
+static void tegra_bpc_mgmt_late_resume(struct early_suspend *h)
+{
+	struct tegra_bpc_mgmt_platform_data *bpc_platform_data
+			= container_of(h, struct tegra_bpc_mgmt_platform_data, bpc_mgmt_early_suspend);
+
+	enable_irq(gpio_to_irq(bpc_platform_data->gpio_trigger));
+
+	//return 0;
+}
+#endif
+#endif
 
 static __devinit int tegra_bpc_mgmt_probe(struct platform_device *pdev)
 {
@@ -103,6 +132,15 @@ static __devinit int tegra_bpc_mgmt_probe(struct platform_device *pdev)
 			sched_setscheduler_nocheck(bh_thread,
 						   SCHED_FIFO, &param);
 	}
+
+#ifdef CONFIG_MACH_X3
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	bpc_platform_data->bpc_mgmt_early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
+	bpc_platform_data->bpc_mgmt_early_suspend.suspend = tegra_bpc_mgmt_early_suspend;
+	bpc_platform_data->bpc_mgmt_early_suspend.resume = tegra_bpc_mgmt_late_resume;
+	register_early_suspend(&bpc_platform_data->bpc_mgmt_early_suspend);
+#endif
+#endif
 
 	return 0;
 }

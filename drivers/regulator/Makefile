@@ -83,4 +83,6 @@ obj-$(CONFIG_REGULATOR_WM8400) += wm8400-regulator.o
 obj-$(CONFIG_REGULATOR_WM8994) += wm8994-regulator.o
 
 
+obj-$(CONFIG_REGULATOR_GPIO_SWITCH) += gpio-switch-regulator.o
+obj-$(CONFIG_REGULATOR_CAM_SUBPMIC_LP8720) += lp8720.o
 ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG

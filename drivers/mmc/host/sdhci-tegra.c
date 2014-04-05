@@ -44,6 +44,9 @@
 #include <mach/clk.h>
 
 #include "sdhci-pltfm.h"
+#ifdef CONFIG_MACH_X3
+#include "../../../arch/arm/mach-tegra/lge/x3/include/lge/board-x3.h"
+#endif
 
 #define SDHCI_VNDR_CLK_CTRL	0x100
 #define SDHCI_VNDR_CLK_CTRL_SDMMC_CLK	0x1
@@ -2112,6 +2115,9 @@ static int tegra_sdhci_resume(struct sdhci_host *sdhci)
 	struct sdhci_tegra *tegra_host = pltfm_host->priv;
 	struct platform_device *pdev;
 	struct tegra_sdhci_platform_data *plat;
+#ifdef CONFIG_MACH_X3
+	bool card_present;
+#endif
 
 	pdev = to_platform_device(mmc_dev(sdhci->mmc));
 	plat = pdev->dev.platform_data;
@@ -2148,6 +2154,16 @@ static int tegra_sdhci_resume(struct sdhci_host *sdhci)
 		sdhci->pwr = 0;
 	}
 
+#ifdef CONFIG_MACH_X3
+	if (gpio_is_valid(plat->cd_gpio)) {
+		card_present = (gpio_get_value(plat->cd_gpio) == 0);
+		if (tegra_host->card_present != card_present) {
+			tegra_host->card_present = card_present;
+			tasklet_schedule(&sdhci->card_tasklet);
+		}
+	}
+#endif
+     
 	return 0;
 }
 
@@ -2501,6 +2517,17 @@ static int __devinit sdhci_tegra_probe(struct platform_device *pdev)
 	}
 
 	if (gpio_is_valid(plat->cd_gpio)) {
+#ifdef CONFIG_MACH_X3
+		if (plat->cd_gpio != 171) {
+			rc = gpio_request(plat->cd_gpio, "sdhci_cd");
+			if (rc) {
+				dev_err(mmc_dev(host->mmc),
+					"failed to allocate cd gpio\n");
+				goto err_cd_req;
+			}
+			gpio_direction_input(plat->cd_gpio);
+		}
+#else
 		rc = gpio_request(plat->cd_gpio, "sdhci_cd");
 		if (rc) {
 			dev_err(mmc_dev(host->mmc),
@@ -2508,6 +2535,7 @@ static int __devinit sdhci_tegra_probe(struct platform_device *pdev)
 			goto err_cd_req;
 		}
 		gpio_direction_input(plat->cd_gpio);
+#endif
 
 		tegra_host->card_present = (gpio_get_value(plat->cd_gpio) == 0);
 

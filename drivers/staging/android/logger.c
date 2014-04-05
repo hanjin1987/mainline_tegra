@@ -545,6 +545,10 @@ static int logger_open(struct inode *inode, struct file *file)
 		mutex_unlock(&log->mutex);
 
 		file->private_data = reader;
+
+		task_lock(current);
+		pr_info("===== %s : task(%s) pid(%d)\n", __func__, current->comm, current->pid);
+		task_unlock(current);
 	} else
 		file->private_data = log;
 
@@ -567,6 +571,12 @@ static int logger_release(struct inode *ignored, struct file *file)
 		mutex_unlock(&log->mutex);
 
 		kfree(reader);
+		task_lock(current);
+		pr_info("===== %s: task(%s) pid(%d) !!\n",
+			__func__,
+			current->comm,
+			current->pid);
+		task_unlock(current);
 	}
 
 	return 0;
@@ -728,7 +738,11 @@ static struct logger_log VAR = { \
 	.size = SIZE, \
 };
 
+#ifdef CONFIG_MACH_X3
+DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 512*1024)
+#else
 DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 256*1024)
+#endif
 DEFINE_LOGGER_DEVICE(log_events, LOGGER_LOG_EVENTS, 256*1024)
 DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 256*1024)
 DEFINE_LOGGER_DEVICE(log_system, LOGGER_LOG_SYSTEM, 256*1024)

@@ -69,3 +69,21 @@ obj-$(CONFIG_SND_SOC_TEGRA_RT5640)	+= tfa9887.o
 obj-$(CONFIG_FAN_THERM_EST)	+= therm_fan_est.o
 obj-$(CONFIG_BLUEDROID_PM)      += bluedroid_pm.o
 obj-$(CONFIG_CPULOAD_MONITOR)	+= cpuload.o
+
+obj-$(CONFIG_KERNEL_DEBUGGER_CORE)	+= kernel_debugger.o
+obj-$(CONFIG_ADC_TSC2007)		+= tsc2007_adc.o
+# LG_BTUI : X3_BT_bringup - kukdong.bae@lge.com [S]
+obj-$(CONFIG_BCM4330_RFKILL)		+= lbee9qmb-rfkill.o
+obj-$(CONFIG_BD_ADDRESS)		+= bd_address.o
+# LG_BTUI : X3_BT_bringup - kukdong.bae@lge.com [E]
+obj-$(CONFIG_LGE_ERS)			+= lge_ers.o
+obj-$(CONFIG_SENSORS_APDS990X)		+= apds990x.o
+#LGE_CHANGE_S
+obj-y 					+= muic/
+#LGE_CHANGE_E
+obj-$(CONFIG_TSPDRV)			+= tspdrv/
+#LGE_IMC_RIL
+obj-y					+= ts0710mux/
+obj-y					+= cpwatcher.o
+#LGE_IMC_RIL
+obj-y   				+= mtc_eta/

@@ -1117,6 +1117,14 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 * Indicate DDR mode (if supported).
 	 */
 	if (mmc_card_highspeed(card)) {
+#ifdef CONFIG_MACH_X3
+		pr_debug("YJChae %s: mmc_card_highspeed card->ext_csd.card_type %d host->caps %d\n",
+				mmc_hostname(card->host),
+				card->ext_csd.card_type, host->caps);
+		pr_debug("YJChae %s: mmc_card_highspeed EXT_CSD_CARD_TYPE_DDR_1_8V %d MMC_CAP_1_8V_DDR %d MMC_CAP_UHS_DDR50 %d\n",
+				mmc_hostname(card->host),
+				EXT_CSD_CARD_TYPE_DDR_1_8V, MMC_CAP_1_8V_DDR, MMC_CAP_UHS_DDR50);
+#endif
 		if ((card->ext_csd.card_type & EXT_CSD_CARD_TYPE_DDR_1_8V)
 			&& ((host->caps & (MMC_CAP_1_8V_DDR |
 			     MMC_CAP_UHS_DDR50))
@@ -1127,7 +1135,15 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			     MMC_CAP_UHS_DDR50))
 				== (MMC_CAP_1_2V_DDR | MMC_CAP_UHS_DDR50)))
 				ddr = MMC_1_2V_DDR_MODE;
+#ifdef CONFIG_MACH_X3
+		pr_debug("YJChae %s: set DDR mode [MMC_1_8V_DDR_MODE :2 || MMC_1_2V_DDR_MODE :1] %d\n",
+				mmc_hostname(card->host), ddr);
+#endif
 	}
+#ifdef CONFIG_MACH_X3
+	pr_debug("YJChae %s: set SDR mode [SDR 0] %d\n",
+			mmc_hostname(card->host), ddr);
+#endif
 
 	/*
 	 * Indicate HS200 SDR mode (if supported).
@@ -1191,6 +1207,10 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			idx = 0;
 		else
 			idx = 1;
+
+#ifdef CONFIG_MACH_X3
+		pr_debug("YJChae %s: index %d\n", mmc_hostname(card->host), idx);
+#endif
 		for (; idx < ARRAY_SIZE(bus_widths); idx++) {
 			bus_width = bus_widths[idx];
 			if (bus_width == MMC_BUS_WIDTH_1)
@@ -1207,6 +1227,9 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 					 EXT_CSD_BUS_WIDTH,
 					 ext_csd_bits[idx][0],
 					 card->ext_csd.generic_cmd6_time);
+#ifdef CONFIG_MACH_X3
+			pr_debug("YJChae sdr ext_csd_bit for ext_csd_bits : %d, bus_width : %d\n", ext_csd_bits[idx][0], bus_width);
+#endif
 			if (!err) {
 				mmc_set_bus_width(card->host, bus_width);
 
@@ -1238,7 +1261,14 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 					 EXT_CSD_BUS_WIDTH,
 					 ext_csd_bits[idx][1],
 					 card->ext_csd.generic_cmd6_time);
+#ifdef CONFIG_MACH_X3
+			pr_debug("YJChae sdr ext_csd_bit for ext_csd_bits : %d, bus_width : %d\n", ext_csd_bits[idx][0], bus_width);
+#endif
 		}
+#ifdef CONFIG_MACH_X3
+		pr_debug("YJChae %s: before switch to bus width %d ddr %d \n",
+				mmc_hostname(card->host), 1 << bus_width, ddr);
+#endif
 		if (err) {
 			pr_warning("%s: switch to bus width %d ddr %d "
 				"failed\n", mmc_hostname(card->host),
@@ -1268,6 +1298,9 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			mmc_card_set_ddr_mode(card);
 			mmc_set_timing(card->host, MMC_TIMING_UHS_DDR50);
 			mmc_set_bus_width(card->host, bus_width);
+#ifdef CONFIG_MACH_X3
+			pr_debug("YJChae %s: switch to bus width %d\n", mmc_hostname(card->host), 1 << bus_width, ddr);
+#endif
 		}
 	}
 

@@ -88,7 +88,11 @@ static int ami306_set_bits8(void *mlsl_handle,
 			    unsigned char reg, unsigned char bits)
 {
 	int result;
+#ifdef CONFIG_MACH_X3
+	unsigned char buf = 0x00;
+#else
 	unsigned char buf;
+#endif
 
 	result = inv_serial_read(mlsl_handle, pdata->address, reg, 1, &buf);
 	if (result) {
@@ -110,7 +114,11 @@ static int ami306_wait_data_ready(void *mlsl_handle,
 				  unsigned long usecs, unsigned long times)
 {
 	int result = 0;
+#ifdef CONFIG_MACH_X3
+	unsigned char buf = 0x00;
+#else
 	unsigned char buf;
+#endif
 
 	for (; 0 < times; --times) {
 		udelay(usecs);
@@ -266,7 +274,11 @@ static int ami306_read_param(void *mlsl_handle,
 			     struct ext_slave_platform_data *pdata)
 {
 	int result = 0;
+#ifdef CONFIG_MACH_X3
+	unsigned char regs[12] = { 0x00 };
+#else
 	unsigned char regs[12];
+#endif
 	struct ami306_private_data *private_data = pdata->private_data;
 	struct ami_sensor_parametor *param = &private_data->param;
 
@@ -382,13 +394,23 @@ static int ami306_search_offset(void *mlsl_handle,
 {
 	int result;
 	int axis;
+#ifdef CONFIG_MACH_X3
+	unsigned char regs[6] = { 0x00 };
+#else
 	unsigned char regs[6];
+#endif
 	unsigned char run_flg[3] = { 1, 1, 1 };
 	unsigned char fine[3];
 	unsigned char win_range_fine[3];
 	unsigned short fine_output[3];
 	short val[3];
+#ifdef CONFIG_MACH_X3
+	unsigned short cnt = 0;
+	unsigned char bk_fine[3];	// By AICHI KOREA
+	int new_fine = 0;
+#else
 	unsigned short cnt[3] = { 0 };
+#endif
 	struct ami306_private_data *private_data = pdata->private_data;
 
 	result = inv_serial_read(mlsl_handle, pdata->address,
@@ -436,7 +458,23 @@ static int ami306_search_offset(void *mlsl_handle,
 	fine[1] = (unsigned char)(regs[2] & 0x7f);
 	fine[2] = (unsigned char)(regs[4] & 0x7f);
 
+#ifdef CONFIG_MACH_X3
+	// By AICHI KOREA --START
+	bk_fine[0] = fine[0];
+	bk_fine[1] = fine[1];
+	bk_fine[2] = fine[2];
+	cnt = 0;
+	//By AICHI KOREA ---END
+#endif
+
 	while (run_flg[0] == 1 || run_flg[1] == 1 || run_flg[2] == 1) {
+#ifdef CONFIG_MACH_X3
+		if (cnt > 3) {
+			printk("Search Offset Count Over");
+			goto out;
+		}		
+		cnt++;
+#endif
 
 		result = ami306_mea(mlsl_handle, pdata, val);
 		if (result) {
@@ -448,24 +486,47 @@ static int ami306_search_offset(void *mlsl_handle,
 			 fine[0], fine[1], fine[2]);
 
 		for (axis = 0; axis < 3; ++axis) {
+#ifdef CONFIG_MACH_X3
+			new_fine = fine[axis];
+#endif
+
 			if (axis == 0) {	/* X-axis is reversed */
 				val[axis] = 0x0FFF & ~val[axis];
 			}
 			if (val[axis] < SEH_RANGE_MIN) {
 				/* At the case of less low limmit. */
+#ifdef CONFIG_MACH_X3
+				new_fine -= win_range_fine[axis];
+				MPL_LOGV("min : fine[%d] =%d diff=%d\n", axis, new_fine, win_range_fine[axis]);
+#else
 				fine[axis] -= win_range_fine[axis];
 				MPL_LOGV("min : fine=%d diff=%d\n",
 					 fine[axis], win_range_fine[axis]);
+#endif
 			}
 			if (val[axis] > SEH_RANGE_MAX) {
 				/* At the case of over high limmit. */
+#ifdef CONFIG_MACH_X3
+				new_fine += win_range_fine[axis];
+				MPL_LOGV("max : fine[%d] =%d diff=%d\n", axis, new_fine, win_range_fine[axis]);
+#else
 				fine[axis] += win_range_fine[axis];
 				MPL_LOGV("max : fine=%d diff=%d\n",
 					 fine[axis], win_range_fine[axis]);
+#endif
 			}
 			if (SEH_RANGE_MIN <= val[axis] &&
 			    val[axis] <= SEH_RANGE_MAX) {
 				/* In the current window. */
+#ifdef CONFIG_MACH_X3
+				int quo = (val[axis] - AMI_STANDARD_OFFSET) / fine_output[axis];
+				int rem = (val[axis] - AMI_STANDARD_OFFSET) % fine_output[axis];
+				rem = fine_output[axis] < 2 ? 0 : rem / (fine_output[axis] / 2); 
+				new_fine += (quo + rem);
+
+				run_flg[axis] = 0;
+				MPL_LOGV("mid : fine[%d]=%d diff=%d\n", axis, new_fine, (quo + rem));
+#else
 				int diff_fine =
 				    (val[axis] - AMI_STANDARD_OFFSET) /
 				    fine_output[axis];
@@ -473,8 +534,17 @@ static int ami306_search_offset(void *mlsl_handle,
 				run_flg[axis] = 0;
 				MPL_LOGV("mid : fine=%d diff=%d\n",
 					 fine[axis], diff_fine);
+#endif
 			}
 
+#ifdef CONFIG_MACH_X3
+			if (new_fine < 1)
+				fine[axis] = 1;
+			else if (new_fine > 95)
+				fine[axis] = 95;
+			else
+				fine[axis] = (u8)new_fine;
+#else
 			if (!(0 <= fine[axis] && fine[axis] < AMI_FINE_MAX)) {
 				MPL_LOGE("fine err :%d\n", cnt[axis]);
 				goto out;
@@ -484,6 +554,7 @@ static int ami306_search_offset(void *mlsl_handle,
 				goto out;
 			}
 			cnt[axis]++;
+#endif
 		}
 		MPL_LOGV("new fine x:%-5d y:%-5d z:%-5d\n",
 			 fine[0], fine[1], fine[2]);
@@ -491,12 +562,33 @@ static int ami306_search_offset(void *mlsl_handle,
 		/* set current fine */
 		result = ami306_write_offset(mlsl_handle, pdata, fine);
 		if (result) {
+#ifdef CONFIG_MACH_X3
+			memcpy(private_data->fine, bk_fine, sizeof(fine));
+#endif
 			LOG_RESULT_LOCATION(result);
 			return result;
 		}
+#ifdef CONFIG_MACH_X3
+		memcpy(private_data->fine, fine, sizeof(fine));
+#endif
 	}
+#ifdef CONFIG_MACH_X3
+	return 0;
+#else
 	memcpy(private_data->fine, fine, sizeof(fine));
+#endif
 out:
+#ifdef CONFIG_MACH_X3
+// by AICHI KOREA  --START
+	memcpy(private_data->fine, fine, sizeof(fine));
+	result = ami306_write_offset(mlsl_handle, pdata, fine);
+	if (result) 
+	{
+                  LOG_RESULT_LOCATION(result);
+                  return result;
+           }
+//By AICHI KOREA ---END		   
+#else        
 	result = ami306_set_bits8(mlsl_handle, pdata,
 				  AMI_REG_CTRL3, AMI_CTRL3_SRST_BIT);
 	if (result) {
@@ -504,15 +596,21 @@ out:
 		return result;
 	}
 	udelay(250 + 50);
+#endif        
 	return 0;
 }
+
 
 static int ami306_read_win(void *mlsl_handle,
 			   struct ext_slave_descr *slave,
 			   struct ext_slave_platform_data *pdata)
 {
 	int result = 0;
+#ifdef CONFIG_MACH_X3
+	unsigned char regs[6] = { 0x00 };
+#else
 	unsigned char regs[6];
+#endif
 	struct ami306_private_data *private_data = pdata->private_data;
 	struct ami_win_parameter *win = &private_data->win;
 
@@ -568,7 +666,11 @@ static int ami306_suspend(void *mlsl_handle,
 			  struct ext_slave_platform_data *pdata)
 {
 	int result;
+#ifdef CONFIG_MACH_X3
+	unsigned char reg = 0x00;
+#else
 	unsigned char reg;
+#endif
 	result = inv_serial_read(mlsl_handle, pdata->address,
 				 AMI306_REG_CNTL1, 1, &reg);
 	if (result) {
@@ -725,12 +827,34 @@ static int ami306_config(void *mlsl_handle,
 			 struct ext_slave_platform_data *pdata,
 			 struct ext_slave_config *data)
 {
+#ifdef CONFIG_MACH_X3
+	int result;
+	unsigned char fine[3];
+#endif
 	if (!data->data) {
 		LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
 		return INV_ERROR_INVALID_PARAMETER;
 	}
 
 	switch (data->key) {
+#ifdef CONFIG_MACH_X3
+	case MPU_SLAVE_WRITE_REGISTERS:
+		if (!data->data) {
+			LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
+			return INV_ERROR_INVALID_PARAMETER;
+		}		
+
+		memcpy(fine, data->data, sizeof(fine));
+		
+		printk("[%s] set fine data -- x[%d],y[%d],z[%d]",
+				__func__,fine[0],fine[1],fine[2]);
+		result = ami306_write_offset(mlsl_handle, pdata, fine);
+		if (result) {
+			LOG_RESULT_LOCATION(result);
+			return result;
+		}
+		break;
+#endif
 	case MPU_SLAVE_PARAM:
 	case MPU_SLAVE_WINDOW:
 	case MPU_SLAVE_CONFIG_ODR_SUSPEND:

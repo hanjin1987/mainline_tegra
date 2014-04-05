@@ -183,7 +183,11 @@ static void gser_disable(struct usb_function *f)
 
 /* serial function driver setup/binding */
 
+#ifndef CONFIG_LGE_USB_GADGET_DRIVER
 static int __init
+#else
+static int
+#endif
 gser_bind(struct usb_configuration *c, struct usb_function *f)
 {
 	struct usb_composite_dev *cdev = c->cdev;
@@ -283,7 +287,11 @@ gser_unbind(struct usb_configuration *c, struct usb_function *f)
  * handle all the ones it binds.  Caller is also responsible
  * for calling @gserial_cleanup() before module unload.
  */
+#ifndef CONFIG_LGE_USB_GADGET_DRIVER
 int __init gser_bind_config(struct usb_configuration *c, u8 port_num)
+#else
+int gser_bind_config(struct usb_configuration *c, u8 port_num)
+#endif
 {
 	struct f_gser	*gser;
 	int		status;
@@ -307,7 +315,11 @@ int __init gser_bind_config(struct usb_configuration *c, u8 port_num)
 
 	gser->port_num = port_num;
 
+#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+	gser->port.func.name = "serial";
+#else
 	gser->port.func.name = "gser";
+#endif
 	gser->port.func.strings = gser_strings;
 	gser->port.func.bind = gser_bind;
 	gser->port.func.unbind = gser_unbind;

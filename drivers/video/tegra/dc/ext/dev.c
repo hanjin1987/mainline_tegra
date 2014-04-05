@@ -27,6 +27,10 @@
 
 #include <video/tegra_dc_ext.h>
 
+#if defined(CONFIG_MACH_LGE)
+#include <video/tegrafb.h>
+#endif
+
 #include <mach/dc.h>
 #include <linux/nvmap.h>
 #include <mach/tegra_dc_ext.h>
@@ -170,8 +174,14 @@ void tegra_dc_ext_disable(struct tegra_dc_ext *ext)
 	 */
 	for (i = 0; i < ext->dc->n_windows; i++) {
 		struct tegra_dc_ext_win *win = &ext->win[i];
+#if defined(CONFIG_MACH_LGE)
+		mutex_lock(&win->lock);
+#endif
 
 		flush_workqueue(win->flip_wq);
+#if defined(CONFIG_MACH_LGE)
+		mutex_unlock(&win->lock);
+#endif		
 	}
 }
 
@@ -252,6 +262,12 @@ static int tegra_dc_ext_set_windowattr(struct tegra_dc_ext *ext,
 	memcpy(ext_win->cur_handle, flip_win->handle,
 	       sizeof(ext_win->cur_handle));
 
+#if defined(CONFIG_MACH_LGE)
+	ext_win->phys_addr = flip_win->phys_addr;
+	ext_win->phys_addr_u = flip_win->phys_addr_u;
+	ext_win->phys_addr_v = flip_win->phys_addr_v;
+#endif
+
 	/* XXX verify that this won't read outside of the surface */
 	win->phys_addr = flip_win->phys_addr + flip_win->attr.offset;
 
@@ -294,6 +310,10 @@ static int tegra_dc_ext_set_windowattr(struct tegra_dc_ext *ext,
 #endif
 	return err;
 }
+
+#if defined (CONFIG_PANICRPT)    
+extern int panicrpt_ispanic (void);
+#endif /* CONFIG_PANICRPT */
 
 static void (*flip_callback)(void);
 static spinlock_t flip_callback_lock;
@@ -341,6 +361,11 @@ static void tegra_dc_ext_flip_worker(struct work_struct *work)
 	struct nvmap_handle_ref *old_handle;
 	int i, nr_unpin = 0, nr_win = 0;
 	bool skip_flip = false;
+
+#if defined (CONFIG_PANICRPT)
+	if (panicrpt_ispanic ())
+		return;
+#endif /* CONFIG_PANICRPT */
 
 	for (i = 0; i < DC_N_WINDOWS; i++) {
 		struct tegra_dc_ext_flip_win *flip_win = &data->win[i];
@@ -400,6 +425,22 @@ static void tegra_dc_ext_flip_worker(struct work_struct *work)
 
 				if (!old_handle)
 					continue;
+
+#if defined(CONFIG_MACH_LGE)
+				if (j==0 && !ext_win->phys_addr)
+					continue;
+
+				if (j==1 && !ext_win->phys_addr_u)
+					continue;
+
+				if (j==2 && !ext_win->phys_addr_v)
+					continue;
+#endif
+
+#if 0
+				unpin_handles[nr_unpin++] =
+					ext_win->cur_handle[j];
+#endif
 
 				unpin_handles[nr_unpin++] = old_handle;
 			}

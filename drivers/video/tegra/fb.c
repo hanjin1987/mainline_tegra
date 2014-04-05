@@ -52,6 +52,9 @@ struct tegra_fb_info {
 	struct platform_device	*ndev;
 	struct fb_info		*info;
 	bool			valid;
+#if defined (CONFIG_PANICRPT)   
+        atomic_t                in_use;
+#endif /* CONFIG_PANICRPT */
 
 	struct resource		*fb_mem;
 
@@ -63,6 +66,12 @@ struct tegra_fb_info {
 
 /* palette array used by the fbcon */
 static u32 pseudo_palette[16];
+
+#if defined (CONFIG_PANICRPT)    
+static int panicrpt_status = -4;
+extern int panicrpt_ispanic (void);
+extern void panicrpt_ready(bool flag);
+#endif /* CONFIG_PANICRPT */
 
 static int tegra_fb_check_var(struct fb_var_screeninfo *var,
 			      struct fb_info *info)
@@ -264,11 +273,27 @@ static int tegra_fb_setcmap(struct fb_cmap *cmap, struct fb_info *info)
 		} else {
 			/* High-color schemes*/
 			for (i = 0; i < cmap->len; i++) {
+// refer to NVBUG #901921
+#ifdef CONFIG_FRAMEBUFFER_CONSOLE
+			/* update palette for fbcon */
+			if (start+i < 16) {
+				((u32 *) info->pseudo_palette)[start+i] =
+					((*red >> 8) << info->var.red.offset) |
+					((*green >> 8) << info->var.green.offset) |
+					((*blue >> 8) << info->var.blue.offset);
+			}
+#endif
+
 				dc->fb_lut.r[start+i] = *red++ >> 8;
 				dc->fb_lut.g[start+i] = *green++ >> 8;
 				dc->fb_lut.b[start+i] = *blue++ >> 8;
 			}
+
+#ifdef CONFIG_FRAMEBUFFER_CONSOLE
+			tegra_dc_update_lut(dc, -1, 1);
+#else
 			tegra_dc_update_lut(dc, -1, -1);
+#endif
 		}
 	}
 	return 0;
@@ -327,7 +352,27 @@ static int tegra_fb_pan_display(struct fb_var_screeninfo *var,
 		return 0;
 #endif
 
+#if defined(CONFIG_PANICRPT)    
+    /*
+     * when tegra_fb->in_use is 1, it was just opened console
+     * we have to wait when the surfaceflinger open fb
+     */
+    if ((atomic_read (&tegra_fb->in_use) == 1) && !panicrpt_ispanic ()) {
+	    return 0;
+    }
+    if (panicrpt_ispanic () || !tegra_fb->win->cur_handle) {
+	    /*
+         * when tegra_fb is in sleep(maybe early suspended), don't display report
+         */
+        if (tegra_fb->win->dc->suspended || !tegra_fb->win->dc->enabled) {
+	        return 0;
+        }
+        if (!(tegra_fb->win->flags & TEGRA_WIN_FLAG_ENABLED)) {
+            tegra_fb->win->flags = TEGRA_WIN_FLAG_ENABLED;
+        }
+#else
 	if (!tegra_fb->win->cur_handle) {
+#endif /* CONFIG_PANICRPT */
 		flush_start = info->screen_base + (var->yoffset * info->fix.line_length);
 		flush_end = flush_start + (var->yres * info->fix.line_length);
 
@@ -347,12 +392,33 @@ static int tegra_fb_pan_display(struct fb_var_screeninfo *var,
 		tegra_fb->win->flags = TEGRA_WIN_FLAG_ENABLED;
 		tegra_fb->win->virt_addr = info->screen_base;
 
+#if defined (CONFIG_PANICRPT)
+		if (panicrpt_status >= 0) {
+			tegra_dc_update_windows(&tegra_fb->win, 1);
+			tegra_dc_sync_windows(&tegra_fb->win, 1);
+		} else {
+			panicrpt_status++;
+		}
+
+		if (panicrpt_ispanic()) {
+			//printk ( KERN_INFO " beobki.chung : PANIC STATUS ENABLE \n" );
+			panicrpt_status = 1;
+		}
+#else
 		tegra_dc_update_windows(&tegra_fb->win, 1);
 		tegra_dc_sync_windows(&tegra_fb->win, 1);
+#endif
 	}
 
 	return 0;
 }
+
+#if defined (CONFIG_PANICRPT)   
+int panicrpt_status_check( void )
+{
+	return panicrpt_status;
+}
+#endif
 
 static void tegra_fb_fillrect(struct fb_info *info,
 			      const struct fb_fillrect *rect)
@@ -672,6 +738,21 @@ struct tegra_fb_info *tegra_fb_register(struct platform_device *ndev,
 
 	dev_info(&ndev->dev, "probed\n");
 
+#if defined (CONFIG_PANICRPT)  
+	if ( panicrpt_status > 0) {
+		if (fb_data->flags & TEGRA_FB_FLIP_ON_PROBE) {
+			tegra_dc_update_windows(&tegra_fb->win, 1);
+			tegra_dc_sync_windows(&tegra_fb->win, 1);
+		}
+	} else {
+		//tegra_dc_update_windows(&tegra_fb->win, 1);
+		//tegra_dc_sync_windows(&tegra_fb->win, 1);
+		panicrpt_status++;
+	}
+
+	if (panicrpt_status == 0)
+		panicrpt_ready(true);
+#else
 	if (fb_data->flags & TEGRA_FB_FLIP_ON_PROBE) {
 		tegra_dc_update_windows(&tegra_fb->win, 1);
 		tegra_dc_sync_windows(&tegra_fb->win, 1);
@@ -688,6 +769,7 @@ struct tegra_fb_info *tegra_fb_register(struct platform_device *ndev,
 			fb_add_videomode(&vmode, &info->modelist);
 		}
 	}
+#endif
 
 	return tegra_fb;
 

@@ -64,6 +64,15 @@ struct therm_estimator {
 #endif
 };
 
+#ifdef CONFIG_MACH_X3
+static long bcoeff[] = {-38, -11, -3, -2, -2, -1, -1, -1, 0, 11, -13, 6, 7, 5, 6, 6, 6, 6, 13, 55};
+static long bhist[HIST_LEN] ={250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250};
+
+static long cur_skin_temp1=30000;
+extern int nct1008_is_disabled();
+extern int batt_Temp_C;
+#endif
+
 #define TIMER_TRIP_INACTIVE		-2
 
 #define TIMER_TRIP_STATE_NONE		0
@@ -237,9 +246,47 @@ static void therm_est_timer_trip_work_func(struct work_struct *work)
 	}
 }
 
+#ifdef CONFIG_MACH_X3
+static int btemp_get(long *btemp)
+{
+#if 0
+        char buf[64];
+        int fd, ret, count;
+        mm_segment_t old_fs;
+
+        /* Hack: should get battery temp from somewhere else */
+        old_fs = get_fs();
+        set_fs(KERNEL_DS);
+        fd = sys_open("/sys/class/power_supply/battery/temp", O_RDONLY, 0644);
+
+        if (fd >= 0) {
+                count = sys_read(fd, buf, 64);
+                if (count < 64)
+                        buf[count] = '\0';
+                ret = kstrtol(buf, 10, btemp);
+                sys_close(fd);
+        } else {
+                ret = -1;
+        }
+        set_fs(old_fs);
+		return ret;
+#else
+	if (batt_Temp_C!=0x10000) {
+		*btemp = batt_Temp_C;
+		return 0;
+	}
+	else
+		return -1;
+#endif
+}
+#endif
+
 static void therm_est_work_func(struct work_struct *work)
 {
 	int i, j, index, sum = 0;
+#ifdef CONFIG_MACH_X3
+	int bsum = 0;
+#endif
 	long temp;
 	struct delayed_work *dwork = container_of(work,
 					struct delayed_work, work);
@@ -247,6 +294,9 @@ static void therm_est_work_func(struct work_struct *work)
 					struct therm_estimator,
 					therm_est_work);
 
+#ifdef CONFIG_MACH_X3
+	if (nct1008_is_disabled() == 0) {
+#endif
 	for (i = 0; i < est->ndevs; i++) {
 		if (therm_est_subdev_get_temp(est->devs[i].dev_data, &temp))
 			continue;
@@ -261,9 +311,27 @@ static void therm_est_work_func(struct work_struct *work)
 		}
 	}
 
+#ifdef CONFIG_MACH_X3
+	if (btemp_get(&bhist[est->ntemp % HIST_LEN])) {
+		pr_err("%s:error to get battery temp\n", __func__);
+		goto get_temp_err;
+	}
+
+	for (j = 0; j < HIST_LEN; j++) {
+		index = (est->ntemp - j + HIST_LEN) % HIST_LEN;
+		bsum += bhist[index] * bcoeff[j];
+	}
+	est->cur_temp = sum / 100 + est->toffset + bsum;
+
+	cur_skin_temp1=est->cur_temp;
+#else
 	est->cur_temp = sum / 100 + est->toffset;
+#endif
 	est->ntemp++;
 
+#ifdef CONFIG_MACH_X3
+get_temp_err:
+#endif
 	if (est->thz && ((est->cur_temp < est->low_limit) ||
 			(est->cur_temp >= est->high_limit))) {
 		thermal_zone_device_update(est->thz);
@@ -271,9 +339,20 @@ static void therm_est_work_func(struct work_struct *work)
 		therm_est_update_limits(est);
 	}
 
+#ifdef CONFIG_MACH_X3
+	} // nct1008_is_disabled() == 0
+#endif
+
 	queue_delayed_work(est->workqueue, &est->therm_est_work,
 				msecs_to_jiffies(est->polling_period));
 }
+
+#ifdef CONFIG_MACH_X3
+long tegra_get_cur_skin_temp()
+{
+        return cur_skin_temp1;
+}
+#endif
 
 static int therm_est_bind(struct thermal_zone_device *thz,
 				struct thermal_cooling_device *cdev)
@@ -983,6 +1062,13 @@ static int __devinit therm_est_probe(struct platform_device *pdev)
 	mutex_init(&est->timer_trip_lock);
 	INIT_DELAYED_WORK(&est->timer_trip_work,
 			  therm_est_timer_trip_work_func);
+
+#ifdef CONFIG_MAGH_X3
+	btemp_get(&temp);
+	for (j = 0; j < HIST_LEN; j++) {
+		bhist[j] = temp;
+	}
+#endif
 
 	est->workqueue = alloc_workqueue(dev_name(&pdev->dev),
 				    WQ_HIGHPRI | WQ_UNBOUND | WQ_RESCUER, 1);

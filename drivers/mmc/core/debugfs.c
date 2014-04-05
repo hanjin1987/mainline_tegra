@@ -361,4 +361,7 @@ err:
 void mmc_remove_card_debugfs(struct mmc_card *card)
 {
 	debugfs_remove_recursive(card->debugfs_root);
+#ifdef CONFIG_MACH_X3
+	card->debugfs_root = NULL;
+#endif
 }

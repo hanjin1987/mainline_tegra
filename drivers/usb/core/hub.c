@@ -155,6 +155,10 @@ EXPORT_SYMBOL_GPL(ehci_cf_port_reset_rwsem);
 #define HUB_DEBOUNCE_STEP	  25
 #define HUB_DEBOUNCE_STABLE	 100
 
+#ifdef CONFIG_MACH_X3
+extern int is_usb_disconnect;
+int forced_abort_hubevent = 0;
+#endif
 
 static int usb_reset_and_verify_device(struct usb_device *udev);
 
@@ -1752,11 +1756,27 @@ void usb_disconnect(struct usb_device **pdev)
 	 * so that the hardware is now fully quiesced.
 	 */
 	dev_dbg (&udev->dev, "unregistering device\n");
+#ifdef CONFIG_MACH_X3
+	//dev_info(&udev->dev, "mutex_lock\n"); // for debugging : (usb) acespirit 2012.11.22
+	//mutex_lock(hcd->bandwidth_mutex);
+	dev_info(&udev->dev, "disable_device\n");
+#endif
 	usb_disable_device(udev, 0);
+#ifdef CONFIG_MACH_X3
+	//dev_info(&udev->dev, "mutex_unlock\n");
+	//mutex_unlock(hcd->bandwidth_mutex);
+	dev_info(&udev->dev, "sync_unlinks\n");
+#endif
 	usb_hcd_synchronize_unlinks(udev);
+#ifdef CONFIG_MACH_X3
+	//dev_info(&udev->dev, "remove_ep_devs\n");
+#endif
 
 	usb_remove_ep_devs(&udev->ep0);
 	usb_unlock_device(udev);
+#ifdef CONFIG_MACH_X3
+	dev_info(&udev->dev, "device_del\n");
+#endif
 
 	/* Unregister the device.  The device driver is responsible
 	 * for de-configuring the device and invoking the remove-device
@@ -2774,7 +2794,11 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 		/* drive resume for at least 20 msec */
 		dev_dbg(&udev->dev, "usb %sresume\n",
 				(PMSG_IS_AUTO(msg) ? "auto-" : ""));
+#ifdef CONFIG_MACH_X3
+		msleep(50);
+#else
 		msleep(25);
+#endif
 
 		/* Virtual root hubs can trigger on GET_PORT_STATUS to
 		 * stop resume signaling.  Then finish the resume
@@ -2807,6 +2831,11 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 		status = finish_port_resume(udev);
 	if (status < 0) {
 		dev_dbg(&udev->dev, "can't resume, status %d\n", status);
+#ifdef CONFIG_MACH_X3
+		is_usb_disconnect = 1;
+		forced_abort_hubevent = 1;
+		printk("##@%s forced_abort_hubevent <- 1\n", __func__);
+#endif
 		hub_port_logical_disconnect(hub, port1);
 	} else  {
 		/* Try to enable USB2 hardware LPM */
@@ -3510,6 +3539,13 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
   			goto done;
 		return;
 	}
+
+#ifdef CONFIG_MACH_X3
+	if (forced_abort_hubevent) {
+		printk("##@%s returned by forced_abort_hubevent\n", __func__);
+		return;
+	}
+#endif
 
 	for (i = 0; i < SET_CONFIG_TRIES; i++) {
 

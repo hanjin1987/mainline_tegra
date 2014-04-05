@@ -31,7 +31,14 @@
 #include <mach/usb_phy.h>
 #include <mach/gpio-tegra.h>
 #include <mach/tegra-bb-power.h>
+#ifdef CONFIG_MACH_X3
+//#include <mach-tegra/gpio-names.h>
+#endif
 #include "bb-power.h"
+
+#ifdef CONFIG_MACH_X3
+#define BB_GPIO_MDM4_WDI_TEMP	149 //TEGRA_GPIO_PS5
+#endif
 
 static struct tegra_bb_callback *callback;
 static int attr_load;
@@ -80,6 +87,11 @@ static int tegra_bb_power_gpio_init(struct tegra_bb_power_gdata *gdata)
 
 	gpioirq = gdata->gpioirq;
 	for (; gpioirq->id != GPIO_INVALID; ++gpioirq) {
+#ifdef CONFIG_MACH_X3
+		// ebs 
+		printk("ebs %s, irq->id = %d irq->name = %s\n", __func__, gpioirq->id, gpioirq->name);
+		// ebs
+#endif
 		irq = gpio_to_irq(gpioirq->id);
 
 		/* Create interrupt handler, if requested */
@@ -95,6 +107,9 @@ static int tegra_bb_power_gpio_init(struct tegra_bb_power_gdata *gdata)
 
 		/* Enable wake, if requested */
 		if (gpioirq->wake_capable) {
+#ifdef CONFIG_MACH_X3
+	printk("[ebs] %s, id = %d, capable = %d name = %s\n", __func__, gpioirq->id, gpioirq->wake_capable, gpioirq->name);  
+#endif
 			ret = enable_irq_wake(irq);
 			if (ret) {
 				pr_err("%s: Error: irqwake req fail.\n",
@@ -103,6 +118,9 @@ static int tegra_bb_power_gpio_init(struct tegra_bb_power_gdata *gdata)
 			}
 		}
 	}
+#ifdef EBS_TEST
+	gpio_export(144, true); // ebs
+#endif
 	return 0;
 }
 
@@ -287,6 +305,9 @@ static int tegra_bb_power_probe(struct platform_device *device)
 		pr_err("%s - Error: callback data is empty.\n", __func__);
 		return -ENODEV;
 	}
+#ifdef CONFIG_MACH_X3
+	printk("[ebs] %s WDI Status = %d\n", __func__, gpio_get_value(BB_GPIO_MDM4_WDI_TEMP));
+#endif
 
 	/* Create the control sysfs node */
 	err = device_create_file(dev, &dev_attr_load);
@@ -356,6 +377,9 @@ static void tegra_bb_power_shutdown(struct platform_device *device)
 #ifdef CONFIG_PM
 static int tegra_bb_driver_suspend(struct device *dev)
 {
+#ifdef CONFIG_MACH_X3
+	pr_info("[EBS] %s\n", __func__);
+#endif
 	/* BB specific callback */
 	if (callback && callback->power)
 		return callback->power(PWRSTATE_L2L3);
@@ -372,6 +396,9 @@ static int tegra_bb_driver_resume(struct device *dev)
 
 static int tegra_bb_suspend_noirq(struct device *dev)
 {
+#ifdef CONFIG_MACH_X3
+	pr_info("[EBS] %s\n", __func__);
+#endif
 	/* BB specific callback */
 	if (callback && callback->power)
 		return callback->power(PWRSTATE_L2L3_NOIRQ);
@@ -406,8 +433,15 @@ static struct platform_driver tegra_bb_power_driver = {
 	},
 };
 
+#ifdef CONFIG_MACH_X3
+static char version[] __initdata = KERN_INFO "HSIC PowerMng Ver 20120330 + Modem Crash\n";
+#endif
+
 static int __init tegra_baseband_power_init(void)
 {
+#ifdef CONFIG_MACH_X3
+	printk(version);
+#endif
 	pr_debug("%s\n", __func__);
 	return platform_driver_register(&tegra_bb_power_driver);
 }

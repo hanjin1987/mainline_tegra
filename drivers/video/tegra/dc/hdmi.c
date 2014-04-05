@@ -2116,3 +2116,17 @@ struct tegra_dc *tegra_dc_hdmi_get_dc(struct tegra_dc_hdmi_data *hdmi)
 {
 	return hdmi ? hdmi->dc : NULL;
 }
+
+#if defined(CONFIG_MACH_LGE)
+void hdmi_common_send_uevent(char *buf)
+{
+	char *envp[2];   
+	struct tegra_dc_hdmi_data *hdmi = dc_hdmi;
+	if (hdmi) {
+		envp[0] = buf;       
+		envp[1] = NULL;    
+		kobject_uevent_env(&(hdmi->dc->ndev->dev.kobj), KOBJ_CHANGE, envp); 
+	}
+}
+EXPORT_SYMBOL(hdmi_common_send_uevent);
+#endif

@@ -6,3 +6,6 @@ obj-$(CONFIG_TEGRA_DC) += dc/
 obj-$(CONFIG_FB_TEGRA) += fb.o
 obj-$(CONFIG_TEGRA_NVMAP) += nvmap/
 obj-$(CONFIG_TEGRA_CAMERA) += camera/
+
+obj-$(CONFIG_MACH_RGB_CONVERTOR_SPI) += ssd2825/
+obj-y += mhl/

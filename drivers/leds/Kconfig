@@ -408,6 +408,14 @@ config LEDS_OT200
 	  This option enables support for the LEDs on the Bachmann OT200.
 	  Say Y to enable LEDs on the Bachmann OT200.
 
+config LEDS_VU10_PWRKEY
+	bool "LED Vu1.0 Power Key"
+	depends on MACH_VU10
+	depends on LEDS_CLASS
+	default y
+	help
+	  This allows Power Key LED in Vu1.0.
+
 config LEDS_TRIGGERS
 	bool "LED Trigger support"
 	depends on LEDS_CLASS

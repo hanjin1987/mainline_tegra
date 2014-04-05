@@ -468,9 +468,13 @@ static int max77663_regulator_enable(struct regulator_dev *rdev)
 	struct max77663_regulator *reg = rdev_get_drvdata(rdev);
 	struct max77663_regulator_info *rinfo = reg->rinfo;
 	struct max77663_regulator_platform_data *pdata = _to_pdata(reg);
+#if defined(CONFIG_MFD_MAX77663_LPM)
 	int power_mode = (pdata->flags & GLPM_ENABLE) ?
 			 POWER_MODE_GLPM : POWER_MODE_NORMAL;
 
+#else
+	int power_mode = POWER_MODE_NORMAL;
+#endif
 	if (reg->fps_src != FPS_SRC_NONE) {
 		dev_dbg(&rdev->dev, "enable: Regulator %s using %s\n",
 			rdev->desc->name, fps_src_name(reg->fps_src));
@@ -554,8 +558,12 @@ static int max77663_regulator_set_mode(struct regulator_dev *rdev,
 	int ret;
 
 	if (mode == REGULATOR_MODE_NORMAL)
+#if defined(CONFIG_MFD_MAX77663_LPM)
 		power_mode = (pdata->flags & GLPM_ENABLE) ?
 			     POWER_MODE_GLPM : POWER_MODE_NORMAL;
+#else
+		power_mode = POWER_MODE_NORMAL;
+#endif
 	else if (mode == REGULATOR_MODE_STANDBY) {
 		/* N-Channel LDOs don't support Low-Power mode. */
 		power_mode = (rinfo->type != REGULATOR_TYPE_LDO_N) ?
@@ -655,9 +663,13 @@ static int max77663_regulator_preinit(struct max77663_regulator *reg)
 	 * from SRC_0, SRC_1 and SRC_2. */
 	if ((reg->fps_src != FPS_SRC_NONE) && (pdata->fps_src == FPS_SRC_NONE)
 			&& (reg->power_mode != POWER_MODE_NORMAL)) {
+#if defined(CONFIG_MFD_MAX77663_LPM)
 		val = (pdata->flags & GLPM_ENABLE) ?
 		      POWER_MODE_GLPM : POWER_MODE_NORMAL;
 		ret = max77663_regulator_set_power_mode(reg, val);
+#else
+		ret = max77663_regulator_set_power_mode(reg, POWER_MODE_NORMAL);
+#endif
 		if (ret < 0) {
 			dev_err(reg->dev, "preinit: Failed to "
 				"set power mode to POWER_MODE_NORMAL\n");
@@ -678,7 +690,43 @@ static int max77663_regulator_preinit(struct max77663_regulator *reg)
 		return ret;
 	}
 
+<<<<<<< HEAD
 	if (rinfo->type == REGULATOR_TYPE_SD) {
+=======
+	/* Set initial state */
+	if (!pdata->init_apply)
+		goto skip_init_apply;
+
+	if (pdata->init_uV >= 0) {
+		ret = max77663_regulator_do_set_voltage(reg, pdata->init_uV,
+							pdata->init_uV);
+		if (ret < 0) {
+			dev_err(reg->dev, "preinit: Failed to set voltage to "
+				"%d\n", pdata->init_uV);
+			return ret;
+		}
+	}
+
+	if (pdata->init_enable)
+#if defined(CONFIG_MFD_MAX77663_LPM)
+		val = (pdata->flags & GLPM_ENABLE) ?
+		      POWER_MODE_GLPM : POWER_MODE_NORMAL;
+#else
+		val = POWER_MODE_NORMAL;
+#endif
+	else
+		val = POWER_MODE_DISABLE;
+
+	ret = max77663_regulator_set_power_mode(reg, val);
+	if (ret < 0) {
+		dev_err(reg->dev,
+			"preinit: Failed to set power mode to %d\n", val);
+		return ret;
+	}
+
+skip_init_apply:
+	if (reg->type == REGULATOR_TYPE_SD) {
+>>>>>>> f720e99... drivers/: Merge LGE changes [2]
 		val = 0;
 		mask = 0;
 
@@ -947,7 +995,11 @@ static int __init max77663_regulator_init(void)
 {
 	return platform_driver_register(&max77663_regulator_driver);
 }
+#ifdef CONFIG_MACH_X3
+arch_initcall(max77663_regulator_init);
+#else
 subsys_initcall(max77663_regulator_init);
+#endif
 
 static void __exit max77663_reg_exit(void)
 {

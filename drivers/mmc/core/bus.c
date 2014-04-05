@@ -371,6 +371,9 @@ void mmc_remove_card(struct mmc_card *card)
 			pr_info("%s: card %04x removed\n",
 				mmc_hostname(card->host), card->rca);
 		}
+#ifdef CONFIG_MACH_X3
+		card->state &= ~(MMC_STATE_INSERTED | MMC_STATE_PRESENT);
+#endif
 		device_del(&card->dev);
 	}
 

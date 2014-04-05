@@ -96,6 +96,10 @@ static int handle_unpin(struct nvmap_client *client,
 	int ret = 0;
 	nvmap_mru_lock(client->share);
 
+#if defined(CONFIG_MACH_LGE)
+	BUG_ON(!h);
+#endif
+
 	if (atomic_read(&h->pin) == 0) {
 		trace_handle_unpin_error(client, h, atomic_read(&h->pin));
 		nvmap_err(client, "%s unpinning unpinned handle %p\n",

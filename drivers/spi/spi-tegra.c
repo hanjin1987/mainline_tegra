@@ -304,6 +304,20 @@ static int tegra_spi_clk_enable(struct spi_tegra_data *tspi)
 	return 0;
 }
 
+static int spi_tegra_clock_control(struct spi_device *spi, int enable)
+{
+	struct spi_tegra_data *tspi = spi_master_get_devdata(spi->master);
+
+	if (enable) {
+		pm_runtime_get_sync(&tspi->pdev->dev);
+		tegra_spi_clk_enable(tspi);
+	} else {
+		tegra_spi_clk_disable(tspi);
+		pm_runtime_put_sync(&tspi->pdev->dev);
+	}
+	return 0;
+}
+
 static void cancel_dma(struct tegra_dma_channel *dma_chan,
 	struct tegra_dma_req *req)
 {
@@ -1345,6 +1359,7 @@ static int __devinit spi_tegra_probe(struct platform_device *pdev)
 	master->setup = spi_tegra_setup;
 	master->transfer = spi_tegra_transfer;
 	master->num_chipselect = MAX_CHIP_SELECT;
+	master->clock_control = spi_tegra_clock_control;
 
 	dev_set_drvdata(&pdev->dev, master);
 	tspi = spi_master_get_devdata(master);

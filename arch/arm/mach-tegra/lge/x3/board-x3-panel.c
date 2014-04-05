@@ -45,7 +45,8 @@
 #include <mach-tegra/tegra3_host1x_devices.h>
 #include "../../../../../../drivers/video/tegra/ssd2825/ssd2825_bridge.h"
 
-#include <mach-tegra/wakeups-t3.h>	//                                                                  
+#include <mach-tegra/wakeups-t3.h>
+
 #if defined(CONFIG_MACH_RGB_CONVERTOR_SPI)
 extern int ssd2825_bridge_enable(void);
 extern int ssd2825_bridge_disable(void);
@@ -62,9 +63,9 @@ static struct regulator *x3_hdmi_vddio = NULL;
 
 //static struct regulator *x3_lgit_hdmi_pll = NULL;
 
-static atomic_t sd_brightness = ATOMIC_INIT(255);
+//static atomic_t sd_brightness = ATOMIC_INIT(255);
 
-unsigned long long wake_status_backup=0; //                                                                  
+unsigned long long wake_status_backup = 0;
 
 static tegra_dc_bl_output x3_bl_output_measured = {
 	1, 5, 9, 10, 11, 12, 12, 13,
@@ -103,6 +104,7 @@ static tegra_dc_bl_output x3_bl_output_measured = {
 
 static p_tegra_dc_bl_output bl_output;
 
+#if 0
 static int x3_backlight_notify(struct device *unused, int brightness)
 {
 	int cur_sd_brightness = atomic_read(&sd_brightness);
@@ -123,7 +125,6 @@ static int x3_backlight_notify(struct device *unused, int brightness)
 
 	return brightness;
 }
-
 
 static struct platform_tegra_pwm_backlight_data x3_disp1_backlight_data = {
 	.which_dc	= 0,
@@ -151,9 +152,8 @@ static int x3_backlight_init(struct device *dev) {
 static void x3_backlight_exit(struct device *dev) {
 }
 
-
 static struct platform_pwm_backlight_data x3_backlight_data = {
-	.pwm_id		= 2,	//                    
+	.pwm_id		= 2,
 	.max_brightness	= 255,
 	.max_current	= 0xB7,
 	.dft_brightness	= 224,
@@ -170,6 +170,7 @@ static struct platform_device x3_backlight_device = {
 		.platform_data = &x3_backlight_data,
 	},
 };
+#endif
 
 static bool first_disp_boot = TRUE;
 static int x3_panel_enable(void)
@@ -508,16 +509,16 @@ static struct tegra_dc_sd_settings x3_sd_settings = {
 #endif
 
 static struct tegra_fb_data x3_fb_data = {
-    .win        = 0,
+	.win        = 0,
 #if defined(CONFIG_MACH_VIEW5_HITACHI)
-    .xres        = 768,
-    .yres        = 1024,
+	.xres        = 768,
+	.yres        = 1024,
 #else
-    .xres        = 720,
-    .yres        = 1280,
+	.xres        = 720,
+	.yres        = 1280,
 #endif
-    .bits_per_pixel    = 32,//16,//24,
-    .flags		= TEGRA_FB_FLIP_ON_PROBE,
+	.bits_per_pixel	= 32, //16, //24,
+	.flags		= TEGRA_FB_FLIP_ON_PROBE,
 };
 
 static struct tegra_fb_data x3_hdmi_fb_data = {
@@ -586,13 +587,13 @@ int ssd2825_bridge_enable_queue(void)
 static struct tegra_dc_out x3_disp1_out = {
 	.align		= TEGRA_DC_ALIGN_MSB,
 	.order		= TEGRA_DC_ORDER_RED_BLUE,
-//                                                                       
-	.height 		= 105,//                                              
-	.width		= 59,//                                              
+
+	.height 	= 105,
+	.width		= 59,
 
 	.type		= TEGRA_DC_OUT_RGB,
-	.parent_clk 	= "pll_p",//"pll_d_out0",
-	//.depth		= 24,
+	.parent_clk 	= "pll_p", //"pll_d_out0",
+	//.depth	= 24,
 
 	.modes	 	= x3_panel_modes,
 	.n_modes 	= ARRAY_SIZE(x3_panel_modes),
@@ -668,9 +669,11 @@ static struct platform_device *x3_gfx_devices[] __initdata = {
 #endif
 };
 
+#if 0
 static struct platform_device *x3_bl_devices[]  = {
 	&x3_disp1_backlight_device,
 };
+#endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 /* put early_suspend/late_resume handlers here for the display in order
@@ -678,7 +681,7 @@ static struct platform_device *x3_bl_devices[]  = {
  */
 struct early_suspend x3_panel_early_suspender;
 
-static struct rgb_bridge_gpio {
+struct rgb_bridge_gpio {
 	char *name;
 	int gpio;
 };

@@ -1067,7 +1067,7 @@ static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
 	void *dummy)
 {
 #ifdef CONFIG_MACH_X3
-	printk("%s start [%d]\n", __func__, event);  // for debug
+	printk("%s start [%lu]\n", __func__, event);  // for debug
 #endif
 	mutex_lock(&tegra_cpu_lock);
 	if (event == PM_SUSPEND_PREPARE) {

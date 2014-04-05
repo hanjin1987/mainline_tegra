@@ -457,7 +457,7 @@ static struct notifier_block min_cpus_notifier = {
 };
 
 #ifdef CONFIG_MACH_X3
-int tegra_get_threads_count_hotplug_control()
+int tegra_get_threads_count_hotplug_control(void)
 {	
 	return threads_count_hotplug_control_enable;
 }

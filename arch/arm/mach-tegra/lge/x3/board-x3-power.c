@@ -1168,8 +1168,7 @@ int __init x3_power_late_init(void)
 	int irq;
 	int ret;
 
-	if(is_tegra_bootmode())
-	{
+	if (is_tegra_bootmode()) {
 		irq = max7763_pdata.irq_base + MAX77663_IRQ_ONOFF_HRDPOWRN;
 		ret = request_threaded_irq(irq , NULL, max77663_irq_manualreset_warning,
 				IRQF_ONESHOT, "MAX77663_IRQ_ONOFF_HRDPOWRN",
@@ -1230,6 +1229,8 @@ out_free_device:
 		input_free_device(max77663_pwrkey);
 
 	return ret;
+#else
+	return 0;
 #endif
 }
 late_initcall(x3_power_late_init);

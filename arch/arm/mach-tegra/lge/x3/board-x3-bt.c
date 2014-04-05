@@ -46,14 +46,12 @@
 #include <mach-tegra/devices.h>
 #include <mach-tegra/gpio-names.h>
 
-//                                                 
 #ifdef CONFIG_BCM4330_RFKILL
 #include <linux/lbee9qmb-rfkill.h>
 
 #define GPIO_BT_RESET		TEGRA_GPIO_PCC5
 #define GPIO_BT_WAKE		TEGRA_GPIO_PS3
 #define GPIO_BT_HOSTWAKE	TEGRA_GPIO_PS4
-
 
 static struct lbee9qmb_platform_data lbee9qmb_platform = {
 	.gpio_reset = GPIO_BT_RESET,
@@ -66,31 +64,31 @@ static struct lbee9qmb_platform_data lbee9qmb_platform = {
 	.active_low = 0, /* 0: active high, 1: active low */
 	.delay = 100,
 };
+
 static struct platform_device lbee9qmb_device = {
-    .name = "lbee9qmb-rfkill",
-    .dev = {
-        .platform_data = &lbee9qmb_platform,
-    },
+	.name = "lbee9qmb-rfkill",
+	.dev = {
+		.platform_data = &lbee9qmb_platform,
+	},
 };
 
 void x3_bt_rfkill(void)
 {
-    tegra_gpio_enable(GPIO_BT_RESET);
-    printk(KERN_DEBUG "%s : tegra_gpio_enable(reset) [%d]", __func__, GPIO_BT_RESET);
-    tegra_gpio_enable(GPIO_BT_WAKE);
-    printk(KERN_DEBUG "%s : tegra_gpio_enable(btwake) [%d]", __func__, GPIO_BT_WAKE);
-    tegra_gpio_enable(GPIO_BT_HOSTWAKE);
-    printk(KERN_DEBUG "%s : tegra_gpio_enable(hostwake) [%d]", __func__, GPIO_BT_HOSTWAKE);
+	tegra_gpio_enable(GPIO_BT_RESET);
+	printk(KERN_DEBUG "%s : tegra_gpio_enable(reset) [%d]", __func__, GPIO_BT_RESET);
+	tegra_gpio_enable(GPIO_BT_WAKE);
+	printk(KERN_DEBUG "%s : tegra_gpio_enable(btwake) [%d]", __func__, GPIO_BT_WAKE);
+	tegra_gpio_enable(GPIO_BT_HOSTWAKE);
+	printk(KERN_DEBUG "%s : tegra_gpio_enable(hostwake) [%d]", __func__, GPIO_BT_HOSTWAKE);
 
-    if (platform_device_register(&lbee9qmb_device))
-        printk(KERN_DEBUG "%s: lbee9qmb_device registration failed \n", __func__);
+	if (platform_device_register(&lbee9qmb_device))
+		printk(KERN_DEBUG "%s: lbee9qmb_device registration failed \n", __func__);
 	else
-        printk(KERN_DEBUG "%s: lbee9qmb_device registration OK \n", __func__);
-		
-    return;
+		printk(KERN_DEBUG "%s: lbee9qmb_device registration OK \n", __func__);
+
+	return;
 }
 #endif /* CONFIG_BCM4330_RFKILL */
-//                                                 
 
 void __init x3_setup_bluesleep(void)
 {
@@ -111,17 +109,17 @@ void __init x3_setup_bluesleep(void)
 
 	res[0].name   = "gpio_host_wake";
 	res[0].start  = TEGRA_GPIO_PS4;
-	res[0].end	  = TEGRA_GPIO_PS4;
+	res[0].end    = TEGRA_GPIO_PS4;
 	res[0].flags  = IORESOURCE_IO;
 
 	res[1].name   = "gpio_ext_wake";
 	res[1].start  = TEGRA_GPIO_PS3;
-	res[1].end	  = TEGRA_GPIO_PS3;
+	res[1].end    = TEGRA_GPIO_PS3;
 	res[1].flags  = IORESOURCE_IO;
 
 	res[2].name   = "host_wake";
 	res[2].start  = gpio_to_irq(TEGRA_GPIO_PS4);
-	res[2].end	  = gpio_to_irq(TEGRA_GPIO_PS4);
+	res[2].end    = gpio_to_irq(TEGRA_GPIO_PS4);
 	res[2].flags  = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHEDGE ;
 
 	if (platform_device_add_resources(pdev, res, 3)) {

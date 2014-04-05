@@ -44,76 +44,73 @@
 
 int lge_nvdata_raw_read(int offset, char* buf, int size)
 {
-	if(size == 0) return 0;
-
 	int h_file = 0;
 	int ret = 0;
-	mm_segment_t oldfs = get_fs();
+	mm_segment_t oldfs;
+
+	if (size == 0)
+		return 0;
+
+	oldfs = get_fs();
 	set_fs(KERNEL_DS);
 	h_file = sys_open(LGE_NVDATA_PARTITION, O_RDWR,0);
 
-	if(h_file >= 0)
-	{
+	if (h_file >= 0) {
 		printk("read NV size = %d, offset = %d\n",size, offset);	
-		sys_lseek( h_file, offset, 0 );
+		sys_lseek(h_file, offset, 0);
 
-		ret = sys_read( h_file, buf, size);
+		ret = sys_read(h_file, buf, size);
 		
 		printk("read NV ret = %d\n",ret);	
 		
-		if( ret != size )
-		{
-			printk("Can't read  NVDATA.\n");
+		if (ret != size ) {
+			printk("Can't read NVDATA.\n");
 			return ret;
 		}
 
 		sys_close(h_file);
-	}
-	else
-	{
+	} else {
 		printk("Can't open  nvdata partition handle = %d.\n",h_file);
 		return 0;
 	}
+
 	set_fs(oldfs);
 	if (size > 1)
 	       printk("read NV offset = %d, message = %s(%x)[%d]\n", offset, buf, *buf, *buf);
 	else	
-       	printk("read NV offset = %d, message = %x[%d]\n", offset, *buf, *buf);
+	       	printk("read NV offset = %d, message = %x[%d]\n", offset, *buf, *buf);
 	   
 	return size;
 }
 
 int lge_nvdata_raw_write(int offset, char* buf, int size)
-
 {
-	if(size == 0) return 0;
-
 	int h_file = 0;
 	int ret = 0;
+	mm_segment_t oldfs;
 
-	mm_segment_t oldfs = get_fs();
+	if (size == 0)
+		return 0;
+
+	oldfs = get_fs();
 	set_fs(KERNEL_DS);
 	h_file = sys_open(LGE_NVDATA_PARTITION, O_RDWR,0);
 
-	if(h_file >= 0)
-	{
+	if (h_file >= 0) {
 		printk("write NV size = %d, offset = %d\n",size, offset);	
-		sys_lseek( h_file, offset, 0 );
+		sys_lseek(h_file, offset, 0);
 
-		ret = sys_write( h_file, buf, size);
+		ret = sys_write(h_file, buf, size);
 		
 		printk("write NV ret = %d\n",ret);	
 		
-		if( ret != size )
-		{
-			printk("Can't write  NVDATA.\n");
+		if (ret != size) {
+			printk("Can't write NVDATA.\n");
 			return ret;
 		}
 
 		sys_close(h_file);
-	}
-	else
-	{
+	} else {
 		printk("Can't open  NVDATA partition handle = %d.\n",h_file);
 		return 0;
 	}
@@ -122,28 +119,25 @@ int lge_nvdata_raw_write(int offset, char* buf, int size)
 	sys_sync();
 	
 	if (size > 1)
-       	printk("write NV offset = %d, message = %s(%x)[%d]\n", offset, buf, *buf, *buf);
+       		printk("write NV offset = %d, message = %s(%x)[%d]\n", offset, buf, *buf, *buf);
 	else
-	       printk("write NV offset = %d, message = %x[%d]\n", offset, *buf, *buf);
+		printk("write NV offset = %d, message = %x[%d]\n", offset, *buf, *buf);
 	   
 	return size;
 }
 
 int lge_nvdata_read(lge_nvdata_offset offset, char* buf, int size)
 {
-	printk("start lge_nvdata_read .\n");
-	int pos = (int)offset ;
-	return lge_nvdata_raw_read(pos,buf,size);
+	printk("start lge_nvdata_read\n");
+	return lge_nvdata_raw_read((int)offset, buf, size);
 }
 
 int lge_nvdata_write(lge_nvdata_offset offset, char* buf, int size)
 {
-	printk("start lge_nvdata_write .\n");
-	int pos = (int)offset;
-	return lge_nvdata_raw_write(pos,buf,size);
+	printk("start lge_nvdata_write\n");
+	return lge_nvdata_raw_write((int)offset, buf, size);
 }
 
-
-void lge_clean_nvdata_partition()
+void lge_clean_nvdata_partition(void)
 {
 }

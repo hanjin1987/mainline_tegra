@@ -47,32 +47,30 @@
 #include <mach-tegra/devices.h>
 #include <mach-tegra/gpio-names.h>
 
-
-#if defined( LGE_SENSOR_GYROSCOPE)
+#if defined(LGE_SENSOR_GYROSCOPE)
 #include <linux/k3g.h>
 #endif
 
-#if defined( LGE_SENSOR_DCOMPASS)
+#if defined(LGE_SENSOR_DCOMPASS)
 #include <linux/ami306.h>
 #endif
 
-#if defined (LGE_SENSOR_ACCELEROMETER)
+#if defined(LGE_SENSOR_ACCELEROMETER)
 #include <linux/k3dh.h>
 #endif
 
-#if defined (CONFIG_SENSORS_APDS990X)
+#if defined(CONFIG_SENSORS_APDS990X)
 #include <linux/apds990x.h> 
 #endif
 
-#if defined (CONFIG_TOUCHSCREEN_SYNAPTICS_T1320)	
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_T1320)	
 struct synaptics_i2c_rmi_platform_data synaptics_platform_data[] = {
 	{
 		.version	= 0x0,
 		.irqflags	= IRQF_TRIGGER_FALLING,
 	}
 };
-#elif defined(CONFIG_TOUCHSCREEN_SYNAPTICS_T1320_HD) 
-
+#elif defined(CONFIG_TOUCHSCREEN_SYNAPTICS_T1320_HD)
 static int synaptics_t1320_gpio_init(void)
 {
 	int ret = 0;
@@ -156,7 +154,6 @@ struct synaptics_ts_platform_data synaptics_platform_data = {
 	.delta_pos_threshold	= 0,
 };
 #elif defined(CONFIG_TOUCHSCREEN_SYNAPTICS_T3000)
-
 struct p940_synaptics_platform_data {
 	u32 gpio;
 	u32 reset;
@@ -169,14 +166,11 @@ static int touch_3_3v = TEGRA_GPIO_PD3;
 int touch_power_control(int on)
 {
 	printk("==>synaptics_t3000_power_on =%d",on);
-	if(on)
-	{
+	if (on) {
 		//gpio_set_value(TEGRA_GPIO_PC6,1);
 		//mdelay(20);
 		gpio_set_value(touch_3_3v,1);	
-	}
-	else
-	{
+	} else {
 		gpio_set_value(touch_3_3v,0);
 		//mdelay(20);
 		//gpio_set_value(TEGRA_GPIO_PC6,0);
@@ -187,14 +181,11 @@ int touch_power_control(int on)
 
 static struct p940_synaptics_platform_data synaptics_t3000_platform_data = {
 	.gpio		= TEGRA_GPIO_PQ3,
-	.reset		= TEGRA_GPIO_PV6,//OMAP4_GPIO_TOUCH_RESET,
+	.reset		= TEGRA_GPIO_PV6, //OMAP4_GPIO_TOUCH_RESET,
 	.irqflags	= IRQF_TRIGGER_FALLING,
 	.power		= &touch_power_control,
 };
-
-//                                                           
 #elif defined (CONFIG_TOUCHSCREEN_SYNAPTICS_COMMON)
-
 static int touch_1V8_en = TEGRA_GPIO_PX4;
 static int touch_3V0_en = TEGRA_GPIO_PQ1;
 
@@ -218,17 +209,14 @@ int touch_power_control(int on)
 	return 1;
 }
 
-int touch_power_init(void)
+int touch_power_init(int on)
 {
 	int ret = 0;
 
-	if(x3_get_hw_rev_pcb_version() > hw_rev_pcb_type_C)
-	{
+	if (x3_get_hw_rev_pcb_version() > hw_rev_pcb_type_C) {
 		touch_1V8_en = TEGRA_GPIO_PX4;
 		touch_3V0_en = TEGRA_GPIO_PQ1;		
-	}
-	else
-	{
+	} else {
 		touch_1V8_en = TEGRA_GPIO_PX4;
 		touch_3V0_en = TEGRA_GPIO_PD3;
 	}
@@ -273,38 +261,37 @@ failed_first:
 }
 
 struct touch_device_caps touch_caps = {
-	.button_support 		= 1,
-	.number_of_button 		= 3,
-	.button_name 			= {KEY_BACK,KEY_HOME,KEY_MENU},
-	.button_margin 			= 10,
+	.button_support 	= 1,
+	.number_of_button 	= 3,
+	.button_name 		= {KEY_BACK, KEY_HOME, KEY_MENU},
+	.button_margin 		= 10,
 	.is_width_supported 	= 1,
 	.is_pressure_supported 	= 1,
-	.is_id_supported		= 1,
-	.max_width 				= 15,
-	.max_pressure 			= 0xFF,
-	.max_id					= 10,
-	.lcd_x					= 720,
-	.lcd_y					= 1280,
-	.x_max					= 1440,//1100,
-	.y_max					= 2780,//1900,
-
+	.is_id_supported	= 1,
+	.max_width 		= 15,
+	.max_pressure 		= 0xFF,
+	.max_id			= 10,
+	.lcd_x			= 720,
+	.lcd_y			= 1280,
+	.x_max			= 1440, //1100,
+	.y_max			= 2780, //1900,
 };
 
 struct touch_operation_role touch_role = {
 	.operation_mode 	= INTERRUPT_MODE,
-	.key_type			= TOUCH_SOFT_KEY, /* rev.a : hard_key, rev.b : soft_key */
-	.report_mode			= 0,
+	.key_type		= TOUCH_SOFT_KEY, /* rev.a : hard_key, rev.b : soft_key */
+	.report_mode		= 0,
 	.delta_pos_threshold 	= 0,
 	.orientation 		= 0,
-	.booting_delay 			= 200,
+	.booting_delay 		= 200,
 	.reset_delay		= 20,
 	.report_period		= 10000000, 	/* 12.5 msec -> 10.0 msec(X3) */
 	.suspend_pwr		= POWER_OFF,
 	.resume_pwr		= POWER_ON,
 	.jitter_filter_enable	= 1,
-	.jitter_curr_ratio		= 28,
+	.jitter_curr_ratio	= 28,
 	.accuracy_filter_enable	= 1,
-	.irqflags 				= IRQF_TRIGGER_FALLING,
+	.irqflags 		= IRQF_TRIGGER_FALLING,
 };
 
 struct touch_power_module touch_pwr = {
@@ -325,19 +312,15 @@ struct touch_platform_data  synaptics_pdata = {
 };
 #endif
 
-//                                                                
 #if defined(CONFIG_SENSORS_APDS990X)
-
 static int prox_ldo_en = TEGRA_GPIO_PX1;
-
-uint32_t prox_pwr_mask = 0; //don't need but
+uint32_t prox_pwr_mask = 0; // don't need but
 
 static s32 x3_apds990x_power_init(void)
 {
         s32 ret = 0;
 
-	switch(x3_get_hw_rev_pcb_version())
-	{
+	switch (x3_get_hw_rev_pcb_version()) {
 	case hw_rev_pcb_type_B :
 	case hw_rev_pcb_type_C :
 		prox_ldo_en = TEGRA_GPIO_PD4;
@@ -350,7 +333,7 @@ static s32 x3_apds990x_power_init(void)
 		break;
 	}
 		
-	printk(KERN_INFO"%s start!![%d][%d] \n",__func__,__LINE__, prox_ldo_en);
+	printk(KERN_INFO "%s start!![%d][%d] \n", __func__, __LINE__, prox_ldo_en);
 	//PROX  LDO Enable : 2.6V & 1.8V
         tegra_gpio_enable(prox_ldo_en);
         ret = gpio_request(prox_ldo_en, "PROX_LDO_EN");
@@ -372,6 +355,8 @@ static s32 x3_apds990x_power_init(void)
 	printk(KERN_DEBUG "PROX_Sensor[3] : Proximity LDO Enable before toggle "
 		"at BOARD: %d, Line[%d]\n", 
 	gpio_get_value(prox_ldo_en), __LINE__);
+
+	return ret;
 }
 
 /*
@@ -384,13 +369,14 @@ int sensor_proximity_power_set(unsigned char onoff)
 	return 0;	
 }
 */
+
 static int prox_common_power_set(unsigned char onoff, int sensor)
 {
 //	int ret = -EINVAL;
 
 	gpio_set_value(prox_ldo_en,onoff);
 	
-	printk(" prox_common_power_set : %d, Line[%d]\n",	gpio_get_value(prox_ldo_en),__LINE__);
+	printk(" prox_common_power_set : %d, Line[%d]\n", gpio_get_value(prox_ldo_en), __LINE__);
 
 	if (onoff)
 		prox_pwr_mask |= sensor;
@@ -402,21 +388,20 @@ static int prox_common_power_set(unsigned char onoff, int sensor)
 
 int prox_power_on(int sensor)
 {
-    int ret = 0;
-	ret = prox_common_power_set(1, sensor);
+	int ret = prox_common_power_set(1, sensor);
 	return ret;
 }
+
 int prox_power_off(int sensor)
 {
-    int ret = 0;
-	ret = prox_common_power_set(0, sensor);
+	int ret = prox_common_power_set(0, sensor);
 	return ret;	
 }
 
 static s32 x3_apds990x_irq_set(void)
 {
 	s32 ret = 0;
-	printk(KERN_INFO"[SENSOR-APDS] %s start(%d, %d)!!!!![%d] \n",__func__, TEGRA_GPIO_PK2, TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PK2), __LINE__);
+	printk(KERN_INFO"[SENSOR-APDS] %s start(%d, %d)!!!!![%d]\n",__func__, TEGRA_GPIO_PK2, TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PK2), __LINE__);
 
 	//PROX INT
         tegra_gpio_enable(TEGRA_GPIO_PK2);
@@ -427,17 +412,18 @@ static s32 x3_apds990x_irq_set(void)
                 printk("Sensor[1] : Fail to request Proximity INT enabling\n");
                 return ret;
         }
-        ret=gpio_direction_input(TEGRA_GPIO_PK2);
+
+        ret = gpio_direction_input(TEGRA_GPIO_PK2);
         if (ret < 0)
         {
                 printk("Sensor[2] : Fail to request Proximity INT enabling\n");
                 gpio_free(TEGRA_GPIO_PK2);
                 return ret;
         }
-}
 
-#endif  
-//                                                                                 
+	return ret;
+}
+#endif
 
 struct lge_sensor_int_gpio{
 	s16 num;
@@ -445,12 +431,7 @@ struct lge_sensor_int_gpio{
 	//unsigned config;
 };
 
-
-
-
-
 #if defined(MPU_SENSORS_MPU6050B1)
-
 static int sensors_ldo_en = TEGRA_GPIO_PD0;
 
 static s32 x3_mpuirq_init(void)
@@ -458,55 +439,48 @@ static s32 x3_mpuirq_init(void)
 	s32 ret = 0;
 
 //SENSOR_LDO_EN pin Enable for GYRO 3.0V
+	if (x3_get_hw_rev_pcb_version() < hw_rev_pcb_type_D) {
+		tegra_gpio_enable(sensors_ldo_en);
 
-	if(x3_get_hw_rev_pcb_version() < hw_rev_pcb_type_D)
-	{
-	tegra_gpio_enable(sensors_ldo_en);
+		ret = gpio_request(sensors_ldo_en, "SENSOR_LDO_EN");
+		if (ret < 0) {
+			printk("Sensor[1] : Fail to request Sensor LDO enabling\n");
+			return ret;
+		}
 
-	ret = gpio_request(sensors_ldo_en, "SENSOR_LDO_EN");
-	if (ret < 0)
-	{
-		printk("Sensor[1] : Fail to request Sensor LDO enabling\n");
-		return ret;
-	}
-
-	ret=gpio_direction_output(sensors_ldo_en, 1);
-	if (ret < 0)
-	{
-		printk("Sensor[2] : Fail to direct Sensor LDO enabling\n");
-		gpio_free(sensors_ldo_en);
-		return ret;
-	}		
+		ret = gpio_direction_output(sensors_ldo_en, 1);
+		if (ret < 0) {
+			printk("Sensor[2] : Fail to direct Sensor LDO enabling\n");
+			gpio_free(sensors_ldo_en);
+			return ret;
+		}		
 	
-	gpio_set_value(sensors_ldo_en,1);		//on
-	printk(" mpu-- Sensor_DEBUG[3]: Sensor LDO Enable before toggle at BOARD: %d, Line[%d]\n", gpio_get_value(sensors_ldo_en),__LINE__);
+		gpio_set_value(sensors_ldo_en, 1); // on
+		printk("mpu-- Sensor_DEBUG[3]: Sensor LDO Enable before toggle at BOARD: %d, Line[%d]\n",
+			gpio_get_value(sensors_ldo_en), __LINE__);
 	}
 
 //SENSOR INT
 	tegra_gpio_enable(TEGRA_GPIO_PH4);
 
 	ret = gpio_request(TEGRA_GPIO_PH4, "SENSOR_INT");
-	if (ret < 0)
-	{
+	if (ret < 0) {
 		printk("Sensor : Fail to request MOTION INT enabling\n");
 		return ret;
 	}
 
-	ret=gpio_direction_input(TEGRA_GPIO_PH4);
-	if (ret < 0)
-	{
+	ret = gpio_direction_input(TEGRA_GPIO_PH4);
+	if (ret < 0) {
 		printk("Sensor : Fail to request MOTION INT enabling\n");
 		gpio_free(TEGRA_GPIO_PH4);
 		return ret;
 	}
 
+	return ret;
 }
+#endif  // MPU_SENSORS_MPU6050B1
 
-#endif  //MPU_SENSORS_MPU6050B1
-
-//                                                       
 #if defined (CONFIG_SENSORS_APDS990X)
-
 struct apds990x_proximity_platform_data x3_prox_data = {
         .gpio		= TEGRA_GPIO_PK2,
       	.irq		= TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PK2),
@@ -516,9 +490,8 @@ struct apds990x_proximity_platform_data x3_prox_data = {
 };
 #endif
 
-//for Sensor of Rev.D Power Board
+// for Sensor of Rev.D Power Board
 #if defined(MPU_SENSORS_MPU6050B1)
-
 #include <linux/mpu.h> 
 
 struct mpu_platform_data mpu6050_data = {
@@ -527,7 +500,6 @@ struct mpu_platform_data mpu6050_data = {
         .orientation     = {  0,  1,  0,
                               -1,  0,  0,
                               0,  0, 1},
-
 };
 
 /* accel */
@@ -539,7 +511,7 @@ struct ext_slave_platform_data inv_mpu6050_accel_data = {
                                       -1,  0,  0,
                                       0,  0, 1 },
 };
-*/  //include in mpu6050
+*/  // included in mpu6050
 
 /* compass */
 struct ext_slave_platform_data mpu_compass_data = {
@@ -550,30 +522,18 @@ struct ext_slave_platform_data mpu_compass_data = {
                                       0,  1,  0,
                                       0,  0,  1},
 };
-
-//for Sensor of Rev.D Power Board
-
+// for Sensor of Rev.D Power Board END
 #endif
-
-
-
-
-
 
 int __init x3_sensor_input_init(void)
 {
-
 #ifdef MPU_SENSORS_MPU6050B1
 	x3_mpuirq_init();
 #endif
-		
-
 #ifdef CONFIG_SENSORS_APDS990X
 	x3_apds990x_power_init();
 	x3_apds990x_irq_set();
-#endif	
+#endif
 
+	return 0;
 }
-	
-
-//                                                                               

@@ -26,9 +26,8 @@
 
 #define USB_PRODUCT_ID_DEFAULT	0x61fc
 #define USB_PRODUCT_ID_RNDIS	0x61fc
-#define USB_VENDOR_ID			0x1004
-#endif//
-
+#define USB_VENDOR_ID		0x1004
+#endif
 
 extern struct platform_device tegra_usb_fsg_device;
 extern struct platform_device androidusb_device;

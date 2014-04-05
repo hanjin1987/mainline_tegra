@@ -50,6 +50,6 @@ obj-$(CONFIG_MACH_X3)				+= board-x3-baseband.o
 
 obj-$(CONFIG_MACH_X3)				+= board-x3-pinmux.o
 
-obj-$(CONFIG_REBOOT_MONITOR)		+= board-x3-reboot.o
+obj-$(CONFIG_REBOOT_MONITOR)			+= board-x3-reboot.o
 
-obj-$(CONFIG_MACH_X3)		+= board-x3-nv.o
+obj-$(CONFIG_MACH_X3)				+= board-x3-nv.o

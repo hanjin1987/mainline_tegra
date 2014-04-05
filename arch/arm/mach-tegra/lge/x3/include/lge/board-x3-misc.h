@@ -23,22 +23,22 @@
 #define MUIC_GPIO	TEGRA_GPIO_PJ0 //TEGRA_GPIO_PX6
 #endif
 
-#if defined(CONFIG_MAX8971_CHARGER)	//                                       
-//#define	MAX8971_SLAVE_ADDR	0x6A
-#define	MAX8971_SLAVE_ADDR	0x35
-#define	MAX8971_IRQB		TEGRA_GPIO_PJ2
-#endif	//                                      
-
-#if defined(CONFIG_BATTERY_MAX17043)	//                                        
-#define	MAX17043_SLAVE_ADDR	0x36
-#define MAX17043_GAUGE_INT	TEGRA_GPIO_PS0
-#endif	//                                  
-
-#if defined(CONFIG_ADC_TSC2007) //                              
-#define TSC2007_ADC_SLAVE_ADDR			0x48
+#if defined(CONFIG_MAX8971_CHARGER)
+//#define MAX8971_SLAVE_ADDR	0x6A
+#define MAX8971_SLAVE_ADDR	0x35
+#define MAX8971_IRQB		TEGRA_GPIO_PJ2
 #endif
 
-#if defined(CONFIG_BACKLIGHT_LM353X) //YJChae 
+#if defined(CONFIG_BATTERY_MAX17043)
+#define	MAX17043_SLAVE_ADDR	0x36
+#define MAX17043_GAUGE_INT	TEGRA_GPIO_PS0
+#endif
+
+#if defined(CONFIG_ADC_TSC2007)
+#define TSC2007_ADC_SLAVE_ADDR	0x48
+#endif
+
+#if defined(CONFIG_BACKLIGHT_LM353X) // YJChae
 extern struct lm3533_bl_platform_data lm3533_pdata;
 #endif
 

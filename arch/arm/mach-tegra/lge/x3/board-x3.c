@@ -233,11 +233,13 @@ static __initdata struct tegra_clk_init_table x3_clk_i2s2_table[] = {
 	{ NULL,		NULL,		0,		0},
 };
 
+#if 0
 static __initdata struct tegra_clk_init_table x3_clk_i2s4_table[] = {
 	/* name		parent		rate		enabled */
 	{ "i2s4",	"pll_a_out0",	0,		false},
 	{ NULL,		NULL,		0,		0},
 };
+#endif
 
 #if defined(CONFIG_BD_ADDRESS)
 static struct platform_device bd_address_device = {
@@ -360,30 +362,28 @@ static struct platform_device tegra_camera = {
 	.id = -1,
 };
 
+#if 0
 static struct resource ram_console_resources[] = {
 	{
 		.flags = IORESOURCE_MEM,
 	},
 };
 
-/*
 static struct platform_device ram_console_device = {
 	.name 		= "ram_console",
 	.id 		= -1,
 	.num_resources	= ARRAY_SIZE(ram_console_resources),
 	.resource	= ram_console_resources,
 };
-*/
-//                                              
+#endif
+
 #if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_MHI_NETDEV)
 struct platform_device mhi_netdevice0 = {
   .name = "mhi_net_device",
   .id = 0,
 };
 #endif /* CONFIG_MHI_NETDEV */
-//                                              
 
-//                                              
 struct platform_device hsic_netdevice0 = {
   .name = "hsic_net_device",
   .id = 0,
@@ -395,8 +395,7 @@ struct platform_device modem_boot_hsic0 = {
   .name = "modem_boot_hsic",
   .id = 0,
 };
-#endif	
-//                                              
+#endif
 
 #if defined( CONFIG_USB_ANDROID_CDC_ECM) 
 static struct usb_ether_platform_data ecm_pdata = {

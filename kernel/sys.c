@@ -413,6 +413,7 @@ void kernel_restart(char *cmd)
 }
 EXPORT_SYMBOL_GPL(kernel_restart);
 
+#if !defined(CONFIG_MACH_X3)
 static void kernel_shutdown_prepare(enum system_states state)
 {
 	blocking_notifier_call_chain(&reboot_notifier_list,
@@ -421,6 +422,8 @@ static void kernel_shutdown_prepare(enum system_states state)
 	usermodehelper_disable();
 	device_shutdown();
 }
+#endif
+
 /**
  *	kernel_halt - halt the system
  *

@@ -185,6 +185,7 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 		syscore_resume();
 #ifdef CONFIG_MACH_X3
 		sleepEnter = 1;
+#endif
 	}
 
 	arch_suspend_enable_irqs();

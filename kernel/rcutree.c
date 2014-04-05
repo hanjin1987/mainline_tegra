@@ -595,8 +595,8 @@ static void print_cpu_stall(struct rcu_state *rsp)
 	 * RCU CPU stall warnings.
 	 */
 #ifdef CONFIG_MACH_X3
-	printk(KERN_ERR "INFO: %s detected stall on CPU %d (t=%lu jiffies %lu ms)\n",
-	       rsp->name, smp_processor_id(), jiffies - rsp->gp_start, jiffies_to_msecs(jiffies - rsp->gp_start) );
+	printk(KERN_ERR "INFO: %s detected stall on CPU %d (t=%lu jiffies %u ms)\n",
+	       rsp->name, smp_processor_id(), jiffies - rsp->gp_start, jiffies_to_msecs(jiffies - rsp->gp_start));
 
 	panic("need to reset because of detecting stall on CPU\n");
 	//trigger_all_cpu_backtrace();

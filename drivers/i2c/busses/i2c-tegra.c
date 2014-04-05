@@ -478,7 +478,16 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
 	u32 val;
 	int err = 0;
 
+	if (!i2c_dev->is_clkon_always)
 	tegra_i2c_clock_enable(i2c_dev);
+
+#ifdef CONFIG_MACH_LGE
+	/* Interrupt generated before sending stop signal so
+	* wait for some time so that stop signal can be send proerly */
+//	dev_err(i2c_dev->dev,
+//		"i2c-time check, err \n");
+	mdelay(1);
+#endif
 
 	tegra_periph_reset_assert(i2c_dev->div_clk);
 	udelay(2);
@@ -513,6 +522,7 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
 	if (tegra_i2c_flush_fifos(i2c_dev))
 		err = -ETIMEDOUT;
 
+	if (!i2c_dev->is_clkon_always)
 	tegra_i2c_clock_disable(i2c_dev);
 
 	if (i2c_dev->irq_disabled) {
@@ -815,6 +825,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
 	i2c_dev->msgs_num = num;
 
 	pm_runtime_get_sync(&adap->dev);
+	if (!i2c_dev->is_clkon_always)
 	tegra_i2c_clock_enable(i2c_dev);
 
 	for (i = 0; i < num; i++) {
@@ -830,6 +841,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
 			break;
 	}
 
+	if (!i2c_dev->is_clkon_always)
 	tegra_i2c_clock_disable(i2c_dev);
 	pm_runtime_put(&adap->dev);
 
@@ -1070,7 +1082,7 @@ static int tegra_i2c_suspend_noirq(struct device *dev)
 	rt_mutex_lock(&i2c_dev->dev_lock);
 
 	i2c_dev->is_suspended = true;
-	if (i2c_dev->is_clkon_always)
+//	if (i2c_dev->is_clkon_always)
 		tegra_i2c_clock_disable(i2c_dev);
 
 	rt_mutex_unlock(&i2c_dev->dev_lock);

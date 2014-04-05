@@ -451,6 +451,9 @@ int input_grab_device(struct input_handle *handle)
 	}
 
 	rcu_assign_pointer(dev->grab, handle);
+#ifdef CONFIG_MACH_LGE
+	synchronize_rcu(); // ICS
+#endif
 
  out:
 	mutex_unlock(&dev->mutex);

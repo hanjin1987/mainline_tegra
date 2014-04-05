@@ -122,7 +122,7 @@ static bool CP_initiated_L2toL0;
 static bool modem_power_on;
 static int power_onoff;
 //To_Ril-recovery Nvidia_Patch_20111226 [Start]
-static unsigned long XYZ = 4500 * 1000000 + 800 * 1000 + 500;
+//static unsigned long XYZ = 4500 * 1000000 + 800 * 1000 + 500;
 static int enum_repeat = ENUM_REPEAT_TRY_CNT;
 //To_Ril-recovery Nvidia_Patch_20111226 [End]
 
@@ -136,7 +136,7 @@ static DEFINE_MUTEX(xmm_onoff_mutex);
 
 static struct workqueue_struct *workqueue_susp;
 static struct work_struct work_shortsusp, work_defaultsusp;
-static struct baseband_xmm_power_work_t *baseband_xmm_power_work_usb;
+//static struct baseband_xmm_power_work_t *baseband_xmm_power_work_usb;
 
 //Move place To_Ril-recovery Nvidia_Patch_20111226
 static struct baseband_xmm_power_work_t *baseband_xmm_power_work;
@@ -543,6 +543,7 @@ irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id)
 {
 	int value;
 	struct baseband_power_platform_data *data = baseband_power_driver_data;
+	struct usb_interface *intf;
 	
 	value = gpio_get_value(baseband_power_driver_data->modem.xmm.ipc_ap_wake);
 	pr_debug("%s g(%d), wake_st(%d)\n", __func__, value, ipc_ap_wake_state);
@@ -616,8 +617,7 @@ irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id)
 				pr_debug("GPIO [W]: Slave_wake -> 0 \n"); 
 			}
 			if (reenable_autosuspend && usbdev) {
-			      reenable_autosuspend = false;
-				struct usb_interface *intf;
+				reenable_autosuspend = false;
 				intf = usb_ifnum_to_if(usbdev, 0);
 				if (usb_autopm_get_interface_async(intf) >= 0) {
 					pr_info("get_interface_async succeeded"	" - call put_interface\n");
@@ -777,27 +777,24 @@ static void baseband_xmm_power_L2_resume_work(struct work_struct *work)
 	struct usb_interface *intf;
 
 	pr_debug("%s {\n", __func__);
-
 	l2_resume_work_done = false;
 
-	if (!usbdev)
-	{
-		pr_debug("usbdev = %d\n",usbdev);
+	if (!usbdev) {
+		pr_debug("usbdev = %p\n", usbdev);
 		return;
 	}
 
 	usb_lock_device(usbdev);
 	intf = usb_ifnum_to_if(usbdev, 0);
 
-	if(intf == NULL)
-	{
-		pr_debug("usb_ifnum_to_if's return vaule is NULL !! \n");
+	if (intf == NULL) {
+		pr_debug("usb_ifnum_to_if's return vaule is NULL!\n");
 	}
 	
 	if (usb_autopm_get_interface(intf) == 0)
 		usb_autopm_put_interface(intf);
-	usb_unlock_device(usbdev);
 
+	usb_unlock_device(usbdev);
 	l2_resume_work_done = true;
 
 	pr_debug("} %s\n", __func__);
@@ -858,7 +855,7 @@ static void baseband_xmm_power_flash_pm_ver_ge_1145_recovery
 {
 	int timeout_500ms = MODEM_ENUM_TIMEOUT_500MS;
 	int timeout_200ms = 0;
-	long err;
+	long err = 0;
 	
 	pr_info("%s {\n", __func__);
 
@@ -1101,7 +1098,6 @@ static int usb_xmm_notify(struct notifier_block *self, unsigned long action,void
 	return NOTIFY_OK;
 }
 
-
 static struct notifier_block usb_xmm_nb = {
 	.notifier_call = usb_xmm_notify,
 };
@@ -1154,10 +1150,10 @@ static int baseband_xmm_power_pm_notifier_event(struct notifier_block *this,
 	return NOTIFY_DONE;
 }
 
-static int baseband_xmm_shutdown_function()
+static void baseband_xmm_shutdown_function(void)
 {
 	disable_irq(gpio_to_irq(baseband_power_driver_data->modem.xmm.ipc_ap_wake));
-	if ( l2_resume_work_done ) {
+	if (l2_resume_work_done) {
 		flush_workqueue(workqueue_susp);
 		flush_workqueue(workqueue);
 	} else {
@@ -1170,7 +1166,6 @@ static int baseband_xmm_shutdown_function()
 	mdelay(20);
 }
 
-
 static struct notifier_block baseband_xmm_power_pm_notifier = {
 	.notifier_call = baseband_xmm_power_pm_notifier_event,
 };
@@ -1180,18 +1175,17 @@ static int baseband_xmm_reboot_notify(struct notifier_block *nb,
 {
 	pr_debug("%s\n", __func__);
 
-    switch (event) {
-    case SYS_RESTART:
-    case SYS_HALT:
-    case SYS_POWER_OFF:
-		{
+	switch (event) {
+		case SYS_RESTART:
+		case SYS_HALT:
+		case SYS_POWER_OFF: {
 			baseband_xmm_shutdown_function();
+			return NOTIFY_OK;
 		}
-	    return NOTIFY_OK;
-    }
-    return NOTIFY_DONE;
-}
+	}
 
+	return NOTIFY_DONE;
+}
 
 static struct notifier_block baseband_xmm_reboot_nb = {
 	.notifier_call = baseband_xmm_reboot_notify,
@@ -1386,13 +1380,11 @@ static int baseband_xmm_power_driver_remove(struct platform_device *device)
 	return 0;
 }
 
-static int baseband_xmm_power_driver_shutdown(struct platform_device *device)
+static void baseband_xmm_power_driver_shutdown(struct platform_device *device)
 {
 	pr_debug("%s\n", __func__);
 
 	baseband_xmm_shutdown_function();
-
-	return 0;
 }
 
 static int baseband_xmm_power_driver_handle_resume(
@@ -1509,26 +1501,26 @@ static struct platform_driver baseband_power_driver = {
 	.remove = baseband_xmm_power_driver_remove,
 	.shutdown = baseband_xmm_power_driver_shutdown,
 	.driver = {
-		       .name = "baseband_xmm_power",
+		.name = "baseband_xmm_power",
 #ifdef CONFIG_PM
-	           .pm   = &baseband_xmm_power_dev_pm_ops,
+		.pm   = &baseband_xmm_power_dev_pm_ops,
 #endif		
 	},
 };
 
 static int __init baseband_xmm_power_init(void)
 {
-	if(is_tegra_bootmode())
-	{
+	if (is_tegra_bootmode()) {
 		pr_debug("%s\n", __func__);
 		return platform_driver_register(&baseband_power_driver);
 	}
+
+	return 0;
 }
 
 static void __exit baseband_xmm_power_exit(void)
 {
-	if(is_tegra_bootmode())
-	{
+	if (is_tegra_bootmode()) {
 		pr_debug("%s\n", __func__);
 		platform_driver_unregister(&baseband_power_driver);
 	}

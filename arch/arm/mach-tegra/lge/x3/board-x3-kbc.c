@@ -81,7 +81,7 @@ static struct tegra_kbc_platform_data x3_kbc_platform_data = {
 		.debounce_interval = 1,	\
 	}
 
-#define PMC_WAKE_STATUS 0x14
+#define PMC_WAKE_STATUS 	0x14
 #define PMC_WAKE2_STATUS	0x168
 
 static inline u64 read_pmc_wake_status(void)
@@ -180,4 +180,3 @@ int __init x3_kbc_init(void)
 	pr_info("Registering successful tegra-kbc\n");
 	return 0;
 }
-

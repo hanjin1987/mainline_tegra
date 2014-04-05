@@ -13,5 +13,3 @@ static struct pn544_i2c_platform_data nfc_pdata = {
 	    	.irq = TEGRA_GPIO_TO_IRQ(NFC_GPIO_IRQ),			\
 	    	.platform_data = &nfc_pdata,				\
 	}
-
-

@@ -32,9 +32,9 @@
 struct gps_gpio_platform_data {
 	unsigned pwron;		/* PWR_ON GPIO */
 	unsigned reset_n;	/* RESET_N GPIO */
-//                                                        
-	unsigned eclk;      /* 26MHz_GPS_REF_EN GPIO */
-//                                                        
+
+	unsigned eclk;		/* 26MHz_GPS_REF_EN GPIO */
+
 #if defined(CONFIG_P940_GPS_LNA_SD_USE)
 	unsigned lna_sd;	/* LNA_SD GPIO */
 #endif

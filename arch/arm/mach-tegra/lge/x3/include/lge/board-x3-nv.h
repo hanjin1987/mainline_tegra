@@ -13,14 +13,14 @@
 #ifndef __MACH_TEGRA_X3_NV_H
 #define __MACH_TEGRA_X3_NV_H
 
-#define LGE_NVDATA_PARTITION			"/dev/block/platform/sdhci-tegra.3/by-name/NVA"
+#define LGE_NVDATA_PARTITION	"/dev/block/platform/sdhci-tegra.3/by-name/NVA"
 
-// If you chnanged lge_nvdata_offset,modify the following files.
+// If you changed lge_nvdata_offset, modify the following files:
 // android/kernel/arch/arm/mach-tegra/lge/x3/include/lge/board-x3-nv.h
 // android/bootable/recovery/lge_boot_utils.h
 // android/vendor/lge/tegra/core/system/fastboot/lge_boot/inc/lge_boot_utils.h
 
-typedef enum{
+typedef enum {
     /* Block 0 : 0 */
     LGE_NVDATA_IMEI_OFFSET = 8, // used size 40 bytes
     LGE_NVDATA_SWV_OFFSET = 48, // used size 128 bytes
@@ -36,7 +36,7 @@ typedef enum{
     LGE_NVDATA_FORCE_CRASH_OFFSET   = 516,  // used size 1 byte
     LGE_NVDATA_FACTORY_RESET_STATUS_OFFSET  = 518,  // used size 1 byte, for at%frst & at%frstatus
     LGE_NVDATA_FBOOT_OFFSET     = 520,  // used size 1 byte, for at%fboot
-        //                                                                                 
+
     LGE_NVDATA_CP_CRASH_COUNT_OFFSET = 523,  // used size 1 byte
     LGE_NVDATA_CIQ_NVDATA_RESET_OFFSET = 524, // used size 2 byte //RESET SIDE & CAUSE
     LGE_NVDATA_HARD_RESET_OFFSET = 526,
@@ -47,12 +47,12 @@ typedef enum{
     /* Block 2 :1024 */
     LGE_NVDATA_910K_DETECT_OFFSET   = 1024,  // used size 4 byte
 
-    /*Block 3 : 1536 */
-    /*Block 4 : 2048 */
+    /* Block 3 : 1536 */
+    /* Block 4 : 2048 */
     LGE_NVDATA_DEVICETEST_OFFSET    = 2052, //length 8     ==> move to static nvdata
     LGE_NVDATA_DEVICDTEST_DATE_OFFSET = 2060,//length 8  ==> move to static nvdata
 
-    /*Block 5 : 2560 */
+    /* Block 5 : 2560 */
     LGE_NVDATA_MUIC_RETENTION_OFFSET = 2560, // used size 1 byte
     LGE_NVDATA_SMPL_EN_OFFSET   = 2570, // used size 1 byte
     LGE_NVDATA_SMPL_COUNT_OFFSET    = 2572, // used size 4 byte
@@ -71,6 +71,7 @@ typedef enum{
 
     /* Block 9 : 4608 */
     LGE_NVDATA_QEM_OFFSET           = (4608+3), //length 4
+
     /* Please don't use following offset( 4864 to 4911 ) */
     LGE_NVDATA_ATKCAL_RED_OFFSET = 4865, // used size 1 byte, red for at%kcal
     LGE_NVDATA_ATKCAL_GREEN_OFFSET = 4881, // used size 1 byte, green for at%kcal
@@ -83,12 +84,12 @@ typedef enum{
     /* Block 11 : 5632 */
     /* Block 12 : 6144 */
     /* Block 13 : 6656 */
-}lge_nvdata_offset;
+} lge_nvdata_offset;
 
 // Value define for nv data
 #define LGE_NVDATA_RESET_CAUSE_VAL_USER_RESET	0x94
-#define LGE_NVDATA_RESET_CAUSE_VAL_AP_CRASH		0xDE
-#define LGE_NVDATA_RESET_CAUSE_VAL_CP_CRASH		0xAD
+#define LGE_NVDATA_RESET_CAUSE_VAL_AP_CRASH	0xDE
+#define LGE_NVDATA_RESET_CAUSE_VAL_CP_CRASH	0xAD
 #define LGE_NVDATA_RESET_CAUSE_FACTORY_RESET	0x46
 
 // WEB DOWNLOAD [START]

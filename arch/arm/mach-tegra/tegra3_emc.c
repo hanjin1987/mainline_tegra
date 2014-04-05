@@ -990,7 +990,7 @@ static int tegra_emc_suspend_notify(struct notifier_block *nb,
 				unsigned long event, void *data)
 {
 #if defined(CONFIG_MACH_LGE)
-	printk("%s start [%d]\n", __func__, event);  // for debug
+	printk("%s start [%lu]\n", __func__, event);  // for debug
 #endif
 
 	if (event != PM_SUSPEND_PREPARE)
@@ -1015,7 +1015,7 @@ static int tegra_emc_resume_notify(struct notifier_block *nb,
 				unsigned long event, void *data)
 {
 #if defined(CONFIG_MACH_LGE)
-	printk("%s start [%d]\n", __func__, event);  // for debug
+	printk("%s start [%lu]\n", __func__, event);  // for debug
 #endif
 
 	if (event != PM_POST_SUSPEND)

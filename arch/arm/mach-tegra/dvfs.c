@@ -586,7 +586,7 @@ static int tegra_dvfs_pm_notify(struct notifier_block *nb,
 				unsigned long event, void *data)
 {
 #ifdef CONFIG_MACH_X3
-	printk("%s start [%d]\n", __func__, event);  // for debug
+	printk("%s start [%lu]\n", __func__, event);  // for debug
 #endif
 
 	switch (event) {

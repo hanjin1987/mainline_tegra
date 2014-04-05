@@ -40,62 +40,61 @@
 #include <mach-tegra/devices.h>
 #include <mach-tegra/gpio-names.h>
 #include <mach-tegra/baseband-xmm-power.h>
-//                                         
+
 #if defined(CONFIG_MACH_PEGASUS)
-#include <mach/tegra-bb-power.h> //dalyong.cha
+#include <mach/tegra-bb-power.h> // dalyong.cha
 #endif	
-//                                         
 
-#define XMM6260_GPIO_BB_RST			MODEM_RESET
-#define XMM6260_GPIO_BB_ON			MODEM_PWR_ON
-#define XMM6260_GPIO_IPC_BB_WAKE		AP2CP_ACK1_SLAVE_WAKEUP
-#define XMM6260_GPIO_IPC_AP_WAKE		CP2AP_ACK2_HOST_WAKEUP
-#define XMM6260_GPIO_IPC_HSIC_ACTIVE		CP2AP_ACK1_HOST_ACTIVE
-#define XMM6260_GPIO_IPC_HSIC_SUS_REQ		AP2CP_ACK2_SUSPEND_REQ
+#define XMM6260_GPIO_BB_RST		MODEM_RESET
+#define XMM6260_GPIO_BB_ON		MODEM_PWR_ON
+#define XMM6260_GPIO_IPC_BB_WAKE	AP2CP_ACK1_SLAVE_WAKEUP
+#define XMM6260_GPIO_IPC_AP_WAKE	CP2AP_ACK2_HOST_WAKEUP
+#define XMM6260_GPIO_IPC_HSIC_ACTIVE	CP2AP_ACK1_HOST_ACTIVE
+#define XMM6260_GPIO_IPC_HSIC_SUS_REQ	AP2CP_ACK2_SUSPEND_REQ
 
-static int x3_usb_hsic_postsuspend(void);
-static int x3_usb_hsic_preresume(void);
-static int x3_usb_hsic_phy_ready(void);
-static int x3_usb_hsic_phy_off(void);
-
+static void x3_usb_hsic_postsuspend(void);
+static void x3_usb_hsic_preresume(void);
+static void x3_usb_hsic_phy_ready(void);
+static void x3_usb_hsic_phy_off(void);
 
 struct baseband_power_platform_data tegra_baseband_power_data = {
-	.baseband_type = BASEBAND_XMM,                               
-	.modem = {                                                       
-		.xmm = {                                             
-			.bb_rst = XMM6260_GPIO_BB_RST,                
-			.bb_on = XMM6260_GPIO_BB_ON,                    
-			.ipc_bb_wake = XMM6260_GPIO_IPC_BB_WAKE, 
-			.ipc_ap_wake = XMM6260_GPIO_IPC_AP_WAKE,          
-			.ipc_hsic_active = XMM6260_GPIO_IPC_HSIC_ACTIVE,     
-			.ipc_hsic_sus_req = XMM6260_GPIO_IPC_HSIC_SUS_REQ,    
-			.hsic_device = &tegra_ehci2_device,                   
-		},                                                       
-	},                                                               
-};                                                                      
+	.baseband_type = BASEBAND_XMM,
+	.modem = {
+		.xmm = {
+			.bb_rst = XMM6260_GPIO_BB_RST,
+			.bb_on = XMM6260_GPIO_BB_ON,
+			.ipc_bb_wake = XMM6260_GPIO_IPC_BB_WAKE,
+			.ipc_ap_wake = XMM6260_GPIO_IPC_AP_WAKE,
+			.ipc_hsic_active = XMM6260_GPIO_IPC_HSIC_ACTIVE,
+			.ipc_hsic_sus_req = XMM6260_GPIO_IPC_HSIC_SUS_REQ,
+			.hsic_device = &tegra_ehci2_device,
+		},
+	},
+};
 
-																		
-static struct platform_device tegra_baseband_power_device = {           
-	.name = "baseband_xmm_power",                                        
-	.id = -1,                                                        
-	.dev = {                                                         
-		.platform_data = &tegra_baseband_power_data,             
-	},                                                               
-};                                                                      
-                                                                        
-static struct platform_device tegra_baseband_power2_device = {          
-	.name = "baseband_xmm_power2",                                       
-	.id = -1,                                                        
-	.dev = {                                                         
-		.platform_data = &tegra_baseband_power_data,             
-	},                                                               
-};                                                 
+static struct platform_device tegra_baseband_power_device = {
+	.name = "baseband_xmm_power",
+	.id = -1,
+	.dev = {
+		.platform_data = &tegra_baseband_power_data,
+	},
+};
+
+#if 0
+static struct platform_device tegra_baseband_power2_device = {
+	.name = "baseband_xmm_power2",
+	.id = -1,
+	.dev = {
+		.platform_data = &tegra_baseband_power_data,
+	},
+};
+#endif
 
 static struct tegra_usb_phy_platform_ops hsic_imc_plat_ops = {
 	.post_suspend = x3_usb_hsic_postsuspend,
 	.pre_resume = x3_usb_hsic_preresume,
-	.port_power = x3_usb_hsic_phy_ready, // How to handle port_power api?  //ebs_wondering
-	.post_phy_on = x3_usb_hsic_phy_ready,	//Nv-1030815_resume_fromLP0.patch
+	.port_power = x3_usb_hsic_phy_ready, // How to handle port_power api?  // ebs_wondering
+	.post_phy_on = x3_usb_hsic_phy_ready, // Nv-1030815_resume_fromLP0.patch
 	//.usb_phy_ready = x3_usb_hsic_phy_ready,
 	.post_phy_off = x3_usb_hsic_phy_off,
 };
@@ -104,7 +103,7 @@ static struct tegra_usb_platform_data tegra_ehci2_hsic_imc_pdata = {
 	.port_otg = false,
 	.has_hostpc = true,
 	.phy_intf = TEGRA_USB_PHY_INTF_HSIC,
-	.op_mode	= TEGRA_USB_OPMODE_HOST,
+	.op_mode = TEGRA_USB_OPMODE_HOST,
 	.u_data.host = {
 		.vbus_gpio = -1,
 		.hot_plug = false,
@@ -121,7 +120,7 @@ static struct tegra_usb_platform_data tegra_ehci2_hsic_imc_pdata = {
 	.ops = &hsic_imc_plat_ops,
 };
 
-/*
+#if 0
 static struct tegra_uhsic_config uhsic_phy_config = {
 	.enable_gpio = (-1), //TPS80031_GPIO_SMPS3,
 	.reset_gpio = (-1),
@@ -145,32 +144,28 @@ static struct tegra_ehci_platform_data tegra_ehci_uhsic_pdata = {
 	.operating_mode = TEGRA_USB_HOST,
 	.power_down_on_bus_suspend = 0,
 };
-*/
+#endif
 
-static int x3_usb_hsic_postsuspend(void)
+static void x3_usb_hsic_postsuspend(void)
 {
 	printk("%s\n", __func__);
 #ifdef CONFIG_TEGRA_BB_XMM_POWER
 	baseband_xmm_set_power_status(BBXMM_PS_L2);
 #endif
-	return 0;
 }
 
-
-static int x3_usb_hsic_preresume(void)
+static void x3_usb_hsic_preresume(void)
 {
 	printk("%s\n", __func__);
 #ifdef CONFIG_TEGRA_BB_XMM_POWER
 	baseband_xmm_set_power_status(BBXMM_PS_L2TOL0);
 #endif
-	return 0;
 }
 
-//                                             
 #ifdef CONFIG_TEGRA_BB_MODEM4
 extern int rmc_usb_hsic_phy_ready(void);
 #endif
-static int x3_usb_hsic_phy_ready(void)
+static void x3_usb_hsic_phy_ready(void)
 {
 	printk("%s\n", __func__);
 #if defined(CONFIG_TEGRA_BB_XMM_POWER)
@@ -178,23 +173,20 @@ static int x3_usb_hsic_phy_ready(void)
 #elif defined(CONFIG_TEGRA_BB_MODEM4)
 	rmc_usb_hsic_phy_ready();
 #endif
-	return 0;
 }
-//                                             
 
-static int x3_usb_hsic_phy_off(void)
+static void x3_usb_hsic_phy_off(void)
 {
 	printk("%s\n", __func__);
 #ifdef CONFIG_TEGRA_BB_XMM_POWER
 	baseband_xmm_set_power_status(BBXMM_PS_L3);
 #endif
-	return 0;
 }
 
 struct platform_device *tegra_usb_hsic_host_register(void)
 {
 	struct platform_device *pdev;
-	void *platform_data;
+	//void *platform_data;
 	int val;
 
 	pdev = platform_device_alloc(tegra_ehci2_device.name,
@@ -232,7 +224,6 @@ void tegra_usb_hsic_host_unregister(struct platform_device *pdev)
 	platform_device_unregister(pdev);
 }
 
-
 static int __init tegra_uhsic_init(void)
 {
 	tegra_ehci2_device.dev.platform_data = &tegra_ehci2_hsic_imc_pdata;
@@ -255,9 +246,7 @@ static int __init tegra_uhsic_init(void)
 	return 0;
 }
 
-//                                   
 #if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_TEGRA_BB_MODEM4)
-
 static union tegra_bb_gpio_id modem4_gpio_id = {
 	.modem4 = {
 		.mdm4_rst = BB_GPIO_MDM4_RST,
@@ -266,7 +255,6 @@ static union tegra_bb_gpio_id modem4_gpio_id = {
 		.usb_cwr = BB_GPIO_MDM4_CWR,
 		.mdm4_spare = BB_GPIO_MDM4_SPARE,
 		.mdm4_wdi = BB_GPIO_MDM4_WDI,
-
 	},
 };
 
@@ -286,20 +274,18 @@ static struct platform_device tegra_baseband_modem4_device = {
 	},
 };
 #endif
+
 int __init x3_baseband_init(void)
 {
 #if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_TEGRA_BB_MODEM4)
-	tegra_ehci2_device.dev.platform_data
-		= &tegra_ehci_uhsic_pdata;
+	tegra_ehci2_device.dev.platform_data = &tegra_ehci_uhsic_pdata;
 	platform_device_register(&tegra_baseband_modem4_device);
 #else
-	int ret;
+	//int ret;
 	
-	printk("##@%s  \n", __func__ ) ;
+	printk("##@%s\n", __func__ ) ;
 
 	tegra_uhsic_init();
 #endif
 	return 0;
-//                                   
 }
-

@@ -57,7 +57,6 @@ static inline void tegra_throttling_enable(bool enable)
 int tegra_auto_hotplug_init(struct mutex *cpu_lock);
 void tegra_auto_hotplug_exit(void);
 void tegra_auto_hotplug_governor(unsigned int cpu_freq, bool suspend);
-long tegra_get_cur_skin_temp();
 #else
 static inline int tegra_auto_hotplug_init(struct mutex *cpu_lock)
 { return 0; }
@@ -66,6 +65,13 @@ static inline void tegra_auto_hotplug_exit(void)
 static inline void tegra_auto_hotplug_governor(unsigned int cpu_freq,
 					       bool suspend)
 { }
+#endif
+
+#ifdef CONFIG_MACH_LGE
+long tegra_get_cur_skin_temp(void);
+#else
+static long inline tegra_get_cur_skin_temp(void)
+{ return 0; }
 #endif
 
 #ifdef CONFIG_TEGRA_EDP_LIMITS

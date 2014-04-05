@@ -78,7 +78,6 @@ extern struct synaptics_i2c_rmi_platform_data synaptics_platform_data[];
 extern struct touch_platform_data synaptics_pdata;
 #endif
 
-
 #ifdef LGE_SENSOR
 #define SENSOR_POWER_OFF_K3DH	0x1
 #define SENSOR_POWER_OFF_K3G	0x2

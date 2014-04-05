@@ -29,3 +29,7 @@ obj-$(CONFIG_INPUT_OF_MATRIX_KEYMAP) += of_keymap.o
 obj-$(CONFIG_INPUT_KEYRESET)	+= keyreset.o
 
 obj-$(CONFIG_INPUT_CFBOOST)	+= input-cfboost.o
+
+#+++ BRCM : X3_BT_bringup - kukdong.bae@lge.com [S]
+obj-y				+= bthid/
+#--- BRCM : X3_BT_bringup - kukdong.bae@lge.com [E]

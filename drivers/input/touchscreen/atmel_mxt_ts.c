@@ -2454,6 +2454,7 @@ static int mxt_initialize_input_device(struct mxt_data *data)
 	input_dev->dev.parent = dev;
 	input_dev->open = mxt_input_open;
 	input_dev->close = mxt_input_close;
+	input_dev->hint_events_per_packet = 256U;
 
 	__set_bit(EV_ABS, input_dev->evbit);
 	__set_bit(EV_KEY, input_dev->evbit);

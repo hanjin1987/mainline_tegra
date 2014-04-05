@@ -517,6 +517,14 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
 
 	tegra_i2c_clock_enable(i2c_dev);
 
+#ifdef CONFIG_MACH_LGE
+	/* Interrupt generated before sending stop signal so
+	* wait for some time so that stop signal can be send proerly */
+//	dev_err(i2c_dev->dev,
+//		"i2c-time check, err \n");
+	mdelay(1);
+#endif
+
 	tegra_periph_reset_assert(i2c_dev->div_clk);
 	udelay(2);
 	tegra_periph_reset_deassert(i2c_dev->div_clk);

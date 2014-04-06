@@ -1776,6 +1776,7 @@ static int max98088_dai2_set_fmt(struct snd_soc_dai *codec_dai,
        return 0;
 }
 
+#if !defined(CONFIG_MACH_X3) && ! defined(CONFIG_MACH_LX) && !defined(CONFIG_MACH_VU10)
 static int max98088_dai1_digital_mute(struct snd_soc_dai *codec_dai, int mute)
 {
        struct snd_soc_codec *codec = codec_dai->codec;
@@ -1805,6 +1806,7 @@ static int max98088_dai2_digital_mute(struct snd_soc_dai *codec_dai, int mute)
                            M98088_DAI_MUTE_MASK, reg);
        return 0;
 }
+#endif
 
 static void max98088_sync_cache(struct snd_soc_codec *codec)
 {
@@ -1896,7 +1898,7 @@ static int max98088_startup(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int max98088_shutdown(struct snd_pcm_substream *substream,
+static void max98088_shutdown(struct snd_pcm_substream *substream,
 			struct snd_soc_dai *dai){
 	struct snd_soc_codec *codec = dai->codec;
 	struct max98088_priv *max98088 = snd_soc_codec_get_drvdata(codec);
@@ -1911,8 +1913,6 @@ static int max98088_shutdown(struct snd_pcm_substream *substream,
 						M98088_SHDNRUN, M98088_SHDNRUN);
 #endif
 	}
-
-	return 0;
 }
 #endif
 

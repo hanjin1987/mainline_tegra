@@ -585,7 +585,7 @@ int snd_soc_suspend(struct device *dev)
 					codec->cache_sync = 1;
 				} else {
 					printk("(soc-core) %s() [%s] SSP (ignore) Don't let go codec suspend @@@@###\n",
-						__func__);                
+						__func__, codec->name);
 				}
 #else
 				codec->driver->suspend(codec, PMSG_SUSPEND);

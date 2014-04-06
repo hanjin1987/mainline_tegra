@@ -1156,6 +1156,9 @@ int tegra30_make_voice_call_connections(struct codec_config *codec_info,
 {
 	struct tegra30_i2s  *codec_i2s;
 	struct tegra30_i2s  *bb_i2s;
+#ifdef TEGRA30_I2S_RESET
+	int retry_cnt;
+#endif
 
 	codec_i2s = &i2scont[codec_info->i2s_id];
 	bb_i2s = &i2scont[bb_info->i2s_id];
@@ -1220,8 +1223,7 @@ int tegra30_make_voice_call_connections(struct codec_config *codec_info,
 		TEGRA30_DAM_CHIN0_SRC);
 
 #ifdef TEGRA30_I2S_RESET
-	int retry_cnt = 0;
-
+	retry_cnt = 0;
 	tegra30_i2s_write(bb_i2s, TEGRA30_I2S_CTRL,
 		(bb_i2s->reg_ctrl | TEGRA30_I2S_CTRL_SOFT_RESET));
 	while ((tegra30_i2s_read(bb_i2s, TEGRA30_I2S_CTRL) & TEGRA30_I2S_CTRL_SOFT_RESET)

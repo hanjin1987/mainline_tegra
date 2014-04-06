@@ -1457,7 +1457,7 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 	set_bit(KEY_HOOK, switch_data->ip_dev->keybit); 
 
 	switch_data->ip_dev->name = "tegra-snd-max98088";
-	input_register_device(switch_data->ip_dev);  
+	ret = input_register_device(switch_data->ip_dev);  
 	headset_sw_data = switch_data;   
 #endif
 

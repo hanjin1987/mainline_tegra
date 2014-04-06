@@ -545,7 +545,7 @@ static const struct rtc_class_ops max77663_rtc_ops = {
 };
 
 #ifdef CONFIG_MFD_MAX77663_SMPL
-static void max77663_rtc_enable_smpl(struct max77663_rtc *rtc, u8 enable)
+static int max77663_rtc_enable_smpl(struct max77663_rtc *rtc, u8 enable)
 {
 	u8 val;
 	int ret;
@@ -578,6 +578,8 @@ static void max77663_rtc_enable_smpl(struct max77663_rtc *rtc, u8 enable)
 			return ret;
 		}
 	}
+
+	return 0;
 }
 #endif
 
@@ -659,10 +661,9 @@ static ssize_t max77663_rtc_store_smplcount(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val = simple_strtoul(buf, NULL, 10);
-	int ret;
+//	int ret;
 
-	if(val == 0)
-	{
+	if (val == 0) {
 		char smplcount = 0;
 		lge_nvdata_write(LGE_NVDATA_SMPL_COUNT_OFFSET, &smplcount,1);		
 	}
@@ -691,7 +692,7 @@ static ssize_t max77663_rtc_store_enablesmpl(struct device *dev,
 {
 	struct max77663_rtc *rtc = dev_get_drvdata(dev);
 	unsigned long val = simple_strtoul(buf, NULL, 10);
-	int ret;
+//	int ret;
 
 	char smplenable = 0;
 

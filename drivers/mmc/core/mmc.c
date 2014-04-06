@@ -819,7 +819,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 */
 	if (mmc_card_highspeed(card)) {
 #ifdef CONFIG_MACH_X3
-		pr_debug("YJChae %s: mmc_card_highspeed card->ext_csd.card_type %d host->caps %d\n",
+		pr_debug("YJChae %s: mmc_card_highspeed card->ext_csd.card_type %d host->caps %lu\n",
 				mmc_hostname(card->host),
 				card->ext_csd.card_type, host->caps);
 		pr_debug("YJChae %s: mmc_card_highspeed EXT_CSD_CARD_TYPE_DDR_1_8V %d MMC_CAP_1_8V_DDR %d MMC_CAP_UHS_DDR50 %d\n",
@@ -943,7 +943,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			mmc_set_timing(card->host, MMC_TIMING_UHS_DDR50);
 			mmc_set_bus_width(card->host, bus_width);
 #ifdef CONFIG_MACH_X3
-			pr_debug("YJChae %s: switch to bus width %d\n", mmc_hostname(card->host), 1 << bus_width, ddr);
+			pr_debug("YJChae %s: switch to bus width %d, ddr %d\n", mmc_hostname(card->host), 1 << bus_width, ddr);
 #endif
 		}
 	}

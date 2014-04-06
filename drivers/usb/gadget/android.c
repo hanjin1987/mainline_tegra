@@ -576,7 +576,7 @@ static struct android_usb_function ptp_function = {
 };
 
 #ifdef CONFIG_LGE_USB_GADGET_DRIVER
-static struct ecm_function_config {
+struct ecm_function_config {
 	u8      ethaddr[ETH_ALEN];
 	u32     vendorID;
 	char	manufacturer[256];
@@ -1431,7 +1431,7 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 
 #ifdef CONFIG_LGE_USB_GADGET_DRIVER
 	if (get_cable_type()) {
-		dev_info(dev->dev, "Check Factory cable... %s returns\n, __func__	");
+		dev_info(dev->dev, "Check Factory cable... %s returns\n", __func__);
 		return -EPERM;
 	}
 #endif
@@ -1502,10 +1502,8 @@ field ## _store(struct device *dev, struct device_attribute *attr,	\
 		const char *buf, size_t size)				\
 {									\
 	int value;							\
-#ifdef CONFIG_LGE_USB_GADGET_DRIVER					\
 	if (get_cable_type())						\
 		return -EPERM;						\
-#endif									\
 	if (sscanf(buf, format_string, &value) == 1) {			\
 		device_desc.field = value;				\
 		return size;						\
@@ -1525,10 +1523,8 @@ static ssize_t								\
 field ## _store(struct device *dev, struct device_attribute *attr,	\
 		const char *buf, size_t size)				\
 {									\
-#ifdef CONFIG_LGE_USB_GADGET_DRIVER					\
 	if (get_cable_type())						\
 		return -EPERM;						\
-#endif									\
 	if (size >= sizeof(buffer)) return -EINVAL;			\
 	if (sscanf(buf, "%s", buffer) == 1) {				\
 		return size;						\
@@ -1580,7 +1576,8 @@ static void lge_factory_mode_bind(struct usb_composite_dev *cdev)
 	struct android_dev *dev = _android_dev;
 	char factory_functions[256];
 	char *name, *b;
-	int ret, err, value;
+//	int ret, err, value;
+	int err;
 
 	device_desc.idVendor = VENDOR_ID;
 	device_desc.idProduct = FACTORY_PID;

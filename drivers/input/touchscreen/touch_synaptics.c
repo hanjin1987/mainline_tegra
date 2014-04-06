@@ -653,7 +653,7 @@ int synaptics_ts_init(struct i2c_client* client, struct touch_fw_info* fw_info)
 	struct synaptics_ts_data* ts =
 			(struct synaptics_ts_data*)get_touch_handle(client);
 
-	u8 buf = 0; //                                          
+	u8 buf = 0;
 
 	if (touch_debug_mask & DEBUG_TRACE)
 		TOUCH_DEBUG_MSG("\n");
@@ -760,7 +760,7 @@ int synaptics_ts_power(struct i2c_client* client, int power_ctrl)
 		else
 			ts->pdata->pwr->power(1);
 
-		#if 0 //X3 sora.jin 20120125 block code which cause kernel panic while booting
+#if 0 // X3 sora.jin 20120125 block code which cause kernel panic while booting
 		/* P2 H/W bug fix */
 		if (ts->pdata->reset_pin > 0) {
 			msleep(10);
@@ -768,7 +768,7 @@ int synaptics_ts_power(struct i2c_client* client, int power_ctrl)
 			msleep(ts->pdata->role->reset_delay);
 			gpio_set_value(ts->pdata->reset_pin, 1);
 		}
-		#endif
+#endif
 		break;
 	case POWER_SLEEP:
 		if (unlikely(touch_i2c_write_byte(client, DEVICE_CONTROL_REG,
@@ -928,7 +928,7 @@ int synaptics_ts_ic_ctrl(struct i2c_client *client, u8 code, u16 value)
 			break;
 
 		case BASELINE_FIX:
-#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_LGE_f100) //YJChae 
+#if defined(CONFIG_TOUCHSCREEN_SYNAPTICS_LGE_f100) // YJChae 
 			if (unlikely(touch_i2c_write_byte(client, PAGE_SELECT_REG, 0x01) < 0)) {
 			TOUCH_ERR_MSG("PAGE_SELECT_REG write fail\n");
 			return -EIO;
@@ -996,18 +996,17 @@ int synaptics_ts_ic_ctrl(struct i2c_client *client, u8 code, u16 value)
 	return buf;
 }
 
-int synaptics_ts_test_report(struct i2c_client *client, char* buf, size_t * count)
+int synaptics_ts_test_report(struct i2c_client *client, char* buf, size_t* count)
 {
-
 	struct synaptics_ts_data* ts =
 			(struct synaptics_ts_data*)get_touch_handle(client);
-
 
 	u8 command;
 	u8 command_read;
 
-	short ImageArray[13][23] = {0,};
-	u8 ImageBuffer[13*23*2]= {0,};
+//	short ImageArray[13][23] = { { 0 } };
+	short** ImageArray;
+	u8 ImageBuffer[13*23*2] = { 0 };
 
 	int i, j, k;
 	int ret = 0;
@@ -1017,14 +1016,18 @@ int synaptics_ts_test_report(struct i2c_client *client, char* buf, size_t * coun
 
 	TOUCH_INFO_MSG("%s\n",__func__);
 
-
 	if (touch_debug_mask & DEBUG_TRACE)
 		TOUCH_DEBUG_MSG("\n");
 
 	// INITIALIZE 
 	command = 0;
 	command_read = 0;
-    i = 0 ; j = 0 ; k = 0;
+	i = 0 ; j = 0 ; k = 0;
+
+	ImageArray = kzalloc(13 * sizeof(short *), GFP_KERNEL);
+	for (i = 0; i < 13; i++) {
+		ImageArray[i] = kzalloc(23 * sizeof(short), GFP_KERNEL);
+	}
 
 	// Enabling only the analog image reporting interrupt, and turn off the rest
 	command = 0x08;
@@ -1108,7 +1111,6 @@ int synaptics_ts_test_report(struct i2c_client *client, char* buf, size_t * coun
 			TOUCH_ERR_MSG("IC register read fail : TEST_REPORT_CMD_BASE\n");
 			return -EIO;
 		}
-
 	} while (command_read == 0x01);
 
 	TOUCH_INFO_MSG("%s : TEST_REPORT_CMD_BASE : 0x%x\n",__func__,command_read);
@@ -1122,7 +1124,6 @@ int synaptics_ts_test_report(struct i2c_client *client, char* buf, size_t * coun
 		TOUCH_ERR_MSG("IC register read fail : TEST_REPORT_DATA_BUFF\n");
 		return -EIO;
 	}
-
 
 	//ret += sprintf(buf+ret, "[imageBuffer][%d]---START- ",length);
 	for (i = 0; i < numberOfRows; i++)
@@ -1143,13 +1144,17 @@ int synaptics_ts_test_report(struct i2c_client *client, char* buf, size_t * coun
 		ret += sprintf(buf+ret, "[%d][ ",i);
 		for (j = 0; j < numberOfColumns; j++)
 		{
-			ret += sprintf(buf+ret,"%d ", ImageArray[i][j]);
+			ret += sprintf(buf+ret, "%d ", ImageArray[i][j]);
 		}
 		ret += sprintf(buf+ret,"]\n");
 	}
 
 	*count = ret;
 
+	for (i = 0; i < 13; i++) {
+		kzfree(ImageArray[i]);
+	}
+	kzfree(ImageArray);
 	return ret;
 }
 
@@ -1159,9 +1164,9 @@ struct touch_device_driver synaptics_ts_driver = {
 	.init  	= synaptics_ts_init,
 	.data  	= synaptics_ts_get_data,
 	.power 	= synaptics_ts_power,
-	.fw_upgrade = synaptics_ts_fw_upgrade,
-	.ic_ctrl	= synaptics_ts_ic_ctrl,
-	.test_report = synaptics_ts_test_report, //F54
+	.fw_upgrade  = synaptics_ts_fw_upgrade,
+	.ic_ctrl     = synaptics_ts_ic_ctrl,
+	.test_report = synaptics_ts_test_report, // F54
 };
 
 static int __devinit touch_init(void)
@@ -1186,4 +1191,3 @@ module_exit(touch_exit);
 MODULE_AUTHOR("yehan.ahn@lge.com, hyesung.shin@lge.com");
 MODULE_DESCRIPTION("LGE Touch Driver");
 MODULE_LICENSE("GPL");
-

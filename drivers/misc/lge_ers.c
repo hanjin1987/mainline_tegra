@@ -25,7 +25,7 @@
 #define ERS_DRIVER_NAME "lge-ers-kernel"
 
 static atomic_t enable = ATOMIC_INIT(1);
-static atomic_t report_num = ATOMIC_INIT(1);
+//static atomic_t report_num = ATOMIC_INIT(1);
 
 #if 0
 struct ram_console_buffer {

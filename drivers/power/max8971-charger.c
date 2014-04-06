@@ -28,14 +28,10 @@
 
 #include "../../arch/arm/mach-tegra/board.h"
 
-//                                                                          
-//                    
 #if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
 #include <linux/power/lge_battery.h>
 #endif
-//                                                                          
 
-//                                                      
 #include "../misc/muic/muic.h"
 extern TYPE_CHARGING_MODE charging_mode;
 
@@ -118,7 +114,7 @@ extern TYPE_CHARGING_MODE charging_mode;
 #define MAX8971_CHGCC_MASK		0x1F
 #define MAX8971_CHGCC_SHIFT		0
 #define MAX8971_FCHGTIME_MASK		0xE0
-#define MAX8971_FCHGTIME_SHIFT         0 // BEFORE 5 it disabled need Change? go to X3-board platform data
+#define MAX8971_FCHGTIME_SHIFT		0 // BEFORE 5 it disabled need Change? go to X3-board platform data
 
 #define MAX8971_REG_DCCRNT		0x07
 #define MAX8971_CHGRSTRT_MASK		0x40
@@ -150,7 +146,7 @@ extern TYPE_CHARGING_MODE charging_mode;
 #define MAX8971_CHGPROT_SHIFT		2
 #define MAX8971_CHGPROT_UNLOCKED	0x03
 
-#define MAX_CHARGER_INT_COUNT 10			//                                                             
+#define MAX_CHARGER_INT_COUNT		10
 
 //#define MAX8971_TOPOFF_WORKAROUND
 
@@ -162,7 +158,7 @@ struct max8971_chip {
 	struct i2c_client		*client;
 	struct power_supply		charger;
 	struct max8971_platform_data	*pdata;
-	//kkk_test
+	// kkk_test
 	struct delayed_work		monitor_work;
 #ifdef MAX8971_TOPOFF_WORKAROUND
 	struct delayed_work		topoff_work;
@@ -178,15 +174,12 @@ struct max8971_chip {
 };
 
 static struct max8971_chip	*max8971_chg;
-static struct work_struct max8971_wq;
+//static struct work_struct max8971_wq;
 
-//                                                                          
-//                    
 #if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
 current_limit_property_t current_limit_state = CURRENT_LIMIT_OFF;
 extern current_limit_property_t current_limit_request;
 #endif
-//                                                                          
 
 static int max8971_write_reg(struct i2c_client *client, u8 reg, u8 value)
 {
@@ -246,17 +239,13 @@ static int max8971_set_reg(struct max8971_chip *chip, int enable)
 		// Set fast charge current and timer
 		switch(chip->chg_cable_type) {
 			case POWER_SUPPLY_TYPE_USB:
-				//                                                      
-				if( charging_mode != CHARGING_MHL ) {
-//                                                                          
-//                    
+				if (charging_mode != CHARGING_MHL) {
 #if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
 					if (current_limit_request == CURRENT_LIMIT_400MA) {
 						reg_val = ((chip->pdata->chgcc_400 << MAX8971_CHGCC_SHIFT) |
 								(chip->pdata->fchgtime<<MAX8971_FCHGTIME_SHIFT));
 					} else
 #endif
-//                                                                          
 					{
 						reg_val = ((chip->pdata->chgcc_usb500 << MAX8971_CHGCC_SHIFT) |
 								(chip->pdata->fchgtime<<MAX8971_FCHGTIME_SHIFT));
@@ -267,15 +256,12 @@ static int max8971_set_reg(struct max8971_chip *chip, int enable)
 				}
 				break;
 			case POWER_SUPPLY_TYPE_MAINS:
-//                                                                          
-//                    
 #if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
 				if (current_limit_request == CURRENT_LIMIT_400MA) {
 					reg_val = ((chip->pdata->chgcc_400 << MAX8971_CHGCC_SHIFT) |
 							(chip->pdata->fchgtime<<MAX8971_FCHGTIME_SHIFT));
 				} else
 #endif
-//                                                                          
 				{
 					reg_val = ((chip->pdata->chgcc_ta << MAX8971_CHGCC_SHIFT) |
 							(chip->pdata->fchgtime<<MAX8971_FCHGTIME_SHIFT));
@@ -294,20 +280,15 @@ static int max8971_set_reg(struct max8971_chip *chip, int enable)
 		}
 		max8971_write_reg(chip->client, MAX8971_REG_FCHGCRNT, reg_val);
 
-//                                                                          
-/*                                              */
 #if 0 //defined(CONFIG_MACH_VU10)
 		current_limit_state = current_limit_request;
 #endif
-/*                                              */
-//                                                                          
 
 		dev_dbg(&chip->client->dev, "MAX8971_REG_FCHGCRNT(0x%x) = 0x%x\n", MAX8971_REG_FCHGCRNT, reg_val);
 		
 		// Set input current limit and charger restart threshold
 		switch(chip->chg_cable_type) {
 			case POWER_SUPPLY_TYPE_USB:
-				//                                                      
 				if( charging_mode != CHARGING_MHL ) {
 				reg_val = ((chip->pdata->chgrstrt << MAX8971_CHGRSTRT_SHIFT) |
 				(chip->pdata->dcilmt_usb500 << MAX8971_DCILMT_SHIFT));
@@ -391,7 +372,7 @@ static int max8971_set_reg(struct max8971_chip *chip, int enable)
 		// USB Suspend and DC Voltage Monitoring
 		// Set DC Voltage Monitoring to Enable and USB Suspend to Disable
 		
-		if(chg_flag_muic >= MAX_CHARGER_INT_COUNT)		//                                                                    
+		if(chg_flag_muic >= MAX_CHARGER_INT_COUNT)
 		{
 			//                                                                                           
 			if(chip->chg_cable_type == POWER_SUPPLY_TYPE_USB){
@@ -439,7 +420,7 @@ static int max8971_charger_detail_irq(int irq, void *data, u8 *val)
 		case MAX8971_IRQ_PWRUP_OK:
 			dev_dbg(&chip->client->dev, "Power Up OK Interrupt\n");
 
-				chg_flag_muic = chg_flag_muic+1;			//                                                                       
+				chg_flag_muic = chg_flag_muic + 1;
 
 				if ((val[0] & MAX8971_DCUVP_MASK) == 0) {
 				// check DCUVP_OK bit in CGH_STAT
@@ -630,7 +611,7 @@ static void lge_charger_monitor_work(struct work_struct *work)
 {
 	struct max8971_chip *chip;
 	u8 val = 0;
-	chip = container_of(work, struct max8971_chip, monitor_work);
+	chip = container_of((struct delayed_work *)work, struct max8971_chip, monitor_work);
 	
 	val = max8971_read_reg(chip->client, MAX8971_REG_DETAILS2);
 	dev_dbg(&chip->client->dev, "MAX8971_REG_DETAILS2(0x%x) = 0x%02x\n", MAX8971_REG_DETAILS2, val);
@@ -644,8 +625,8 @@ static void lge_charger_monitor_work(struct work_struct *work)
 static void lge_charger_setting_work(struct work_struct *work)
 {
 	struct max8971_chip *chip;
-	u8 val = 0;
-	chip = container_of(work, struct max8971_chip, monitor_work);
+//	u8 val = 0;
+	chip = container_of((struct delayed_work *)work, struct max8971_chip, monitor_work);
 	
 	max8971_set_reg(chip, 1);
 
@@ -660,7 +641,7 @@ static void max8971_topoff_work(struct work_struct *max8971_work)
 	int irq_val, irq_mask, irq_name;
 	u8 val[3];
 
-	chip = container_of(max8971_work, struct max8971_chip, topoff_work);
+	chip = container_of((struct delayed_work *)max8971_work, struct max8971_chip, topoff_work);
 
 
 	dev_dbg(&chip->client->dev, "%s\n", __func__);
@@ -929,6 +910,7 @@ static int max8971_charger_set_property(struct power_supply *psy,
 	return 0;
 }
 
+#if 0
 static irqreturn_t max8971_interrupt_handler(s32 irq, void *data)
 {
 	printk("max8971_interrupt_handler()\n");
@@ -936,7 +918,7 @@ static irqreturn_t max8971_interrupt_handler(s32 irq, void *data)
 	schedule_work(&max8971_wq);
 	return IRQ_HANDLED;
 }
-
+#endif
 
 static enum power_supply_property max8971_charger_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
@@ -962,34 +944,29 @@ static ssize_t max8971_charger_store_chgcc_ta(struct device *dev,
 
 	chip->pdata->chgcc_ta = val;
 
-	if(chip->chg_enable == true)
-	{
+	if (chip->chg_enable == true) {
 		max8971_set_reg(chip, 1);
 	}
 
 	return count;
 }
 
-//chip->pdata->chgcc_ta = 0x08; //400mA
-//chip->pdata->chgcc_ta = 0x0A; //500mA
-//chip->pdata->chgcc_ta = 0x0C; //600mA
-//chip->pdata->chgcc_ta = 0x0E; //700mA
-//chip->pdata->chgcc_ta = 0x10; //800mA
-
+//chip->pdata->chgcc_ta = 0x08; // 400mA
+//chip->pdata->chgcc_ta = 0x0A; // 500mA
+//chip->pdata->chgcc_ta = 0x0C; // 600mA
+//chip->pdata->chgcc_ta = 0x0E; // 700mA
+//chip->pdata->chgcc_ta = 0x10; // 800mA
 
 static DEVICE_ATTR(chgcc_ta, S_IRUGO | S_IWUSR | S_IRGRP | S_IWGRP,
 		   max8971_charger_show_chgcc_ta,
 		   max8971_charger_store_chgcc_ta);
 
-
 static __devinit int max8971_probe(struct i2c_client *client, 
 				   const struct i2c_device_id *id)
 {
-
 	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
 	struct max8971_chip *chip;
 	int ret;
-
 
 	dev_info(&client->dev, "%s..\n", __func__);
 
@@ -1004,9 +981,7 @@ static __devinit int max8971_probe(struct i2c_client *client,
 		return -ENOMEM;
 	}
 
-	/*                                              */
 	max8971_chg = chip;
-	/*                                              */
 
 #ifdef MAX8971_TOPOFF_WORKAROUND
 	dev_info(&client->dev, "Starting delayed workd queue..\n");
@@ -1020,7 +995,7 @@ static __devinit int max8971_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, chip);
 
-	if(chip->pdata->gpio_init)
+	if (chip->pdata->gpio_init)
 		chip->pdata->gpio_init();
 	else
 		printk("max8971_probe : Failed to gpio init\n");
@@ -1041,19 +1016,19 @@ static __devinit int max8971_probe(struct i2c_client *client,
 	
 	//INIT_WORK(&max8971_wq, max8971_charger_wq);
 
-	//kkk_test
+	// kkk_test
 	INIT_DELAYED_WORK_DEFERRABLE(&chip->monitor_work, lge_charger_setting_work);
 	//schedule_delayed_work(&chip->monitor_work, 0);
 
-	if(is_tegra_batteryexistWhenBoot() == 1)
-	{
-	   	 ret = request_threaded_irq(client->irq, NULL, max8971_charger_wq,
-	      		  IRQF_ONESHOT | IRQF_TRIGGER_LOW, client->name, chip);
+	if (is_tegra_batteryexistWhenBoot() == 1) {
+		ret = request_threaded_irq(client->irq, NULL, max8971_charger_wq,
+			IRQF_ONESHOT | IRQF_TRIGGER_LOW, client->name, chip);
 		
 		if (ret < 0) {
 			printk(KERN_INFO "[max8971_probe] MAX8971_IRQB_GPIO set up failed!\n");
 			free_irq(client->irq, &client->dev);
-			return -ENOSYS;
+			goto err_gpio_register_1;
+			//return -ENOSYS;
 		}
 	}
 
@@ -1075,10 +1050,11 @@ static __devinit int max8971_probe(struct i2c_client *client,
 	}
 */
 
- 	ret = device_create_file(&client->dev, &dev_attr_chgcc_ta);
-        if (ret < 0) {
-                printk("device_create_file error!\n");
-                return ret;
+	ret = device_create_file(&client->dev, &dev_attr_chgcc_ta);
+	if (ret < 0) {
+		printk("device_create_file error!\n");
+		goto err;
+		//return ret;
 	}
 	dev_info(&client->dev, "%s finish...\n", __func__);
 
@@ -1087,8 +1063,8 @@ static __devinit int max8971_probe(struct i2c_client *client,
 err:
 	free_irq(client->irq, chip);
 
-err_irq_request:
-err_gpio_register_2:
+//err_irq_request:
+//err_gpio_register_2:
 	gpio_free(client->irq);
 
 err_gpio_register_1:
@@ -1105,7 +1081,7 @@ static __devexit int max8971_remove(struct i2c_client *client)
 {
 	struct max8971_chip *chip = i2c_get_clientdata(client);
 
-	//kkk_test
+	// kkk_test
 	//cancel_delayed_work(&chip->monitor_work);
 
 	gpio_free(TEGRA_GPIO_PJ2);
@@ -1116,11 +1092,8 @@ static __devexit int max8971_remove(struct i2c_client *client)
 	return 0;
 }
 
-/*                                        
-                                            
- */
 #if 0
-//kkk_test
+// kkk_test
 static int max8971_suspend(struct device *dev)
 {
 	struct max8971_chip *chip = dev_get_drvdata(dev);
@@ -1175,7 +1148,6 @@ static void __exit max8971_exit(void)
 {
 	i2c_del_driver(&max8971_i2c_driver);
 }
-
 
 #if defined(CONFIG_MACH_LGHDK) || defined(CONFIG_MACH_X3)
 subsys_initcall(max8971_init);

@@ -71,6 +71,7 @@
 #endif /* WL11U */
 
 /* Redefine LINUX_VERSION_CODE (KERNEL_VERSION(3, 4, 0)) */
+#undef LINUX_VERSION_CODE
 #define LINUX_VERSION_CODE      KERNEL_VERSION(3, 4, 0)
 
 #ifdef BCMWAPI_WPI

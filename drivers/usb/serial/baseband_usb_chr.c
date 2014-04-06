@@ -337,7 +337,9 @@ static ssize_t baseband_ipc_file_read(struct baseband_ipc *ipc,
 	}
 
 	/* acquire rx buffer semaphores */
+#ifndef CONFIG_MACH_X3
 retry:
+#endif
 	if (down_interruptible(&ipc->buf_sem)) {
 		pr_err("baseband_ipc_file_read - "
 			"cannot acquire buffer semaphore\n");

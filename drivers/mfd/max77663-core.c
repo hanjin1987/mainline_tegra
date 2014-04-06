@@ -460,6 +460,7 @@ static void max77663_power_off(void)
 	if (max77663_get_bits(chip->dev, MAX77663_REG_ONOFF_STAT, ONOFF_STAT_ACOK_MASK, 0)) {
 		max77663_power_rst_wkup(1);
 		//arm_machine_restart('h', NULL);
+		return 0;
 	} else {
 		dev_info(chip->dev, "%s: Global shutdown\n", __func__);
 		return max77663_set_bits(chip->dev, MAX77663_REG_ONOFF_CFG1,
@@ -488,6 +489,8 @@ int max77663_set_ScratchRegister(u8 bit)
 
 	max77663_write(chip->dev, MAX77663_RTC_UPDATE0, &val, 1, 1);
 	mdelay(15);
+
+	return 0;
 }
 EXPORT_SYMBOL(max77663_set_ScratchRegister);
 
@@ -553,7 +556,7 @@ static int max77663_sleep(struct max77663_chip *chip, bool on)
 
 	if (ret < 0)
 		dev_err(chip->dev,
-			"sleep_enable: Failed to set on/off config1 Sleep\n",
+			"sleep_enable: Failed to set on/off config1 (%d) Sleep\n",
 			MAX77663_REG_ONOFF_CFG1);
 
 	return ret;
@@ -1470,7 +1473,7 @@ static void max77663_debugfs_exit(struct max77663_chip *chip)
 	debugfs_remove(max77663_dentry_regs);
 }
 
-#ifdef CONFIG_MACH_X3
+#if 0 //def CONFIG_MACH_X3
 static void max77663_dumpRegister(struct max77663_chip *chip, char *label,
 				      u8 *addrs, int num_addrs, int is_rtc)
 {
@@ -1565,7 +1568,7 @@ static int max77663_reboot_notify(struct notifier_block *nb,
 {
 	struct max77663_chip *chip = max77663_chip;
 
-	dev_info(chip->dev, "%s: [%d]\n", __func__, event);
+	dev_info(chip->dev, "%s: [%lu]\n", __func__, event);
 
 	switch (event) {
 		case SYS_RESTART:
@@ -1582,7 +1585,9 @@ static int max77663_reboot_notify(struct notifier_block *nb,
 			max77663_set_bits(chip->dev, 0x53, 0xFF, 0x00, 0);
 //			max77663_set_bits(chip->dev, 0x03, 0x03, 0x03, 0);
 
+#ifdef CONFIG_DEBUG_FS
 //			max77663_AlldumpRegister();
+#endif
 
 			return NOTIFY_OK;
 		}
@@ -1651,7 +1656,7 @@ static int max77663_probe(struct i2c_client *client,
 	}
 
 	if (pdata->use_power_off && !pm_power_off)
-		pm_power_off = max77663_power_off;
+		pm_power_off = (void (*)(void))max77663_power_off;
 
 #ifdef CONFIG_MACH_X3
 	max77663_set_manual_resettime(chip);
@@ -1739,8 +1744,8 @@ static int max77663_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct max77663_chip *chip = i2c_get_clientdata(client);
 	int ret;
-	int i;
 #if defined(CONFIG_MACH_DUMP_GPIO)
+	int i;
 	u32 *ctx = pinmux_reg;
 #endif
 
@@ -1778,7 +1783,7 @@ static int max77663_resume(struct device *dev)
 #endif /* CONFIG_PM */
 
 #ifdef CONFIG_MACH_X3
-static u32 __init max77663_reset_cause_cmdline(char *str)
+static int __init max77663_reset_cause_cmdline(char *str)
 {
 	int output[4] = { 0 };
  

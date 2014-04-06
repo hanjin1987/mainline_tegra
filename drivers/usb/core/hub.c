@@ -1644,7 +1644,9 @@ void usb_disconnect(struct usb_device **pdev)
 {
 	struct usb_device	*udev = *pdev;
 	int			i;
+#ifndef CONFIG_MACH_X3
 	struct usb_hcd		*hcd = bus_to_hcd(udev->bus);
+#endif
 
 	if (!udev) {
 		pr_debug ("%s nodev\n", __func__);

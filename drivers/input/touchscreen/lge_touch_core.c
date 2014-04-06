@@ -15,7 +15,6 @@
  *
  */
 
-
 #include <linux/delay.h>
 #include <linux/hrtimer.h>
 #include <linux/i2c.h>
@@ -43,26 +42,26 @@
 
 struct lge_touch_data
 {
-	void*			h_touch;
-	atomic_t		next_work;
-	atomic_t		device_init;
+	void*				h_touch;
+	atomic_t			next_work;
+	atomic_t			device_init;
 	u8				work_sync_err_cnt;
 	u8				ic_init_err_cnt;
-	volatile int	curr_pwr_state;
-	struct i2c_client 			*client;
-	struct input_dev 			*input_dev;
-	struct hrtimer 				timer;
+	volatile int			curr_pwr_state;
+	struct i2c_client 		*client;
+	struct input_dev 		*input_dev;
+	struct hrtimer 			timer;
 	struct work_struct  		work;
-	struct delayed_work			work_init;
-	struct delayed_work			work_touch_lock;
+	struct delayed_work		work_init;
+	struct delayed_work		work_touch_lock;
 	struct work_struct  		work_fw_upgrade;
 	struct early_suspend		early_suspend;
 	struct touch_platform_data 	*pdata;
-	struct touch_data			ts_data;
+	struct touch_data		ts_data;
 	struct touch_fw_info		fw_info;
 	struct fw_upgrade_info		fw_upgrade;
-	struct section_info			st_info;
-	struct kobject 				lge_touch_kobj;
+	struct section_info		st_info;
+	struct kobject 			lge_touch_kobj;
 	struct ghost_finger_ctrl	gf_ctrl;
 	struct jitter_filter_info	jitter_filter;
 	struct accuracy_filter_info	accuracy_filter;
@@ -2435,7 +2434,7 @@ static ssize_t store_keyguard_info(struct lge_touch_data *ts, const char *buf, s
  */
 static ssize_t show_virtual_key(struct lge_touch_data *ts, char *buf)
 {
-	int i=0;
+	int i = 0;
 	int ret = 0;
 
 	u32 center_x = (ts->pdata->caps->x_max / (ts->pdata->caps->number_of_button * 2));
@@ -2458,31 +2457,28 @@ static ssize_t show_virtual_key(struct lge_touch_data *ts, char *buf)
 
 }
 
-static ssize_t show_test_report(struct lge_touch_data *ts, char *buf, size_t count)
+static ssize_t show_test_report(struct lge_touch_data *ts, char *buf)
 {
-
 	int ret = 0;
-	//                                                   
+	size_t dummy;
 
 	TOUCH_INFO_MSG("%s\n",__func__);
 
 	if (touch_device_func->test_report) {
 		// Display the image
-		ret += sprintf(buf+ret,"\nDisplay the 16-bit image --- START ---\n");
-		//GET TEST_REPORT DATA
-		ret = touch_device_func->test_report(ts->client, buf, count);
-		ret += sprintf(buf+ret,"\nDisplay the 16-bit image --- END ---\n");
+		ret += sprintf(buf+ret, "\nDisplay the 16-bit image --- START ---\n");
+		// GET TEST_REPORT DATA
+		ret = touch_device_func->test_report(ts->client, buf, &dummy);
+		ret += sprintf(buf+ret, "\nDisplay the 16-bit image --- END ---\n");
 	}
 
 	return ret;
 }
 
-
 static ssize_t store_test_report(struct lge_touch_data *ts, const char *buf, size_t count)
 {
 	int ret = 0;
 	int dummy = 0;
-
 
 	TOUCH_INFO_MSG("%s\n",__func__);
 
@@ -2512,30 +2508,27 @@ static ssize_t store_test_report(struct lge_touch_data *ts, const char *buf, siz
 	return count;
 }
 
-
-static ssize_t show_test_report_type(struct lge_touch_data *ts, char *buf, size_t count)
+static ssize_t show_test_report_type(struct lge_touch_data *ts, char *buf)
 {
 	int ret = 0;
 
-	TOUCH_INFO_MSG("%s\n",__func__);
-	ret += sprintf(buf+ret,"test report type : %d\n",test_report_type);
+	TOUCH_INFO_MSG("%s\n", __func__);
+	ret += sprintf(buf+ret, "test report type : %d\n", test_report_type);
 
 	return ret;
-
 }
 
 static ssize_t store_test_report_type(struct lge_touch_data *ts, const char *buf, size_t count)
 {
 	int ret = 0;
-    int temp_type = 0;  
-	//                                                       
-    //-ret = sscanf(buf, "%d", &test_report_type); 
-	ret = sscanf(buf, "%c", &test_report_type);
-    temp_type = simple_strtol(buf, NULL,10);
+	int temp_type = 0;
 
-    //-switch(test_report_type)
-	switch(temp_type)
-	{
+	//ret = sscanf(buf, "%d", &test_report_type); 
+	ret = sscanf(buf, "%c", &test_report_type);
+	temp_type = simple_strtol(buf, NULL,10);
+
+	//switch (test_report_type)
+	switch (temp_type) {
 		case 2:
 		case 3:
 			break;
@@ -2558,7 +2551,6 @@ static ssize_t store_jitter_solution(struct lge_touch_data *ts, const char *buf,
 	ret = sscanf(buf, "%d %d",
 				&ts->pdata->role->jitter_filter_enable,
 				&ts->jitter_filter.adjust_margin);
-
 
 	return count;
 }
@@ -2740,10 +2732,10 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 
 	/* Power gpio initialize */
 	if (ts->pdata->pwr->gpio_init){
-	  if (ts->pdata->pwr->gpio_init(ts->client) < 0){	  
-		TOUCH_ERR_MSG("FAIL: touch_power gpio_request\n");
+		if (ts->pdata->pwr->gpio_init(ts->client) < 0) {
+			TOUCH_ERR_MSG("FAIL: touch_power gpio_request\n");
 			goto err_assign_platform_data;
-	   }
+		}
 	}
 
 	/* Power on */
@@ -2782,7 +2774,7 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 	set_bit(EV_ABS, ts->input_dev->evbit);
 //#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 0, 0))
 #if 1
-	set_bit(INPUT_PROP_DIRECT, ts->input_dev->propbit); //to prevent hovering (showing cursor like mouse pointer)
+	set_bit(INPUT_PROP_DIRECT, ts->input_dev->propbit); // to prevent hovering (showing cursor like mouse pointer)
 #endif
 
 	if (ts->pdata->caps->button_support && ts->pdata->role->key_type != VIRTUAL_KEY) {
@@ -2815,7 +2807,6 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 		goto err_input_register_device_failed;
 	}
 
-
 	/* interrupt mode */
 	if (ts->pdata->role->operation_mode) {
 		ret = gpio_request(ts->pdata->int_pin, "touch_int");
@@ -2840,7 +2831,7 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 		}
 	}
 	/* polling mode */
-	else{
+	else {
 		hrtimer_init(&ts->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 		ts->timer.function = touch_timer_handler;
 		hrtimer_start(&ts->timer, ktime_set(0, ts->pdata->role->report_period), HRTIMER_MODE_REL);
@@ -2921,7 +2912,7 @@ err_power_failed:
 err_assign_platform_data:
 	kfree(ts);
 err_alloc_data_failed:
-err_check_functionality_failed:
+//err_check_functionality_failed:
 	return ret;
 }
 

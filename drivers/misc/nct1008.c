@@ -115,7 +115,7 @@ static inline u8 temperature_to_value(bool extended, s8 temp)
 }
 
 #ifdef CONFIG_MACH_X3
-int nct1008_is_disabled()
+int nct1008_is_disabled(void)
 {
 	return nct1008_is_shutdown;
 }
@@ -616,7 +616,7 @@ static void nct1008_power_control(struct nct1008_data *data, bool is_enable)
 			(data->chip == NCT72) ? "72" : "1008",
 			ret);
 	else
-		dev_info(&data->client->dev, "success in %s rail vdd_nct1008\n",
+		dev_info(&data->client->dev, "success in %s rail vdd_nct%s\n",
 			(is_enable) ? "enabling" : "disabling",
 			(data->chip == NCT72) ? "72" : "1008");
 
@@ -1140,13 +1140,14 @@ error:
 static int nct1008_reboot_notify(struct notifier_block *nb,
                                 unsigned long event, void *data)
 {
+	struct i2c_client *client = ref_data->client;
+
 	switch (event) {
 		case SYS_RESTART:
 		case SYS_HALT:
 		case SYS_POWER_OFF: {
 			printk("%s \n",__func__);
 			nct1008_is_shutdown = 1;
-			struct i2c_client *client = ref_data->client;
 			disable_irq(client->irq);
 
 			return NOTIFY_OK;
@@ -1266,14 +1267,14 @@ static int __devexit nct1008_remove(struct i2c_client *client)
 #ifdef CONFIG_PM
 static int nct1008_suspend(struct i2c_client *client, pm_message_t state)
 {
-#ifdef CONFIG_MACH_X3
-	nct1008_is_shutdown =1;
-#endif
-
 #ifdef LDO_ON_OFF_SUSPEND
 	struct nct1008_data *data = i2c_get_clientdata(client);
 #endif
 	int err;
+
+#ifdef CONFIG_MACH_X3
+	nct1008_is_shutdown = 1;
+#endif
 
 	disable_irq(client->irq);
 	err = nct1008_disable(client);

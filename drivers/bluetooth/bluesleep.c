@@ -390,12 +390,14 @@ static int bluesleep_start(void)
 
 	set_bit(BT_PROTO, &flags);
 	return 0;
+#if 0
 fail:
 	if (bsi->has_ext_wake == 1)
 		del_timer(&tx_timer);
 	atomic_inc(&open_count);
 
 	return 0;
+#endif
 }
 
 /**

@@ -377,9 +377,9 @@ static int ram_console_driver_probe(struct platform_device *pdev)
 
 #if defined (CONFIG_REBOOT_MONITOR)
 	reserved_buffer = buffer + buffer_size;
-	printk ("ram console: ram_console virtual addr = 0x%x\n", buffer);
-	printk ("ram console: reserved_buffer virtual = 0x%x\n", reserved_buffer);
-	printk ("ram console: reserved_buffer physical= 0x%x\n", start+buffer_size);
+	printk ("ram console: ram_console virtual addr = 0x%p\n", buffer);
+	printk ("ram console: reserved_buffer virtual = 0x%p\n", reserved_buffer);
+	printk ("ram console: reserved_buffer physical= 0x%x\n", start + buffer_size);
 #endif
 	return ram_console_init(buffer, buffer_size, bootinfo, NULL/* allocate */);
 }

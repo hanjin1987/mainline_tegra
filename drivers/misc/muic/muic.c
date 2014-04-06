@@ -955,7 +955,7 @@ static void muic_work_func(struct work_struct *muic_work)
 
 static irqreturn_t muic_interrupt_handler(s32 irq, void *data)
 {
-	unsigned long flags;
+//	unsigned long flags;
 		
 	/* Make the interrupt on MUIC INT wake up OMAP which is in suspend mode */
 //	spin_lock_irqsave(&muic_spin_lock, flags);

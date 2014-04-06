@@ -275,6 +275,7 @@ static struct tegra_dc_cmu default_cmu = {
 
 #if defined(CONFIG_MACH_LGE)
 extern struct lcd_gamma_rgb cmdlineRGBvalue;
+#if 0
 static u8 hitach_gammalut[256] = {
 	/* Q-gate 1st */
 /*	0x00, 0x01, 0x02, 0x02, 0x03, 0x04, 0x05, 0x05,
@@ -343,6 +344,7 @@ static u8 hitach_gammalut[256] = {
 	0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf6, 0xf7,
 	0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
 };
+#endif
 
 int tegra_dc_update_windows(struct tegra_dc_win *windows[], int n);  
 struct tegra_dc *tegra_dc_gamma;

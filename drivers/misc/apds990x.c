@@ -31,12 +31,10 @@
 #include <linux/irq.h>
 #include <linux/input.h>
 
-
 #include <linux/types.h>		/* kernel data types */
 #include <linux/kernel.h>		/* printk() */
 #include <linux/uaccess.h>		/* copy_from/to_user() */
 #include <asm/system.h>
-
 
 #include <asm/gpio.h>
 #include <linux/platform_device.h>
@@ -66,35 +64,34 @@
 
 //#define APDS990x_INT		IRQ_EINT20
 
-//Proximity Distance : 4.5Cm
-#define APDS990x_PS_DETECTION_THRESHOLD						900
-#define APDS990x_PS_HSYTERESIS_THRESHOLD					820
+// Proximity Distance : 4.5 cm
+#define APDS990x_PS_DETECTION_THRESHOLD			900
+#define APDS990x_PS_HSYTERESIS_THRESHOLD		820
 
-#define APDS990x_PS_DEFAULT_PPCOUNT_REV_B					0x07			// 7-Pulse for proximity 
-#define APDS990x_PS_DEFAULT_CROSSTALK_VAL_REV_B				150
+#define APDS990x_PS_DEFAULT_PPCOUNT_REV_B		0x07	// 7-Pulse for proximity 
+#define APDS990x_PS_DEFAULT_CROSSTALK_VAL_REV_B		150
 
-#define APDS990x_PS_DEFAULT_PPCOUNT_REV_D					0x03			// 4-Pulse for proximity 
-#define APDS990x_PS_DEFAULT_CROSSTALK_VAL_REV_D				650
-
-
-//Calculation parameters
-#define APDS990x_PS_DETECTION_THRESHOLD_BASE				130
-#define APDS990x_PS_HSYTERESIS_THRESHOLD_SUBTRACT_VAL		40
-
-//ALS - BLACK WINDOW
-#define APDS990x_BLACK_ALS_DEFAULT_GA						271
-#define APDS990x_BLACK_ALS_DEFAULT_COE_B					231
-#define APDS990x_BLACK_ALS_DEFAULT_COE_C					34
-#define APDS990x_BLACK_ALS_DEFAULT_COE_D					65
-
-//ALS - WHITE WINDOW
-#define APDS990x_WHITE_ALS_DEFAULT_GA						243
-#define APDS990x_WHITE_ALS_DEFAULT_COE_B					199
-#define APDS990x_WHITE_ALS_DEFAULT_COE_C					71
-#define APDS990x_WHITE_ALS_DEFAULT_COE_D					129
+#define APDS990x_PS_DEFAULT_PPCOUNT_REV_D		0x03	// 4-Pulse for proximity 
+#define APDS990x_PS_DEFAULT_CROSSTALK_VAL_REV_D		650
 
 
-#define APDS990x_ALS_THRESHOLD_HSYTERESIS	20	/* 20 = 20% */
+// Calculation parameters
+#define APDS990x_PS_DETECTION_THRESHOLD_BASE		130
+#define APDS990x_PS_HSYTERESIS_THRESHOLD_SUBTRACT_VAL	40
+
+// ALS - BLACK WINDOW
+#define APDS990x_BLACK_ALS_DEFAULT_GA			271
+#define APDS990x_BLACK_ALS_DEFAULT_COE_B		231
+#define APDS990x_BLACK_ALS_DEFAULT_COE_C		34
+#define APDS990x_BLACK_ALS_DEFAULT_COE_D		65
+
+// ALS - WHITE WINDOW
+#define APDS990x_WHITE_ALS_DEFAULT_GA			243
+#define APDS990x_WHITE_ALS_DEFAULT_COE_B		199
+#define APDS990x_WHITE_ALS_DEFAULT_COE_C		71
+#define APDS990x_WHITE_ALS_DEFAULT_COE_D		129
+
+#define APDS990x_ALS_THRESHOLD_HSYTERESIS		20	/* 20 = 20% */
 
 /* Change History 
  *
@@ -114,7 +111,6 @@
 /*
  * Defines
  */
-
 #define APDS990x_ENABLE_REG	0x00
 #define APDS990x_ATIME_REG	0x01
 #define APDS990x_PTIME_REG	0x02
@@ -135,11 +131,11 @@
 #define APDS990x_ID_REG		0x12
 #define APDS990x_STATUS_REG	0x13
 #define APDS990x_CDATAL_REG	0x14
-#define APDS990x_CDATAH_REG	0x15 //
+#define APDS990x_CDATAH_REG	0x15
 #define APDS990x_IRDATAL_REG	0x16
-#define APDS990x_IRDATAH_REG	0x17 //
+#define APDS990x_IRDATAH_REG	0x17
 #define APDS990x_PDATAL_REG	0x18
-#define APDS990x_PDATAH_REG	0x19 //
+#define APDS990x_PDATAH_REG	0x19
 
 #define CMD_BYTE		0x80
 #define CMD_WORD		0xA0
@@ -158,19 +154,13 @@
 
 // Interrupt define
 //#define  APDS990x_IRQ;		//(82) //IRQ_EINT(27)
-#define APDS990x_ATTB 		(S5PV210_GPH3(3))
+#define APDS990x_ATTB 			(S5PV210_GPH3(3))
 
 #define STORE_INTERRUPT_SELECT_PROX 	0x02
 #define STORE_INTERRUPT_SELECT_ALS 	0x04
 
 static int APDS990x_IRQ;		//(82) //IRQ_EINT(27)
 
-/*                     
-                                                                        
-                 
-               
-               
-*/
 enum {
   DEBUG_ERR_CHECK     = 1U << 0,
   DEBUG_USER_ERROR    = 1U << 1,
@@ -181,7 +171,7 @@ enum {
   DEBUG_INTR_INFO     = 1U << 6,
 };
 
-static unsigned int debug_mask = DEBUG_USER_ERROR;		//All Log : 0x7F
+static unsigned int debug_mask = DEBUG_USER_ERROR;	// All Log : 0x7F
 
 
 module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
@@ -189,7 +179,6 @@ module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 /*
  * Structs
  */
-
 struct apds990x_data {
 	struct i2c_client *client;
 	//struct mutex update_lock;
@@ -217,14 +206,14 @@ struct apds990x_data {
 
 	/* PS parameters */
 	unsigned int ps_threshold;
-	unsigned int ps_hysteresis_threshold; /* always lower than ps_threshold */
+	unsigned int ps_hysteresis_threshold;	/* always lower than ps_threshold */
 	unsigned int ps_detection;		/* 0 = near-to-far; 1 = far-to-near */
 	unsigned int ps_data;			/* to store PS data */
 	unsigned int cross_talk;		/* cross_talk value */
 
 	/* ALS parameters */
-	unsigned int als_threshold_l;	/* low threshold */
-	unsigned int als_threshold_h;	/* high threshold */
+	unsigned int als_threshold_l;		/* low threshold */
+	unsigned int als_threshold_h;		/* high threshold */
 	unsigned int als_data;			/* to store ALS data */
 
 	unsigned int als_gain;			/* needed for Lux calculation */
@@ -233,7 +222,7 @@ struct apds990x_data {
 	unsigned int undersunlight;
 
 	unsigned char irq_wake;
-    unsigned int ps_default_result;
+	unsigned int ps_default_result;
 	unsigned int ps_cal_result;
 
 	unsigned int is_white;
@@ -255,10 +244,10 @@ static int ppcount_val = 0;
 static int PS_DEFAULT_PPCOUNT = APDS990x_PS_DEFAULT_PPCOUNT_REV_D;
 static int PS_DEFAULT_CROSSTALK_VAL = APDS990x_PS_DEFAULT_CROSSTALK_VAL_REV_D;
 
-static int GA = APDS990x_WHITE_ALS_DEFAULT_GA; 		/* 2.485 --- 0.48 without glass window ..old: 271*/
-static int COE_B = APDS990x_WHITE_ALS_DEFAULT_COE_B;		/* 1.973 --- 2.23 without glass window ..old: 231*/
-static int COE_C = APDS990x_WHITE_ALS_DEFAULT_COE_C;		/* 0.694 --- 0.70 without glass window .. old: 34*/
-static int COE_D = APDS990x_WHITE_ALS_DEFAULT_COE_D;		/* 1.322 --- 1.42 without glass window .. old: 65*/
+static int GA = APDS990x_WHITE_ALS_DEFAULT_GA; 		/* 2.485 --- 0.48 without glass window .. old: 271 */
+static int COE_B = APDS990x_WHITE_ALS_DEFAULT_COE_B;	/* 1.973 --- 2.23 without glass window .. old: 231 */
+static int COE_C = APDS990x_WHITE_ALS_DEFAULT_COE_C;	/* 0.694 --- 0.70 without glass window .. old: 34 */
+static int COE_D = APDS990x_WHITE_ALS_DEFAULT_COE_D;	/* 1.322 --- 1.42 without glass window .. old: 65 */
 
 /*
  * Management functions
@@ -270,17 +259,16 @@ static void apds990x_Set_PS_Threshold_Adding_Cross_talk(struct i2c_client *clien
 
 static s32 __init prox_cal_data(char *str)
 {
-		sscanf(str,"%d,%d ",&cross_talk_val, &ppcount_val);
+	sscanf(str,"%d,%d ",&cross_talk_val, &ppcount_val);
 
         printk("[apds990x] get_prox_cal_data(): cross_talk_val = %d, ppcount_val = %d\n", cross_talk_val, ppcount_val);
         return 1;
 }
 __setup("prox_cal_data=", prox_cal_data);
 
-
 static int apds990x_set_command(struct i2c_client *client, int command)
 {
-	struct apds990x_data *data = i2c_get_clientdata(client);
+	//struct apds990x_data *data = i2c_get_clientdata(client);
 	int ret;
 	int clearInt;
 
@@ -1046,34 +1034,27 @@ static ssize_t apds990x_store_run_calibration(struct device *dev,
 
 	ret = apds990x_Run_Cross_talk_Calibration(client);
 
-    //Store Calibration data
-    if(  0 <= ret && ret < 720 )
-    {
-        DEBUG_MSG("%s Succes cross-talk :  %d, ppcount(%d), is_white(%d) \n", __func__, ret, data->ppcount, data->is_white);
-        lge_nvdata_write(LGE_NVDATA_PROXIMITY_PPCOUNT_OFFSET, &ppcount_val, 1);
-        lge_nvdata_write(LGE_NVDATA_PROXIMITY_CROSS_TALK_CALIBRATION_OFFSET, &ret, 2);
+	// Store Calibration data
+	if (0 <= ret && ret < 720)  {
+		DEBUG_MSG("%s Succes cross-talk :  %d, ppcount(%d), is_white(%d) \n", __func__, ret, data->ppcount, data->is_white);
+		lge_nvdata_write(LGE_NVDATA_PROXIMITY_PPCOUNT_OFFSET, (char *)&ppcount_val, 1);
+		lge_nvdata_write(LGE_NVDATA_PROXIMITY_CROSS_TALK_CALIBRATION_OFFSET, (char *)&ret, 2);
 		data->ps_cal_result = 1;
 
 #if defined(CHECK_WHITE_AND_BLACK_WIN)
-		if(data->is_white == 1)
-		{
-			GA = APDS990x_WHITE_ALS_DEFAULT_GA; 		/* 2.485 --- 0.48 without glass window ..old: 271*/
-			COE_B = APDS990x_WHITE_ALS_DEFAULT_COE_B;		/* 1.973 --- 2.23 without glass window ..old: 231*/
-			COE_C = APDS990x_WHITE_ALS_DEFAULT_COE_C;		/* 0.694 --- 0.70 without glass window .. old: 34*/
-			COE_D = APDS990x_WHITE_ALS_DEFAULT_COE_D;		/* 1.322 --- 1.42 without glass window .. old: 65*/
-		}
-		else
-		{
-			GA = APDS990x_BLACK_ALS_DEFAULT_GA; 		/* 2.485 --- 0.48 without glass window ..old: 271*/
-			COE_B = APDS990x_BLACK_ALS_DEFAULT_COE_B;		/* 1.973 --- 2.23 without glass window ..old: 231*/
-			COE_C = APDS990x_BLACK_ALS_DEFAULT_COE_C;		/* 0.694 --- 0.70 without glass window .. old: 34*/
-			COE_D = APDS990x_BLACK_ALS_DEFAULT_COE_D;		/* 1.322 --- 1.42 without glass window .. old: 65*/
+		if (data->is_white == 1) {
+			GA = APDS990x_WHITE_ALS_DEFAULT_GA; 		/* 2.485 --- 0.48 without glass window .. old: 271 */
+			COE_B = APDS990x_WHITE_ALS_DEFAULT_COE_B;	/* 1.973 --- 2.23 without glass window .. old: 231 */
+			COE_C = APDS990x_WHITE_ALS_DEFAULT_COE_C;	/* 0.694 --- 0.70 without glass window .. old: 34 */
+			COE_D = APDS990x_WHITE_ALS_DEFAULT_COE_D;	/* 1.322 --- 1.42 without glass window .. old: 65 */
+		} else {
+			GA = APDS990x_BLACK_ALS_DEFAULT_GA; 		/* 2.485 --- 0.48 without glass window .. old: 271 */
+			COE_B = APDS990x_BLACK_ALS_DEFAULT_COE_B;	/* 1.973 --- 2.23 without glass window .. old: 231 */
+			COE_C = APDS990x_BLACK_ALS_DEFAULT_COE_C;	/* 0.694 --- 0.70 without glass window .. old: 34 */
+			COE_D = APDS990x_BLACK_ALS_DEFAULT_COE_D;	/* 1.322 --- 1.42 without glass window .. old: 65 */
 		}
 #endif
-
-    }
-	else
-    {
+	} else {
 		DEBUG_MSG("%s Fail error :  %d\n", __func__, ret);
 		data->ps_cal_result = 0;
 	}
@@ -1084,7 +1065,7 @@ static ssize_t apds990x_store_run_calibration(struct device *dev,
 static DEVICE_ATTR(run_calibration,  0660,
 		   apds990x_show_run_calibration, apds990x_store_run_calibration);
 
- static ssize_t apds990x_show_default_calibration(struct device *dev,
+static ssize_t apds990x_show_default_calibration(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	struct i2c_client *client = to_i2c_client(dev);
@@ -1102,8 +1083,8 @@ static ssize_t apds990x_store_default_calibration(struct device *dev,
 	int default_cal = PS_DEFAULT_CROSSTALK_VAL;
 	int default_ppcount = PS_DEFAULT_PPCOUNT;
 
-	lge_nvdata_write(LGE_NVDATA_PROXIMITY_PPCOUNT_OFFSET, &default_ppcount, 1);
-	lge_nvdata_write(LGE_NVDATA_PROXIMITY_CROSS_TALK_CALIBRATION_OFFSET, &default_cal, 2);
+	lge_nvdata_write(LGE_NVDATA_PROXIMITY_PPCOUNT_OFFSET, (char *)&default_ppcount, 1);
+	lge_nvdata_write(LGE_NVDATA_PROXIMITY_CROSS_TALK_CALIBRATION_OFFSET, (char *)&default_cal, 2);
 	
 	if(default_cal < 0)
 	{

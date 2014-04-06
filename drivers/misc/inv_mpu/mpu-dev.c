@@ -90,23 +90,23 @@ struct mpu_private_data {
 	struct module *slave_modules[EXT_SLAVE_NUM_TYPES];
 
 #ifdef FEATURE_MPU_SYSFS
-  atomic_t enable_accel;
-  atomic_t enable_compass;
-  atomic_t enable_gyro;
-  int enabled_accel_by_sysfs;
-  int enabled_compass_by_sysfs;
-  int enabled_gyro_by_sysfs;
+	atomic_t enable_accel;
+	atomic_t enable_compass;
+	atomic_t enable_gyro;
+	int enabled_accel_by_sysfs;
+	int enabled_compass_by_sysfs;
+	int enabled_gyro_by_sysfs;
 
-  unsigned char gyro_pwr_mgnt[2];
-  unsigned char int_pin_cfg;
-  
-  struct mutex sysfs_mutex;
-  struct i2c_adapter* adaptors[EXT_SLAVE_NUM_TYPES];
-#endif//FEATURE_MPU_SYSFS
+	unsigned char gyro_pwr_mgnt[2];
+	unsigned char int_pin_cfg;
+
+	struct mutex sysfs_mutex;
+	struct i2c_adapter* adaptors[EXT_SLAVE_NUM_TYPES];
+#endif // FEATURE_MPU_SYSFS
 #ifdef SENSOR_COMMON_LDO_CTRL
-        struct delayed_work     dwork;  /* for Power on/Off */
-        struct regulator *mpu_vdd_reg;
-        struct regulator *mpu_vlogic_reg;
+	struct delayed_work dwork;  /* for power on/off */
+	struct regulator *mpu_vdd_reg;
+	struct regulator *mpu_vlogic_reg;
 #endif
 };
 
@@ -297,7 +297,7 @@ static int mpu_sysfs_enable_gyro(
     if(mpu_sysfs_is_suspended(mldl_cfg,EXT_SLAVE_TYPE_GYROSCOPE) && 
         data->enabled_gyro_by_sysfs)
     {
-      unsigned char int_pin = 0;
+//      unsigned char int_pin = 0;
       
       
 
@@ -348,7 +348,7 @@ int mpu_get_accel_facing_up(long z_threshold)
 	struct mldl_cfg *mldl_cfg = &mpu->mldl_cfg;
   struct i2c_adapter *accel_adapter = mpu->adaptors[EXT_SLAVE_TYPE_ACCEL];
   
-  ssize_t content_size =0;
+//  ssize_t content_size =0;
 	unsigned char acceldata[6] = {0};
 	int16_t accel_axis[3] = {0};
   int16_t oriented_accel[3] = {0};
@@ -447,7 +447,7 @@ mpu_sysfs_accel_raw_show(struct device *dev,
       
     }
     
-  	content_size = sprintf(buf, "%8ld, %8ld, %8ld \n",
+  	content_size = sprintf(buf, "%8d, %8d, %8d \n",
   	                        oriented_accel[0], oriented_accel[1], oriented_accel[2]);
   }
 
@@ -671,7 +671,7 @@ static int mpu_pm_notifier_callback(struct notifier_block *nb,
 	struct timeval event_time;
 	dev_dbg(&client->adapter->dev, "%s: %ld\n", __func__, event);
 
-	printk("%s start [%d]\n", __func__, event);  //for debug
+	printk("%s start [%lu]\n", __func__, event);  //for debug
 
 	/* Prevent the file handle from being closed before we initialize
 	   the completion event */
@@ -1151,7 +1151,8 @@ static long mpu_dev_ioctl(struct file *file,
 	struct ext_slave_platform_data **pdata_slave = mldl_cfg->pdata_slave;
 	int ii;
 
-	if(mpu_is_shutdown == 1) return;
+	if (mpu_is_shutdown == 1)
+		return 0;
 
 	for (ii = 0; ii < EXT_SLAVE_NUM_TYPES; ii++) {
 		if (!pdata_slave[ii])

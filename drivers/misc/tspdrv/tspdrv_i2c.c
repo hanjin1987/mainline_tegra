@@ -70,7 +70,7 @@ s32 tspdrv_i2c_write_block_data(u8 command, u8 length, const u8 *values)
 //	printk("***%s : I2C write block status : %d , val[0] :  0x%x, val[1] : 0x%x, ***\n",__func__,status, values[0], values[1]);
 	if (status < 0)
 	{
-		printk("%s : I2C write block fail val[0] : 0x%x, val[1] : 0x%x,  RECOVER !!(%d)\n",__func__, values[0], values[1]);
+		printk("%s : I2C write block fail val[0] : 0x%u, val[1] : 0x%u,  RECOVER !!(%d)\n",__func__, values[0], values[1], status);
 	}
 	
 	return status;
@@ -176,6 +176,7 @@ err_pwm:
 
 static int tspdrv_i2c_remove(struct i2c_client *client)
 {
+	return 0;
 }
 
 #ifdef CONFIG_PM

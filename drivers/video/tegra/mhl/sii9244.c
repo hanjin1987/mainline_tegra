@@ -183,7 +183,8 @@ static ssize_t change_switch_store(struct device *dev, struct device_attribute *
 		}
 //		gpio_request(GPIO_MHL_INT, "MHL_INT");
 		gpio_direction_input(GPIO_MHL_INT);
-		request_irq(gpio_to_irq(GPIO_MHL_INT), mhl_int_irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "mhl_irq", dev); 
+		// Assigning return value to i, because of warn_unused_result, otherwise it isn't used.
+		i = request_irq(gpio_to_irq(GPIO_MHL_INT), mhl_int_irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "mhl_irq", dev); 
 //                                
 		sii9244_cfg_power(1);
 //		sii9244_init();
@@ -200,23 +201,20 @@ static ssize_t change_switch_store(struct device *dev, struct device_attribute *
 	return size;
 }
 
-//                                                                                      
 #ifdef MHL_HW_DEBUG
 static ssize_t change_mhl_ctrl4(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
-	SII_LOG_FUNCTION_NAME_ENTRY;
 	long value = simple_strtoul(buf,NULL,16);
+	SII_LOG_FUNCTION_NAME_ENTRY;
      
 	SII_DEV_DBG("the mhl_ctrl4: 0x%x\n", value);
 
 	set_mhl_ctrl4((int)value);
 
-    SII_LOG_FUNCTION_NAME_EXIT;
-
+	SII_LOG_FUNCTION_NAME_EXIT;
 	return size;
 }
-#endif
-//                                                                                      
+#endif                                                                                      
 
 void MHL_On(bool on)
 {
@@ -440,22 +438,20 @@ EXPORT_SYMBOL(sii9244_i2c_write);
 
 void sii9244_interrupt_event_work(struct work_struct *p)
 {
-    SII_LOG_FUNCTION_NAME_ENTRY;
-
-	//                  
 	struct mhl_work_struct *mhl_work =
 		container_of(p, struct mhl_work_struct, work);
+
+	SII_LOG_FUNCTION_NAME_ENTRY;
 
 	SII_DEV_DBG("[MHL] sii9244_interrupt_event_work() is called\n");
 //	sii9244_interrupt_event();
 	simg_mhl_tx_handler();
     
-    if(mhl_work != NULL)
-    {
-        kfree(mhl_work);
-        mhl_work = NULL;
-    }
-    SII_LOG_FUNCTION_NAME_EXIT;
+	if (mhl_work != NULL) {
+		kfree(mhl_work);
+		mhl_work = NULL;
+	}
+	SII_LOG_FUNCTION_NAME_EXIT;
 }
 
 #if 0
@@ -1321,7 +1317,7 @@ static int mhl_release(struct inode *ip, struct file *fp)
 	return 0;
 }
 
-
+#if 0
 static int mhl_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
 {
 	SII_DEV_DBG("\n");
@@ -1344,6 +1340,7 @@ static int mhl_ioctl(struct inode *inode, struct file *file, unsigned int cmd, u
 #endif		
 	return 0;
 }
+#endif
 
 static struct file_operations mhl_fops = {
 	.owner  = THIS_MODULE,

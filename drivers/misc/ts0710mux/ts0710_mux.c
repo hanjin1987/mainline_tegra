@@ -590,7 +590,7 @@ static void ts0710_reset_dlci(u8 j)
 }
 
 #ifdef CONFIG_LGE_KERNEL_MUX
-static void ts0710_reset_dlci_priority()
+static void ts0710_reset_dlci_priority(void)
 {
     u8 j;
 
@@ -812,14 +812,12 @@ static void send_sabm(ts0710_con * ts0710, u8 dlci)
     mux_send_frame(dlci, ts0710->initiator, MUX_SABM, 0, 0);
 }
 
-//                                       
 #ifndef CONFIG_LGE_KERNEL_MUX
 static void send_disc(ts0710_con * ts0710, u8 dlci)
 {
     mux_send_frame(dlci, !ts0710->initiator, MUX_DISC, 0, 0);
 }
-#endif //                      
-//                                    
+#endif
 
 /* Multiplexer command packets functions */
 
@@ -904,7 +902,7 @@ static int mux_send_uih_data(ts0710_con * ts0710, u8 dlci, u8 *data, int len)
 {
     int ret = 0;
 #ifdef CONFIG_LGE_KERNEL_MUX
-    u8 *send = NULL;
+//    u8 *send = NULL;
     if (len)
     {
 
@@ -1785,7 +1783,7 @@ int ts0710_open_channel(u8 dlci)
 
 static void mux_close(struct tty_struct *tty, struct file *filp)
 {
-    ts0710_con *ts0710 = &ts0710_connection;
+//    ts0710_con *ts0710 = &ts0710_connection;
     int line;
     u8 dlci;
 
@@ -2314,14 +2312,12 @@ void mux_dispatcher(struct tty_struct *tty)
     /* schedule_work(&receive_tqueue); */
 }
 
-//                                      
 #ifndef CONFIG_LGE_KERNEL_MUX
 static void send_ack(ts0710_con * ts0710, u8 seq_num)
 {
     mux_send_frame(CTRL_CHAN, ts0710->initiator, ACK, &seq_num, 1);
 }
-#endif //                      
-//                                    
+#endif
 
 static void ts_ldisc_rx_post(struct tty_struct *tty, const u8 *data, char *flags, int count)
 {
@@ -2516,8 +2512,7 @@ static int ts_ldisc_tx_looper(void *param)
     int is_frames = 0;
     struct spi_data_send_struct *next_ptr = NULL;
     struct spi_data_send_struct *prev_ptr = NULL;
-    //                                    
-    unsigned long flag;		//                              
+//    unsigned long flag;
 
     set_freezable(); //20120312 - Nv_bug_946018 recommend code to fix schedule issue
     
@@ -2838,12 +2833,12 @@ static void ts_ldisc_close(struct tty_struct *tty)
     ipc_tty = 0;
 
     printk("**************************\n");
-    printk("!!!!! ts_ldisc_close !!!!!\n", __FUNCTION__);
+    printk("!!!!! ts_ldisc_close !!!!!\n");
     printk("**************************\n");
 
-    #if defined(LGE_ACM_RX_DUMP_ENABLE)
+#if defined(LGE_ACM_RX_DUMP_ENABLE)
     acm_rx_dump();
-    #endif
+#endif
 
     //                                                                                                 
     printk("### CP Crash : %d, USB DISCONNECT : %d ###\n",is_cp_crash, is_usb_disconnect);
@@ -2887,7 +2882,7 @@ static void ts_ldisc_close(struct tty_struct *tty)
         input_sync(input_mux);
         printk("######### input_report_key(): %d\n", EVENT_KEY);
         //                                                                                               
-        return 0;
+        return;
     }
     /*                                                                              */
     
@@ -3066,6 +3061,7 @@ static int __init mux_init(void)
 {
     u8 j;
     int result;
+    int err;
 #ifdef CONFIG_LGE_KERNEL_MUX
     NR_MUXS = TS0710MAX_CHANNELS;
     iscmdtty = NULL;
@@ -3153,9 +3149,6 @@ static int __init mux_init(void)
         printk("TS0710 :oops. cant register ldisc\n");
     }
 
-//                                                                                                 
-    int err;
-
     input_mux = input_allocate_device();
     if (!input_mux) {
         err = -ENOMEM;
@@ -3182,7 +3175,7 @@ static int __init mux_init(void)
 
 exit_unregister_mux:
     input_unregister_device(input_mux);
-exit:
+//exit:
     return err;
 //                                                                                               
 }

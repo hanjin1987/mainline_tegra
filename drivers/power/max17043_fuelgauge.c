@@ -208,6 +208,7 @@ static int max17043_read_vcell(struct i2c_client *client)
 	dev_dbg(&client->dev, "MAX17043 vcell [%d]\n",chip->vcell);
 	return 0;
 }
+#if 0
 static int max17043_read_soc(struct i2c_client *client)
 {
 	struct max17043_chip *chip = i2c_get_clientdata(client);
@@ -222,6 +223,7 @@ static int max17043_read_soc(struct i2c_client *client)
 
 	return 0;
 }
+#endif
 static int max17043_read_version(struct i2c_client *client)
 {
 	struct max17043_chip *chip = i2c_get_clientdata(client);
@@ -343,10 +345,10 @@ static int max17043_next_alert_level(int level)
 	}else if(level <5 && level >=0){
 		next_level = 1;  //0
 	}else{
-
+		next_level = 0;
 	}
 
-	printk(KERN_DEBUG " [MAX17043] Next_alert_level = %d\n",next_level/2);
+	printk(KERN_DEBUG " [MAX17043] Next_alert_level = %d\n", next_level/2);
 	return next_level;
 }
 
@@ -415,7 +417,7 @@ static int max17043_get_soc(struct i2c_client *client)
 
 	//soc = ((t_soc - 13 * 1000000) / (950 - 13)) / 10000;
 	soc = (t_soc - 13 *1000000) / ((970-13)* 10000);
-	// empty(1.3)  & full(95) ¨¬¢¬A¢´
+	// empty(1.3)  & full(95)
 // taekyeong.kim 20120511 maxim recommend
 
 #endif
@@ -450,7 +452,7 @@ static int max17043_update(struct i2c_client *client)
 
 #if 0	// taekyeong.kim 20120511 maxim recommend
 	chip->capacity = ((chip->capacity - (2)) * 100) / (MAX17043_BATTERY_FULL - 2);	// 2, 2 Adjust 100% Condition
-#endif	// taekyeong.kim 20120511 maxim¢¯¢®¨ù¡© recommend
+#endif	// taekyeong.kim 20120511 maxim recommend
 
 //                                           
 //TODO: Need to update
@@ -513,9 +515,10 @@ static void max17043_work(struct work_struct *work)
 
 static void max17043_alert_work(struct work_struct *work)
 {
-	printk(KERN_INFO "[Max17043_Alert_Work_Start]\n");
 	struct max17043_chip *chip =
-		container_of(work, struct max17043_chip, alert_work);;
+		container_of(work, struct max17043_chip, alert_work);
+
+	printk(KERN_INFO "[Max17043_Alert_Work_Start]\n");
 
 	if (chip->status == MAX17043_WORKING) {
 		cancel_delayed_work_sync(&chip->work);

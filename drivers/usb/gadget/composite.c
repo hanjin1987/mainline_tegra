@@ -354,7 +354,7 @@ static int config_buf(struct usb_configuration *config,
 		enum usb_device_speed speed, void *buf, u8 type)
 {
 	struct usb_config_descriptor	*c = buf;
-#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+#if 0 //def CONFIG_LGE_USB_GADGET_DRIVER
 	struct usb_cdc_union_desc *union_desc = NULL;
 #endif
 	void				*next = buf + USB_DT_CONFIG_SIZE;

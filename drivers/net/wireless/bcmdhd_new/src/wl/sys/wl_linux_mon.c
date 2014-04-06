@@ -41,6 +41,7 @@
 #include <dhd.h>
 
 /* Redefine LINUX_VERSION_CODE (KERNEL_VERSION(3, 4, 0)) */
+#undef LINUX_VERSION_CODE
 #define LINUX_VERSION_CODE      KERNEL_VERSION(3, 4, 0)
 
 typedef enum monitor_states

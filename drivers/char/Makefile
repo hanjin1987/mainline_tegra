@@ -67,4 +67,4 @@ js-rtc-y = rtc.o
 obj-$(CONFIG_TILE_SROM)		+= tile-srom.o
 
 # hyungseok.ji@lge.com
-obj-m				+= gator-driver/
+#obj-m				+= gator-driver/

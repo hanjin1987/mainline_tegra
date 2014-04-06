@@ -237,6 +237,7 @@ static int RMI4Init(struct synaptics_fw_data *fw, struct synaptics_ts_data *ts)
 	return ret;
 }
 
+#if 0
 static unsigned short GetConfigSize(struct synaptics_fw_data *fw)
 {
 	return fw->m_configBlockSize * fw->m_configBlockCount;
@@ -246,6 +247,7 @@ static unsigned short GetFirmwareSize(struct synaptics_fw_data *fw)
 {
 	return fw->m_firmwareBlockSize * fw->m_firmwareBlockCount;
 }
+#endif
 
 /* Read Bootloader ID from Block Data Registers as a 'key value' */
 static int RMI4ReadBootloadID(struct synaptics_fw_data *fw, struct synaptics_ts_data *ts)

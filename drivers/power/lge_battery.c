@@ -31,11 +31,9 @@
 #include <linux/power/lge_battery.h>
 #include "../../arch/arm/mach-tegra/board.h"
 
-//                                                               
 #if defined(CONFIG_MACH_VU10)
 #include "../../../arch/arm/mach-tegra/lge/vu10/include/lge/board-x3-nv.h"
 #endif
-//                                                               
 
 #define POLLING_INTERVAL	(10 * HZ)
 #define POLLING_INTERVAL_DISCHG (20 * HZ)
@@ -48,53 +46,48 @@
 #define TEMP_HIGH_DISCHARGING 550
 #define TEMP_LOW_RECHARGING -50
 #define TEMP_HIGH_RECHARGING 500
-//                                                                          
-//                    
+
 #if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
 #define TEMP_HIGH_REDUCE_CHARGING 450
 #define CURRENT_LIMIT_VOLTAGE_THRESHOLD	4000000 /* 4.0V = 4000000uV */
 #endif
-//                                                                          
+
 #define TEMP_LOW_NO_BATT -300
-//                                           
+
 #if defined(CONFIG_MACH_VU10)
 #define BATT_VCELL_LOW_VOLT     3500 * 1000  // This value is uV, It is not mV.
 #else
 #define BATT_VCELL_LOW_VOLT	3500 // before 3400
 #endif
-//                                           
+
 #define BATT_SOC_LOW_TEMP_SET	0 // For low Temp Scenario need to power off
 
-//                                                                          
-//                    
 #if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
 current_limit_property_t current_limit_request = CURRENT_LIMIT_OFF;
 extern current_limit_property_t current_limit_state;
 #endif
-//                                                                          
 
-long thermal_mit_t = 0; //thermal_mitigation
+long thermal_mit_t = 0; // thermal_mitigation
 static int curr_temp_flag = 0;
 
-//                                                                             
-static long thres_low = 35000;//59000;
-static long thres_high = 37000;//61000;
-extern long tegra_get_cur_skin_temp();
-/** LG Battery Scenario ***/
-//1. OTP(OverTemperature)
+static long thres_low = 35000; //59000;
+static long thres_high = 37000; //61000;
+extern long tegra_get_cur_skin_temp(void);
+
+/** LG Battery Scenario **/
+// 1. OTP (OverTemperature)
 #define OTP_OPERATE_SWITCH 1
-//2. Camera Recording
+
+// 2. Camera Recording
 #define RECORDING_OPERATE_SWITCH 1
 #include "../misc/muic/muic.h"
 extern TYPE_CHARGING_MODE charging_mode;
 extern bool tegra_camera_get_power_save_rec(void);
 
-/*                                                        */
 #if defined(CONFIG_LEDS_VU10_PWRKEY)
 extern u8 pwrkey_led_status;
 extern bool set_pwrkey_led_state(uint);
 #endif
-/*                                                        */
 
 /**************************/
 
@@ -104,7 +97,7 @@ int batt_Temp_C = 0x10000;
 #define LGE_MAX8971_WORK_AROUND
 
 /*Unlimited charge for Hiddenmenu*/
-#define UNLIMITED_TEMP_VAL	0xA4 //decimal 164
+#define UNLIMITED_TEMP_VAL	0xA4 // decimal 164
 #define UNLIMITED_TEMP_HIGH	390
 #define UNLIMITED_TEMP_LOW	-50
 
@@ -119,14 +112,10 @@ int batt_Temp_C = 0x10000;
 #define DBATT(fmt, args...)
 #endif
 
-/*                                              */
-//                    
 #if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
 extern int max8971_is_charging_enable(void);
 #endif
-/*                                              */
 
-//                      
 static ssize_t lge_battery_show(struct device *dev,
 			    struct device_attribute *attr,
 			    char *buf);
@@ -136,13 +125,11 @@ static ssize_t lge_battery_store(struct device *dev,
 			     const char *buf,
 			     size_t count);
 
-
 struct lge_battery_info {
 	struct device 		*dev;
 
 	char 			*gauge_name;
 	char 			*charger_name;
-	//                                  
 	char 			*adc_name;
 
 	struct power_supply	psy_bat;
@@ -158,7 +145,7 @@ struct lge_battery_info {
 	unsigned int		bat_id;
 	unsigned int 		polling_interval;
 	unsigned int		bat_temp_adc;
-	unsigned int		temp_control; //for Charging test
+	unsigned int		temp_control; // for Charging test
 
 	/* charger */
 	int			online;
@@ -173,7 +160,7 @@ struct lge_battery_info {
 	struct workqueue_struct *battery_power_update_workqueue;
 
 	int present;
-	//                                   
+
 	int camera_state;
 	int pre_camera_state;
 	int camera_charging_switch;
@@ -203,11 +190,13 @@ static enum power_supply_property lge_battery_battery_props[] = {
 static enum power_supply_property lge_battery_power_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
 };
-//******************************************************************//
-// Battery Temperature Calculation Algorithm                        //
-// int reference_graph()                                            //
-//******************************************************************//
-//X3 Battery Only
+
+/********************************************************************/
+/* Battery Temperature Calculation Algorithm                        */
+/* int reference_graph()                                            */
+/********************************************************************/
+
+// X3 Battery Only
 battery_graph_prop battery_temp_graph[] =
 {
 	//s32	(adc, temp.);
@@ -377,18 +366,16 @@ int lge_battery_is_recharging_temperature(struct lge_battery_info *info, int tem
 
 int lge_battery_state_temperature(struct lge_battery_info *info, int temp)
 {
-//                                                                          
-/*                                              */
-//                    
 #if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
 	if (temp > TEMP_LOW_NO_BATT && info->temp_control != UNLIMITED_TEMP_VAL) {
-		if(temp <= TEMP_LOW_DISCHARGING) {
+		if (temp <= TEMP_LOW_DISCHARGING) {
 			recharging_wait_temperature_state = DISCHARGING_ON;
 			info->bat_health = POWER_SUPPLY_HEALTH_COLD;
+			return false;
 		}
 		else if (TEMP_LOW_DISCHARGING < temp && temp < TEMP_HIGH_REDUCE_CHARGING) {
 			current_limit_request = CURRENT_LIMIT_OFF;
-			if(recharging_wait_temperature_state && !lge_battery_is_recharging_temperature(info, temp)) {
+			if (recharging_wait_temperature_state && !lge_battery_is_recharging_temperature(info, temp)) {
 				DTEMP("Wait for appropriate recharging temperature\n");
 				return false;
 			}
@@ -397,7 +384,7 @@ int lge_battery_state_temperature(struct lge_battery_info *info, int temp)
 			return true;
 		}
 		else if (TEMP_HIGH_REDUCE_CHARGING <= temp && temp < TEMP_HIGH_DISCHARGING) {
-			if(info->bat_vcell > CURRENT_LIMIT_VOLTAGE_THRESHOLD) {
+			if (info->bat_vcell > CURRENT_LIMIT_VOLTAGE_THRESHOLD) {
 				recharging_wait_temperature_state = DISCHARGING_ON; // set flag
 				info->bat_health = POWER_SUPPLY_HEALTH_OVERHEAT;
 				return false;
@@ -409,14 +396,18 @@ int lge_battery_state_temperature(struct lge_battery_info *info, int temp)
 				return true;
 			}
 		}
-		else if(TEMP_HIGH_DISCHARGING <= temp) {
+		else if (TEMP_HIGH_DISCHARGING <= temp) {
 			recharging_wait_temperature_state = DISCHARGING_ON;
 			info->bat_health = POWER_SUPPLY_HEALTH_OVERHEAT;
+			return false;
+		}
+		else {
+			return false;
 		}
 	}
 	else if (info->temp_control == UNLIMITED_TEMP_VAL || temp <= TEMP_LOW_NO_BATT) {
 		current_limit_request = CURRENT_LIMIT_OFF;
-		if(recharging_wait_temperature_state && !lge_battery_is_recharging_temperature(info, temp ) ) {
+		if (recharging_wait_temperature_state && !lge_battery_is_recharging_temperature(info, temp)) {
 			DTEMP("Wait for appropriate recharging temperature\n");
 			return false;
 		}
@@ -428,12 +419,10 @@ int lge_battery_state_temperature(struct lge_battery_info *info, int temp)
 		DTEMP("battery state temperature is False(Can not Charging) !!\n");
 		return false;
 	}
-/*                                              */
 #else
-	if( (temp > (TEMP_LOW_DISCHARGING) && temp < (TEMP_HIGH_DISCHARGING)) \
-		|| ( temp <= (TEMP_LOW_NO_BATT))|| info->temp_control == UNLIMITED_TEMP_VAL  )
-	{
-		if(recharging_wait_temperature_state && !lge_battery_is_recharging_temperature(info, temp ) ) {
+	if ((temp > (TEMP_LOW_DISCHARGING) && temp < (TEMP_HIGH_DISCHARGING)) \
+		|| (temp <= (TEMP_LOW_NO_BATT))|| info->temp_control == UNLIMITED_TEMP_VAL) {
+		if (recharging_wait_temperature_state && !lge_battery_is_recharging_temperature(info, temp)) {
 			DTEMP("Wait for appropriate recharging temperature\n");
 			return false;
 		}
@@ -441,26 +430,22 @@ int lge_battery_state_temperature(struct lge_battery_info *info, int temp)
 		DTEMP("battery state temperature is True(Can Charging)!\n");
 		return true;
 	}
-
-	if( !( temp <= TEMP_LOW_NO_BATT) && !(info->temp_control == UNLIMITED_TEMP_VAL)) {
+	if (!(temp <= TEMP_LOW_NO_BATT) && !(info->temp_control == UNLIMITED_TEMP_VAL)) {
 		recharging_wait_temperature_state = DISCHARGING_ON; // set flag
-		if(temp < TEMP_LOW_DISCHARGING){
+		if (temp < TEMP_LOW_DISCHARGING) {
 			info->bat_health = POWER_SUPPLY_HEALTH_COLD;
 		}
-		else if(temp > TEMP_HIGH_DISCHARGING){
+		else if (temp > TEMP_HIGH_DISCHARGING) {
 			info->bat_health = POWER_SUPPLY_HEALTH_OVERHEAT;
 		}
 		DTEMP("Set recharging wait temperature flag : temp_C[%d]\n", temp);
 	}
 
-	DTEMP("battery state temperature is False(Can not Charging) !!\n");
+	DTEMP("battery state temperature is False(Can not Charging)!!\n");
 	return false;
 #endif
-//                                                                          
-
 }
 
-//                                  
 static void lge_battery_get_adc_info(struct lge_battery_info *info)
 {
 	struct power_supply *psy = power_supply_get_by_name(info->adc_name);
@@ -661,12 +646,14 @@ static int lge_battery_cable_set_property(struct power_supply *psy,
 {
 	struct lge_battery_info *info;
 
-	if(val->intval == POWER_SUPPLY_TYPE_MAINS)
+	if (val->intval == POWER_SUPPLY_TYPE_MAINS)
 		info = container_of(psy, struct lge_battery_info, psy_ac);
-	else if(val->intval == POWER_SUPPLY_TYPE_USB)
+	else if (val->intval == POWER_SUPPLY_TYPE_USB)
 		info = container_of(psy, struct lge_battery_info, psy_usb);
-	else if(val->intval == POWER_SUPPLY_TYPE_FACTORY)
+	else if (val->intval == POWER_SUPPLY_TYPE_FACTORY)
 		info = container_of(psy, struct lge_battery_info, psy_factory);
+	else // Assume USB otherwise
+		info = container_of(psy, struct lge_battery_info, psy_usb);
 
         info->charger_name = "charger";
         info->online = val->intval;
@@ -680,23 +667,20 @@ static int lge_battery_cable_set_property(struct power_supply *psy,
 				case POWER_SUPPLY_TYPE_USB:	// USB
 				case POWER_SUPPLY_TYPE_FACTORY:
 					info->online = val->intval;
-                                info->charging_status = POWER_SUPPLY_STATUS_CHARGING;
+                                	info->charging_status = POWER_SUPPLY_STATUS_CHARGING;
 					break;
 				case POWER_SUPPLY_TYPE_UPS:
 				default:
 					return -EINVAL;
 					break;
 			}
-			if(val->intval == POWER_SUPPLY_TYPE_MAINS)
-			{
+			if (val->intval == POWER_SUPPLY_TYPE_MAINS) {
 				power_supply_changed(&info->psy_ac);
 			}
-			else if(val->intval == POWER_SUPPLY_TYPE_USB)
-			{
+			else if (val->intval == POWER_SUPPLY_TYPE_USB) {
 				power_supply_changed(&info->psy_usb);
 			}
-			else if(val->intval == POWER_SUPPLY_TYPE_FACTORY)
-			{
+			else if (val->intval == POWER_SUPPLY_TYPE_FACTORY) {
 				power_supply_changed(&info->psy_factory);
 			}
 
@@ -724,14 +708,14 @@ static int lge_battery_battery_set_property(struct power_supply *psy,
 
 	switch (psp) {
 		case POWER_SUPPLY_PROP_STATUS:
-			info->charger_name = info->psy_bat.name;
+			info->charger_name = (char *)info->psy_bat.name;
 			info->online = POWER_SUPPLY_TYPE_BATTERY;
 			info->charging_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
 			power_supply_changed(&info->psy_bat);
 			schedule_work(&info->monitor_work);
 			break;
 		case POWER_SUPPLY_PROP_CAPACITY_LEVEL:
-			info->charger_name = info->psy_bat.name;
+			info->charger_name = (char *)info->psy_bat.name;
 			info->online = POWER_SUPPLY_TYPE_BATTERY;
 			if (val->intval != POWER_SUPPLY_CAPACITY_LEVEL_CRITICAL)
 				return -EINVAL;
@@ -743,26 +727,19 @@ static int lge_battery_battery_set_property(struct power_supply *psy,
 			break;
 		case POWER_SUPPLY_PROP_TEMP_CONTROL:
 			printk("temp_control is %d, %x\n", val->intval, val->intval);
-			if(val->intval == UNLIMITED_TEMP_VAL)
-			{
-			#if defined(CONFIG_MACH_VU10)
-				//                                                               
+			if (val->intval == UNLIMITED_TEMP_VAL) {
+#if defined(CONFIG_MACH_VU10)
 				char nv_buf[1] = {0x1};
 				lge_nvdata_write(LGE_NVDATA_OTP_OFFSET, nv_buf, 1);
 				printk ("[OTP] OTP is enabled. write to nv...\n");
-				//                                                               
-			#endif
+#endif
 				info->temp_control = val->intval;
-			}
-			else
-			{
-			#if defined(CONFIG_MACH_VU10)
-				//                                                               
+			} else {
+#if defined(CONFIG_MACH_VU10)
 				char nv_buf[1] = {0x0};
 				lge_nvdata_write(LGE_NVDATA_OTP_OFFSET, nv_buf, 1);
 				printk ("[OTP] OTP is disabled. write to nv...\n");
-				//                                                               
-			#endif
+#endif
 				info->temp_control = 0;
 			}
 			break;
@@ -914,17 +891,17 @@ static int lge_battery_enable_charger(struct lge_battery_info *info, bool enable
 					if((info->camera_state != 49)&&(thermal_mit_t>=thres_high) && info->temp_control != UNLIMITED_TEMP_VAL){
 						if((info->bat_soc) <= 11){
 							//info->online = POWER_SUPPLY_TYPE_MAINS;
-/*                            chg_700_flag = 1;*/
-	                        dev_info(info->dev, "%s : High thermal_mit_t but SOC<10%, Charging Current will be 700mA\n",__func__);
+//				chg_700_flag = 1;
+	                        dev_info(info->dev, "%s : High thermal_mit_t but SOC<10%%, Charging Current will be 700mA\n",__func__);
 						}else{
 							info->online = POWER_SUPPLY_TYPE_USB;
 						}
 
 					}
 				info->pre_camera_state = info->camera_state;
-	            dev_info(info->dev,"%s : camera_state is %d , pre_camera_state is %d\n", info->camera_state, info->pre_camera_state);
+				dev_info(info->dev,"%s : camera_state is %d , pre_camera_state is %d\n",
+						__func__, info->camera_state, info->pre_camera_state);
 				}
-				//       
 #endif
 				val_type.intval = POWER_SUPPLY_STATUS_CHARGING;
 				val_chg_current.intval = info->online;
@@ -975,14 +952,14 @@ static void lge_battery_cable_work(struct work_struct *work)
 			if((recharging_wait_temperature_state == DISCHARGING_ON) && (info->charging_status == POWER_SUPPLY_STATUS_CHARGING)){
                                         info->charging_state_temp = lge_battery_enable_charger(info, false);
                                         info->charging_status  = POWER_SUPPLY_STATUS_DISCHARGING;
-                                        printk("%s: Discharging cause of temperature (%s)\n", __func__,info->bat_health);
+                                        printk("%s: Discharging cause of temperature (%u)\n", __func__, info->bat_health);
                                 printk("%s : CALLED in Temperature scean\n",__func__);
 			        break;
 			}
 //                      
 			/*                                              */
 			else if((recharging_wait_temperature_state == DISCHARGING_ON) && (info->charging_status == POWER_SUPPLY_STATUS_DISCHARGING)) {
-				printk("%s : Discharging setting again!!! (%s)\n", __func__, info->bat_health);
+				printk("%s : Discharging setting again!!! (%u)\n", __func__, info->bat_health);
 				info->charging_state_temp = lge_battery_enable_charger(info, false);
 				info->charging_status  = POWER_SUPPLY_STATUS_DISCHARGING;
 				break;
@@ -1012,8 +989,8 @@ static void lge_battery_cable_work(struct work_struct *work)
 	power_supply_changed(&info->psy_bat);
 	return;
 }
-//                    
-#define FOR_MONITORING_TEMP_N_CURR 1 //                                                                                     
+
+#define FOR_MONITORING_TEMP_N_CURR 1
 
 #if FOR_MONITORING_TEMP_N_CURR
 extern int get_temp_for_log(long *pTemp);
@@ -1025,7 +1002,7 @@ static void lge_battery_monitor_work(struct work_struct *work)
 {
 	struct lge_battery_info *info = container_of(work, struct lge_battery_info,
 						 monitor_work);
-//                                                
+
 	static unsigned int old_bat_temp = 0;
 	static unsigned int old_bat_soc = 0;
 	static unsigned int chg_cnt_old= 0;
@@ -1045,7 +1022,7 @@ static void lge_battery_monitor_work(struct work_struct *work)
 	ret = get_temp_for_log(&temp_now);
 
 	thermal_mit_t = tegra_get_cur_skin_temp(); //to use skin temp
-	DBATT("skin temp : %d curr_temp_flag = %d\n", thermal_mit_t, curr_temp_flag);
+	DBATT("skin temp : %ld curr_temp_flag = %d\n", thermal_mit_t, curr_temp_flag);
 	if((thermal_mit_t > thres_high)&&(curr_temp_flag == 0)){
 		lge_battery_enable_charger(info, true);
 		curr_temp_flag = 1;
@@ -1062,9 +1039,9 @@ static void lge_battery_monitor_work(struct work_struct *work)
 	ret = get_current_for_log(&current_now);
 	if ((ret < 0) && (current_now != -9998)) dev_err(info->dev, "get_current_for_log fail[%d]\n", ret);
 	if (current_now == -9998)
-		DBATT("temp_now[%dmC], current_sensor_off[single_core]\n", temp_now);
+		DBATT("temp_now[%ldmC], current_sensor_off[single_core]\n", temp_now);
 	else
-		DBATT("temp_now[%dmC], current_now[%dmA]\n", temp_now, current_now);
+		DBATT("temp_now[%ldmC], current_now[%dmA]\n", temp_now, current_now);
 #endif
 
 	chg_cnt_old = chg_cnt_new;
@@ -1090,7 +1067,7 @@ static void lge_battery_monitor_work(struct work_struct *work)
 		if(old_soc >= (info->bat_soc + 5)){
 			old_soc = info->bat_soc;
 			//reset Charger
-			dev_info(info->dev, "charger do not work correctly : soc %d, Reset %s\n", info->bat_soc , info->charger_name);
+			dev_info(info->dev, "charger do not work correctly : soc %d, Reset %s\n", info->bat_soc, info->charger_name);
 	                lge_battery_enable_charger(info, false);
         	        dev_info(info->dev, "%s off",info->charger_name);
 			mdelay(1);
@@ -1099,30 +1076,27 @@ static void lge_battery_monitor_work(struct work_struct *work)
 		}
 	}
 #endif
-	if(info->bat_soc == 0){
+	if (info->bat_soc == 0) {
 		power_supply_changed(&info->psy_bat);
 		dev_info(info->dev,
-		"soc(%d),  vcell(%d), temp(%d), charging(%d), health(%d)\n",
-		info->bat_soc,
-		info->bat_vcell / 1000, info->bat_temp ,
-		info->charging_status, info->bat_health);
+			"soc(%d),  vcell(%d), temp(%d), charging(%d), health(%d)\n",
+			info->bat_soc, info->bat_vcell / 1000, info->bat_temp,
+			info->charging_status, info->bat_health);
 	} else {
-//                                                
-		if((old_bat_temp + 10) <  info->bat_temp || info->bat_temp < (old_bat_temp - 10)){
+		if ((old_bat_temp + 10) <  info->bat_temp || info->bat_temp < (old_bat_temp - 10)) {
 			power_supply_changed(&info->psy_bat);
 			old_bat_temp = info->bat_temp;
 			}
-		else if(old_bat_soc == info->bat_soc) {
+		else if (old_bat_soc == info->bat_soc) {
 			//No SOC Change -> Skip Uevent
 		} else {
 			power_supply_changed(&info->psy_bat);
 			old_bat_soc = info->bat_soc;
 		}
 
-		DBATT("soc(%d),  vcell(%d), temp(%d), charging(%d), health(%d), id(%d), online(%d), system_rev(%d)\n",
-		info->bat_soc,
-		info->bat_vcell / 1000, info->bat_temp ,
-		info->charging_status, info->bat_health, info->bat_id, info->online, system_rev);
+		DBATT("soc(%d), vcell(%d), temp(%d), charging(%d), health(%d), id(%d), online(%d), system_rev(%d)\n",
+			info->bat_soc, info->bat_vcell / 1000, info->bat_temp,
+			info->charging_status, info->bat_health, info->bat_id, info->online, system_rev);
 	}
 	lge_battery_get_camera_info(info,CAMERA_STATE_ROOT);
 	return;
@@ -1134,49 +1108,45 @@ static void lge_battery_polling_work(struct work_struct *work)
 	int forced_cable_work_needed = 0;
 	info = container_of(work, struct lge_battery_info, polling_work.work);
 #if defined(CONFIG_MACH_VU10)
-	//                                                               
 	static char nv_buf[1] = {0};
 
 	if (info->temp_control == 0xFF) {
 		if (lge_nvdata_read(LGE_NVDATA_OTP_OFFSET, nv_buf, 1) == 1) {
-			printk ("[OTP] NV Read (%d) = 0x%02X\n", LGE_NVDATA_OTP_OFFSET, nv_buf[0]);
+			printk("[OTP] NV Read (%d) = 0x%02X\n", LGE_NVDATA_OTP_OFFSET, nv_buf[0]);
 			if (nv_buf[0] == 0x1) {
 				info->temp_control = UNLIMITED_TEMP_VAL;
-				printk ("[OTP] OTP mode enabled!\n");
+				printk("[OTP] OTP mode enabled!\n");
 			}
 			else {
 				info->temp_control = 0x0;
-				printk ("[OTP] OTP mode disabled!\n");
+				printk("[OTP] OTP mode disabled!\n");
 			}
 		}
 		else {
-			printk ("[OTP] NV Read Failed (%d)\n", LGE_NVDATA_OTP_OFFSET);
+			printk("[OTP] NV Read Failed (%d)\n", LGE_NVDATA_OTP_OFFSET);
 		}
 	}
-	//                                                               
 #endif
 	schedule_work(&info->monitor_work);
 #if OTP_OPERATE_SWITCH
-	if(info->online != POWER_SUPPLY_TYPE_BATTERY && info->online != POWER_SUPPLY_TYPE_FACTORY ){
-		if(recharging_wait_temperature_state == DISCHARGING_ON && info->charging_status == POWER_SUPPLY_STATUS_CHARGING){
-		info->cable_work_state = 1;
-		forced_cable_work_needed = 1;
-	}
-	else if(info->cable_work_state == 1 && recharging_wait_temperature_state == DISCHARGING_OFF && info->charging_status != POWER_SUPPLY_STATUS_CHARGING ){
-		info->cable_work_state = 0;
-		forced_cable_work_needed = 1;
+	if (info->online != POWER_SUPPLY_TYPE_BATTERY && info->online != POWER_SUPPLY_TYPE_FACTORY) {
+		if (recharging_wait_temperature_state == DISCHARGING_ON && info->charging_status == POWER_SUPPLY_STATUS_CHARGING) {
+			info->cable_work_state = 1;
+			forced_cable_work_needed = 1;
+		}
+		else if (info->cable_work_state == 1 && recharging_wait_temperature_state == DISCHARGING_OFF &&
+			info->charging_status != POWER_SUPPLY_STATUS_CHARGING) {
+			info->cable_work_state = 0;
+			forced_cable_work_needed = 1;
 		}
 	}
 #endif
-//                    
 #if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
-	/*                                              */
-	//printk("[Power] max8971_is_charging_enable = %d charging_status = %s\n", max8971_is_charging_enable(), info->charging_status);
+	//printk("[Power] max8971_is_charging_enable = %d charging_status = %d\n", max8971_is_charging_enable(), info->charging_status);
 	if (max8971_is_charging_enable() == 1 && info->charging_status != POWER_SUPPLY_STATUS_CHARGING) {
-		printk("[Power] charger is enabled but charging status %s. force cable work start...\n", info->charging_status);
+		printk("[Power] charger is enabled but charging status %d. force cable work start...\n", info->charging_status);
 		forced_cable_work_needed = 1;
 	}
-	/*                                              */
 #endif
 
 #if RECORDING_OPERATE_SWITCH
@@ -1198,30 +1168,22 @@ static void lge_battery_polling_work(struct work_struct *work)
 			forced_cable_work_needed = 1;
 		}
 	}
-	//END
+	// END
 #endif
 
-//                                                                          
-//                    
-#if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
+#if defined(CONFIG_MACH_VU10)
 	if (current_limit_state != current_limit_request) {
-		/*                                              */
-//                                   
-#ifdef CONFIG_MACH_VU10
 		lge_battery_enable_charger(info, true);
-#endif
-		/*                                              */
 	}
 #endif
-//                                                                          
 
-	if(forced_cable_work_needed == 1){
-		queue_delayed_work(info->battery_power_update_workqueue, &info->cable_work, 0);
+	if (forced_cable_work_needed == 1) {
+		queue_delayed_work(info->battery_power_update_workqueue, (struct delayed_work *)&info->cable_work, 0);
 	}
 
-	if(info->charging_status == POWER_SUPPLY_STATUS_NOT_CHARGING){ //Discharging Update per 20 Sec
+	if (info->charging_status == POWER_SUPPLY_STATUS_NOT_CHARGING) { // Discharging Update per 20 Sec
 		queue_delayed_work(info->battery_power_update_workqueue, &info->polling_work, POLLING_INTERVAL_DISCHG);
-	}else{							//Charging     Update per 10 sec
+	} else {							// Charging Update per 10 sec
 		queue_delayed_work(info->battery_power_update_workqueue, &info->polling_work, info->polling_interval);
 	}
 	return;
@@ -1241,8 +1203,6 @@ static struct device_attribute lge_battery_attrs[] = {
 	LGE_BCI_ATTR(bat_soc),
 	LGE_BCI_ATTR(bat_vcell),
 	LGE_BCI_ATTR(bat_temp),
-//                            
-	//                       
 };
 
 static ssize_t lge_battery_show(struct device *dev,
@@ -1277,6 +1237,7 @@ static ssize_t lge_battery_store(struct device *dev,
 	return ret;
 }
 
+#if 0
 static int lge_battery_create_attrs(struct device *dev)
 {
 	int i, rc;
@@ -1294,6 +1255,7 @@ failed:
 succeed:
 	return rc;
 }
+#endif
 
 static int lge_battery_is_charging(struct lge_battery_info *info)
 {

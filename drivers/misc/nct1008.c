@@ -188,7 +188,7 @@ static int nct1008_read_reg(struct i2c_client *client, u8 reg)
 }
 
 #ifdef CONFIG_MACH_X3
-int nct1008_is_disabled()
+int nct1008_is_disabled(void)
 {
 	return nct1008_is_shutdown;
 }
@@ -1497,13 +1497,14 @@ error:
 static int nct1008_reboot_notify(struct notifier_block *nb,
                                 unsigned long event, void *data)
 {
+	struct i2c_client *client = ref_data->client;
+
 	switch (event) {
 		case SYS_RESTART:
 		case SYS_HALT:
 		case SYS_POWER_OFF: {
 			printk("%s \n",__func__);
 			nct1008_is_shutdown = 1;
-			struct i2c_client *client = ref_data->client;
 			disable_irq(client->irq);
 
 			return NOTIFY_OK;

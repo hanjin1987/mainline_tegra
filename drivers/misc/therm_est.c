@@ -69,7 +69,7 @@ static long bcoeff[] = {-38, -11, -3, -2, -2, -1, -1, -1, 0, 11, -13, 6, 7, 5, 6
 static long bhist[HIST_LEN] ={250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250};
 
 static long cur_skin_temp1=30000;
-extern int nct1008_is_disabled();
+extern int nct1008_is_disabled(void);
 extern int batt_Temp_C;
 #endif
 
@@ -348,7 +348,7 @@ get_temp_err:
 }
 
 #ifdef CONFIG_MACH_X3
-long tegra_get_cur_skin_temp()
+long tegra_get_cur_skin_temp(void)
 {
         return cur_skin_temp1;
 }

@@ -1729,7 +1729,7 @@ made_compressed_probe:
 		rb->base = usb_alloc_coherent(acm->dev, readsize,
 				GFP_KERNEL, &rb->dma);
 		if (!rb->base) {
-			printk(&intf->dev,
+			dev_dbg(&intf->dev,
 				"out of memory (read bufs usb_alloc_coherent)\n");
 			goto alloc_fail7;
 		}

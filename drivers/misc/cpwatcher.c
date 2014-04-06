@@ -1,4 +1,3 @@
-
 /*
  * LGE - CP Watcher Driver
  *
@@ -45,7 +44,7 @@
 #include "../../arch/arm/mach-tegra/lge/x3/include/lge/board-x3-nv.h"
 
 
-#include <linux/slab.h>         //kzalloc
+#include <linux/slab.h>         // kzalloc
 #include <linux/errno.h>
 #include <linux/kernel.h>
 
@@ -141,8 +140,8 @@ struct cpwatcher_dev {
 };
 static struct cpwatcher_dev *cpwatcher;
 
-
-static int lge_is_crash_dump_enabled()
+#if 0
+static int lge_is_crash_dump_enabled(void)
 {
 	char data[2] = {0x00,0x00};
 
@@ -154,8 +153,10 @@ static int lge_is_crash_dump_enabled()
 	else
 		return 0;
 }
+#endif
+
  //RIP-73256 : [X3] CTS issue : permission error - byeonggeun.kim [START]
-static int lge_is_ril_recovery_mode_enabled()
+static int lge_is_ril_recovery_mode_enabled(void)
 {
 	char data[2] = {0x00,0x00};
 
@@ -246,7 +247,7 @@ static void cpwatcher_get_status(unsigned int *pin)
 	*pin = gpio_get_value(cp_crash_int_pin);
 }
 
-static void cpwatcher_irq_handler(void *dev_id)
+static irqreturn_t cpwatcher_irq_handler(int irq, void *dev_id)
 {
 	struct cpwatcher_dev *dev = cpwatcher;
 
@@ -257,6 +258,7 @@ static void cpwatcher_irq_handler(void *dev_id)
 	}
 
 	//NvOdmGpioInterruptDone(cpwatcher->hGpioInterrupt);
+	return IRQ_HANDLED;
 }
 
 
@@ -286,26 +288,28 @@ static int cpwatcher_thread(void *pd)
 }
 #endif
 
-extern volatile int time_to_stop; //                                                                                                             
+extern volatile int time_to_stop;
 
 static void cpwatcher_work_func(struct work_struct *wq)
 {
+	extern void muic_proc_set_cp_usb_force(void);
+
 	struct cpwatcher_dev *dev = cpwatcher;
 	unsigned int status = 0;
-    //int ret = 0;
+	//int ret = 0;
         
-	//unsigned char data;				//Blocked due to CS Issue
-    struct timeval now;
-    struct tm gmt_time;
+	//unsigned char data;		// Blocked due to CS Issue
+	struct timeval now;
+	struct tm gmt_time;
 
-	char* argv[] = {"/system/bin/ifx_coredump", "CP_CRASH_IRQ", NULL};
-	char *envp[] = { "HOME=/",	"PATH=/sbin:/bin:/system/bin",	NULL };	
+//	char* argv[] = {"/system/bin/ifx_coredump", "CP_CRASH_IRQ", NULL};
+//	char *envp[] = { "HOME=/",	"PATH=/sbin:/bin:/system/bin",	NULL };	
 
     do_gettimeofday(&now);
     time_to_tm(now.tv_sec, 0, &gmt_time);
         
     printk("[CPW] cpwatcher_work_func()\n");
-    printk(KERN_ERR "%d-%d-%d %d:%d:%d.%ld *\n",
+    printk(KERN_ERR "%ld-%d-%d %d:%d:%d.%ld *\n",
         gmt_time.tm_year + 1900, gmt_time.tm_mon + 1, 
         gmt_time.tm_mday, gmt_time.tm_hour - sys_tz.tz_minuteswest / 60,
         gmt_time.tm_min, gmt_time.tm_sec, now.tv_usec);
@@ -340,7 +344,6 @@ static void cpwatcher_work_func(struct work_struct *wq)
                     printk("[CPW] CP Crash : lge_is_ril_recovery_mode_enabled() = 1 ...change to CP_USB mode \n");
                     gpio_set_value(KEYBACKLIGHT_LEDS_GPIO, 1);      //Temporary -- Keybacklight on when occurs CP Crash
 
-                    extern void muic_proc_set_cp_usb_force(void);
                     muic_proc_set_cp_usb_force();
                 }
                 wake_unlock(&dev->wake_lock);
@@ -421,7 +424,7 @@ static int cpwatcher_probe(struct platform_device *pdev)
 {
 	struct cpwatcher_dev *dev; 
 	struct device *dev_sys = &pdev->dev;
-	int i, j;
+//	int i, j;
 //	NvBool ret_status = 0;
 	int ret = 0;
 
@@ -530,7 +533,7 @@ fail_gpio_open:
 fail_input_register:
 	input_free_device(dev->input);
 
-fail_free_irq:
+//fail_free_irq:
 	free_irq(TEGRA_GPIO_TO_IRQ(cp_crash_int_pin), dev);
 
 fail_input_allocate:

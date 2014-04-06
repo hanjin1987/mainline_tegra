@@ -135,8 +135,7 @@ extern void rcp_cbus_uevent(u8);		//Subhransu
 
 
 //static void simg_interrupt_cb(void);
-//                                              
-static void simg_interrupt_cb(struct work_struct *simg_work);
+//static void simg_interrupt_cb(struct work_struct *simg_work);
 
 #ifndef FEATURE_SiI9244_DEVICE
 #error "~~~~~~~~~~~~~~~~"
@@ -180,7 +179,7 @@ void delete_all_cbus_cmd(void);
 void simg_init_timer(u8 data, unsigned int msecs);
 void simg_timer_handler(unsigned long timer_type);
 void simg_timer_hanler_cb(void* _data);
-static void simg_chip_rst(void);
+//static void simg_chip_rst(void);
 void ReadModifyWriteCBUS(u8 Offset, u8 Mask, u8 Value);
 void ReadModifyWritePage0(u8 Offset, u8 Mask, u8 Data);
 void WriteBytePage0 (u8 Offset, u8 Data);
@@ -419,13 +418,12 @@ cbus_cmd_node *cbus_cmd_head = NULL, *cbus_cmd_tail = NULL;
 
 #endif /*FEATURE_SiI9244_DEVICE*/
 
-//              
 #if 0
 static struct work_struct simg_interrupt_work = {
 	simg_interrupt_cb
 };
 #else
-static struct work_struct simg_interrupt_work;
+//static struct work_struct simg_interrupt_work;
 #endif
 
 struct i2c_client* get_simgI2C_client(u8 device_id)
@@ -518,17 +516,17 @@ void simg_init_timer(u8 data, unsigned int msecs)
   simg_timer.expires = jiffies + (MSECS_TO_JIFFIES(msecs) + 1); // 2 * HZ;
   add_timer(&simg_timer);
 }
-EXPORT_SYMBOL(simg_timer);		// kibum.leelge.com
+EXPORT_SYMBOL(simg_timer);		// kibum.lee@lge.com
 
-//                                                     
-//                                                  
+#if 0
 static irqreturn_t simg_int_irq_handler(int irq, void *devid)
 {
     SII_LOG_FUNCTION_NAME_ENTRY;
  	schedule_work(&simg_interrupt_work);
     SII_LOG_FUNCTION_NAME_EXIT;
-	return IRQ_HANDLED;		//                  
+	return IRQ_HANDLED;
 }
+#endif
 
 void simg_interrupt_enable(bool flag)
 {
@@ -701,7 +699,7 @@ void ReadModifyWriteCBUS(u8 Offset, u8 Mask, u8 Value)
   WriteByteCBUS(Offset, Temp);
 }
 
-
+#if 0
 static void simg_chip_rst(void)
 {
   //skip power on in this test code
@@ -722,11 +720,9 @@ static void simg_chip_rst(void)
 	mdelay(2);
 	gpio_set_value(GPIO_MHL_RST, GPIO_LEVEL_HIGH);
 #endif
-  
 }
 
 //static void simg_interrupt_cb(void)
-//                                               
 static void simg_interrupt_cb(struct work_struct *simg_work)
 {
     static int function_start = 1;   //for test....		// for MHL CTS
@@ -774,6 +770,7 @@ static void simg_interrupt_cb(struct work_struct *simg_work)
     }
     SII_LOG_FUNCTION_NAME_EXIT;
 }
+#endif
 
 static void mhl_tx_init(void)
 {
@@ -2818,7 +2815,7 @@ u8 TX_RGND_check (void)
 
 void CbusReset (void)
 {
-	u8		idx;
+//	u8		idx;
 
 	SET_BIT(PAGE_0_0X72, 0x05, 3);
 

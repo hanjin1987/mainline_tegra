@@ -66,7 +66,7 @@ struct f_ecm {
 };
 
 #ifdef CONFIG_LGE_USB_GADGET_DRIVER
-extern 	u8* get_ndis_hostaddr();
+extern 	u8* get_ndis_hostaddr(void);
 #endif
 
 static inline struct f_ecm *func_to_ecm(struct usb_function *f)
@@ -721,7 +721,7 @@ static void ecm_disable(struct usb_function *f)
 	}
 }
 
-#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+#if 0 //def CONFIG_LGE_USB_GADGET_DRIVER
 static void ecm_suspend(struct usb_function *f)
 {
 	printk("ecm ecm_suspend\n");

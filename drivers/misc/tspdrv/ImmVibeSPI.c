@@ -106,7 +106,7 @@ VibeUInt32 g_nPWM_Freq = PWM_PERIOD_DEFAULT;
 VibeUInt32 g_nLDO_Voltage = LDO_VOLTAGE_DEFAULT;
 
 
-IMMVIBESPIAPI VibeStatus SYS_API__I2C__Write( _addr, _data)
+IMMVIBESPIAPI VibeStatus SYS_API__I2C__Write(u8 _addr, u8 _data)
 {
 	return tspdrv_i2c_write_byte_data(_addr, _data);
 }
@@ -380,7 +380,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8* pForceOutputBuffer)
 {
     VibeInt8 nForce;
-    int ret = VIBE_S_SUCCESS;
+//    int ret = VIBE_S_SUCCESS;
 	int duty_ns;
 
     switch (nOutputSignalBitDepth)
@@ -421,10 +421,12 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
 /*
 ** Called to set force output frequency parameters
 */
+#if 0
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetFrequency(VibeUInt8 nActuatorIndex, VibeUInt16 nFrequencyParameterID, VibeUInt32 nFrequencyParameterValue)
 {
     return VIBE_S_SUCCESS;
 }
+#endif
 
 /*
 ** Called to get the device name (device name must be returned as ANSI char)

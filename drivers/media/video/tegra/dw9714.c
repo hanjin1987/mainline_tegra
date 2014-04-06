@@ -37,15 +37,15 @@ extern void subpm_set_gpio(int onoff);
 #define POS_LOW       0
 #define POS_HIGH      1023
 #define SETTLETIME_MS 30 //100
-#define FOCAL_LENGTH  (3.2f)//(3.5f)
-#define FNUMBER       (2.4f)//(2.8f)
+#define FOCAL_LENGTH  (3.2f) //(3.5f)
+#define FNUMBER       (2.4f) //(2.8f)
 
 DEFINE_MUTEX(dw9714_lock);
 #define DW9714_MAX_RETRIES (3)
 
 // LG Innotek Artwork 담당자의 Rev. 관리 실수로 PK03으로 다시 원복 추후 수정된 모듈을 받으면, 다시 137(PR1)으로 변경
 // 2012.3.27 : 아래 gpio를 137로 변경하면 폰이 부팅되지 않음 : m24c08과 충돌됨
-#define DW9714_VCM_PWD_GPIO     137 //                                                                                                     
+#define DW9714_VCM_PWD_GPIO     137
 
 #define DW9714_USE_LINEAR_SLOPE_CONTROL (1)
 
@@ -92,106 +92,110 @@ static int dw9714_write(struct i2c_client *client, u16 value)
 	return -EIO;  
 }
 
-#ifndef JKR_TEST //for custom control
+#ifndef JKR_TEST // for custom control
 static u32 register_code;
 static ssize_t dw9714_ctrl_store(struct device* dev,                                                            
-							struct device_attribute* attr, const char* buf, size_t count) 
+				 struct device_attribute* attr, const char* buf, size_t count) 
 {                                                                                                                    
-	unsigned long	position	=	simple_strtoul(buf, NULL, 10);                                                
+	unsigned long position = simple_strtoul(buf, NULL, 10);                                                
 	int err;
-	
-	printk(KERN_INFO "enter %s\n", __func__);																													 
+
+	printk(KERN_INFO "enter %s\n", __func__);
 
 	//valid range of position : 0 <= position <= 1023
 	if (position < 0 || position > 1023){
-	//    	pr_err("[CAM] DW9714: INVALID position = %l (low:0, high:1023)", position);
+		//pr_err("[CAM] DW9714: INVALID position = %l (low:0, high:1023)", position);
 		return count;
 	}
 	register_code = position;
+
 	err = dw9714_write(info->i2c_client, 0xECA3);
   	if (err)
-      goto dw9714_fail;
+		goto dw9714_fail;
+
 	err = dw9714_write(info->i2c_client, 0xF200|(0x0F<<3));
 	if (err)
-	  goto dw9714_fail;
+		goto dw9714_fail;
+
 	err = dw9714_write(info->i2c_client, 0xDC51);
 	if (err)
-	  goto dw9714_fail;
+		goto dw9714_fail;
+
 	//setting: postion, codes for step, step period
 	err = dw9714_write(info->i2c_client, ((position<<4 |
 	                                        (0x3 << 2 ) |
 	                                        (0x0 << 0))));
 	if (err)
-	  goto dw9714_fail;
+		goto dw9714_fail;
 
 	return count;
 	  
-	dw9714_fail:
-	  pr_err("[CAM] DW9714: %s: set position failed(%d)\n", __func__, err);
+dw9714_fail:
+	pr_err("[CAM] DW9714: %s: set position failed(%d)\n", __func__, err);
 	return count;
 }                                                                                                                    
                                                                                                                      
 static ssize_t dw9714_ctrl_show(struct device* dev,                                                             
-							struct device_attribute* attr, const char* buf, size_t count) 
+				struct device_attribute* attr, char* buf) 
 {    
 	printk(KERN_INFO "enter %s\n", __func__);
 
-	return	snprintf(buf, PAGE_SIZE, "%d\n", register_code);                                                   
+	return snprintf(buf, PAGE_SIZE, "%d\n", register_code);                                                   
 }                                                                                                                    
 static DEVICE_ATTR(dw9714_ctrl, 0664, dw9714_ctrl_show, dw9714_ctrl_store);
 #endif
 
 static int dw9714_set_position(struct dw9714_info *info, u32 position)
-{
-	//pr_info("%s: Position: %d\n", __func__, position);
-  
+{  
 	int err;
 
-	if (position < info->config.pos_low || position > info->config.pos_high){
-		pr_err(" [CAM] DW9714 !! WARNNG TRIED TO SET POSITION !! position = %d, info->config.pos_low = %d, info->config.pos_high = %d\n",
-				position, info->config.pos_low, info->config.pos_high);
-        // to debug, comment below. and gives a warning instead.
+	//pr_info("%s: Position: %d\n", __func__, position);
+
+	if (position < info->config.pos_low || position > info->config.pos_high) {
+		pr_err("[CAM] DW9714 !! WARNNG TRIED TO SET POSITION !! position = %d, info->config.pos_low = %d, info->config.pos_high = %d\n",
+			position, info->config.pos_low, info->config.pos_high);
+		// to debug, comment below. and gives a warning instead.
 		//return -EINVAL;
 	}
-	
-	if(register_code != 0) position = register_code;	//JKR_TEST : for custom control
-	
-    //pr_err("### [AF position = %d]\n", position);
-#if DW9714_USE_LINEAR_SLOPE_CONTROL
-  // write data with step abd S[3:0]
-  // Codes per step : S[3:2] 11 : "4", Step period S[1:0] : 00
-  err = dw9714_write(info->i2c_client, ((position<<4 | (0x3 << 2 ) | (0x2 << 0)))); // position[9:0], S[3:2], S[1:0]
-  if (err)
-      goto dw9714_set_position_fail;
 
-  return 0;
+	if (register_code != 0) // JKR_TEST : for custom control
+		position = register_code;
+	
+	//pr_err("### [AF position = %d]\n", position);
+#if DW9714_USE_LINEAR_SLOPE_CONTROL
+	// write data with step abd S[3:0]
+	// Codes per step : S[3:2] 11 : "4", Step period S[1:0] : 00
+	err = dw9714_write(info->i2c_client, ((position<<4 | (0x3 << 2 ) | (0x2 << 0)))); // position[9:0], S[3:2], S[1:0]
+	if (err)
+		goto dw9714_set_position_fail;
+
+	return 0;
   
-  dw9714_set_position_fail:
-      pr_err("[CAM] DW9714: %s: set position failed\n", __func__);
-      return err;
+dw9714_set_position_fail:
+	pr_err("[CAM] DW9714: %s: set position failed\n", __func__);
+	return err;
 #else
-    // direct mode
+	// direct mode
 	return dw9714_write(info->i2c_client, position);
 #endif
 }
 
 static long dw9714_ioctl(struct file *file,
-			unsigned int cmd, unsigned long arg)
+			 unsigned int cmd, unsigned long arg)
 {
 	struct dw9714_info *info = file->private_data;
 
 	int ret;
-  //pr_info("%s\n", __func__);
+	//pr_info("%s\n", __func__);
+
 	switch (cmd) {
 	case DW9714_IOCTL_GET_CONFIG:
-	{
-		if (copy_to_user((void __user *) arg, &info->config, sizeof(info->config))) 
-    {
+		if (copy_to_user((void __user *) arg, &info->config, sizeof(info->config))) {
 			pr_err("%s: 0x%x\n", __func__, __LINE__);
 			return -EFAULT;
 		}
 		break;
-	}
+
 	case DW9714_IOCTL_SET_POSITION:
 		mutex_lock(&dw9714_lock);
 		ret = dw9714_set_position(info, (u32) arg);
@@ -207,35 +211,33 @@ static long dw9714_ioctl(struct file *file,
 
 static int dw9714_power_on(void)
 {
-
 #if defined(CONFIG_REGULATOR_CAM_SUBPMIC_LP8720)
-  //pr_info("LP8720 CamPMIC Focuser Power ON ++\n");
-  subpm_set_gpio(1);
+	//pr_info("LP8720 CamPMIC Focuser Power ON ++\n");
+	subpm_set_gpio(1);
 
-  subpm_set_output(LDO5,1);
-  mdelay(12);
+	subpm_set_output(LDO5,1);
+	mdelay(12);
 #endif
-  
-  gpio_direction_output(DW9714_VCM_PWD_GPIO, 1);
-  gpio_set_value(DW9714_VCM_PWD_GPIO, 1);  
-  udelay(10);
+
+	gpio_direction_output(DW9714_VCM_PWD_GPIO, 1);
+	gpio_set_value(DW9714_VCM_PWD_GPIO, 1);  
+	udelay(10);
 
 	return 0;
 }
 
 static int dw9714_power_off(void)
-{
-    
-    gpio_set_value(DW9714_VCM_PWD_GPIO, 0);
-    gpio_direction_output(DW9714_VCM_PWD_GPIO, 0);    
-    udelay(10);
+{    
+	gpio_set_value(DW9714_VCM_PWD_GPIO, 0);
+	gpio_direction_output(DW9714_VCM_PWD_GPIO, 0);    
+	udelay(10);
     
 #if defined(CONFIG_REGULATOR_CAM_SUBPMIC_LP8720)
-    //pr_info("LP8720 CamPMIC Focuser Power OFF ++\n");
-    subpm_set_output(LDO5,0);
-    udelay(100);
+	//pr_info("LP8720 CamPMIC Focuser Power OFF ++\n");
+	subpm_set_output(LDO5,0);
+	udelay(100);
     
-    subpm_set_gpio(0);
+	subpm_set_gpio(0);
 #endif
 	return 0;
 }
@@ -245,55 +247,55 @@ static int dw9714_open(struct inode *inode, struct file *file)
 	int err;
 	pr_info("%s\n", __func__);
 
-  dw9714_power_on();
+	dw9714_power_on();
 
-  //if (atomic_xchg(&info->in_use, 1)) return -EBUSY;
+	//if (atomic_xchg(&info->in_use, 1))
+	//	return -EBUSY;
 	//info->focuser_init_flag = false;
 	
 	file->private_data = info;
 #if DW9714_USE_LINEAR_SLOPE_CONTROL
-  // 1. write protection off
-  err = dw9714_write(info->i2c_client, 0xECA3);
-  if (err)
-      goto dw9714_set_position_fail;
+	// 1. write protection off
+	err = dw9714_write(info->i2c_client, 0xECA3);
+	if (err)
+		goto dw9714_set_position_fail;
 
-  // 2. TR_SRC_setting
-  err = dw9714_write(info->i2c_client, 0xF200|(0x0F<<3)); //T_SRC setting
-  if (err)
-      goto dw9714_set_position_fail;
+	// 2. TR_SRC_setting
+	err = dw9714_write(info->i2c_client, 0xF200|(0x0F<<3)); // T_SRC setting
+	if (err)
+		goto dw9714_set_position_fail;
 
-  // 3. write protection on
-  err = dw9714_write(info->i2c_client, 0xDC51); // protection on
-  if (err)
-      goto dw9714_set_position_fail;
+	// 3. write protection on
+	err = dw9714_write(info->i2c_client, 0xDC51); // protection on
+	if (err)
+		goto dw9714_set_position_fail;
 #endif
   
 	return 0;
 
-  dw9714_set_position_fail:
-      pr_err("[CAM] DW9714: %s: set position failed\n", __func__);
-      return err;
-
+dw9714_set_position_fail:
+	pr_err("[CAM] DW9714: %s: set position failed\n", __func__);
+	return err;
 }
 
 int dw9714_release(struct inode *inode, struct file *file)
 {
-  struct dw9714_info *info = file->private_data;
-  int ret;
+	struct dw9714_info *info = file->private_data;
+	int ret;
+
 	pr_info("%s ver 1.2\n", __func__);
   
-  mutex_lock(&dw9714_lock);
-  ret = dw9714_set_position(info, (u32)0);
-  mutex_unlock(&dw9714_lock);
-  msleep(5);
+	mutex_lock(&dw9714_lock);
+	ret = dw9714_set_position(info, (u32)0);
+	mutex_unlock(&dw9714_lock);
+	msleep(5);
 
 	file->private_data = NULL;
 
-  dw9714_power_off();
+	dw9714_power_off();
   
 	return 0;
 }
-
 
 static const struct file_operations dw9714_fileops = {
 	.owner = THIS_MODULE,
@@ -330,14 +332,13 @@ static int dw9714_probe(struct i2c_client *client,
 
 	tegra_gpio_enable(DW9714_VCM_PWD_GPIO);
 	err = gpio_request(DW9714_VCM_PWD_GPIO, "8m_cam_vcm_pwd");
-  if (err < 0)
-    pr_err("%s: gpio_request failed for gpio %s\n",
-      __func__, "8m_cam_vcm_pwd");
+	if (err < 0)
+		pr_err("%s: gpio_request failed for gpio %s\n",
+			__func__, "8m_cam_vcm_pwd");
 
-  //gpio_direction_output(IMX111_VCM_PWD_GPIO, 1);
-  //gpio_set_value(IMX111_VCM_PWD_GPIO, 0);
+	//gpio_direction_output(IMX111_VCM_PWD_GPIO, 1);
+	//gpio_set_value(IMX111_VCM_PWD_GPIO, 0);
 
-  
 	//info->regulator = 0;
 	info->i2c_client = client;
 	info->config.settle_time = SETTLETIME_MS;
@@ -347,12 +348,12 @@ static int dw9714_probe(struct i2c_client *client,
 	info->config.pos_high = POS_HIGH;
 	i2c_set_clientdata(client, info);
 
-#ifndef JKR_TEST //for custom control
-	if(device_create_file(&client->dev, &dev_attr_dw9714_ctrl)){                                                                                                      
+#ifndef JKR_TEST // for custom control
+	if (device_create_file(&client->dev, &dev_attr_dw9714_ctrl)) {
 		printk("[CAM] DW9714: device create file dw9714_ctrl fail!\n");                                      
 	}
 #endif
-	
+
 	pr_info("%s: Position low %d high %d defined in kernel drivre is\n", __func__, POS_LOW, POS_HIGH);
 	return 0;
 }
@@ -362,7 +363,7 @@ static int dw9714_remove(struct i2c_client *client)
 	struct dw9714_info *info;
   
 	pr_info("%s\n", __func__);
-#ifndef JKR_TEST //for custom control
+#ifndef JKR_TEST // for custom control
 	if (client != 0) {                                                                                            
 		device_remove_file(&client->dev, &dev_attr_dw9714_ctrl);                                         
 	}

@@ -209,7 +209,7 @@ int touch_power_control(int on)
 	return 1;
 }
 
-int touch_power_init(int on)
+int touch_power_init(struct i2c_client *client)
 {
 	int ret = 0;
 

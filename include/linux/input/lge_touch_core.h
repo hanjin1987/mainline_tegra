@@ -66,7 +66,7 @@ struct touch_power_module
 	char	vio[30];
 	int	vio_voltage;
 	int	(*power)	(int on);
-	int	(*gpio_init)	(int on);
+	int	(*gpio_init)	(struct i2c_client *client);
 };
 
 struct touch_platform_data
@@ -204,7 +204,7 @@ struct touch_device_driver {
 	int	(*power)	(struct i2c_client *client, int power_ctrl);
 	int	(*ic_ctrl)	(struct i2c_client *client, u8 code, u16 value);
 	int 	(*fw_upgrade)	(struct i2c_client *client, const char* fw_path);
-	int 	(*test_report)	(struct i2c_client *client, const char* buf, size_t count); // F54
+	int 	(*test_report)	(struct i2c_client *client, char* buf, size_t* count); // F54
 };
 
 enum {

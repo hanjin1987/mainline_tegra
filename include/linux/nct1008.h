@@ -70,6 +70,10 @@ struct nct1008_data {
 	void *alert_data;
 	bool running;
 	bool irq_running;
+#ifdef CONFIG_MACH_X3
+	bool running;
+	bool irq_running;
+#endif
 };
 
 #ifdef CONFIG_SENSORS_NCT1008

@@ -40,6 +40,6 @@ struct gps_gpio_platform_data {
 #endif
 };
 
-#endif /* __MACH_TEGRA_X3_GPS_H */
-
 extern void x3_gps_init(void);
+
+#endif /* __MACH_TEGRA_X3_GPS_H */

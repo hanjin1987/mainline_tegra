@@ -17,11 +17,13 @@
 #include <linux/irq.h>
 #include <linux/mfd/core.h>
 
+#ifdef CONFIG_MACH_X3
 //#define CONFIG_MFD_MAX77663_LPM
 //#define CONFIG_MFD_MAX77663_SD_FORCED_PWM
 #define CONFIG_MFD_MAX77663_SMPL
 #define CONFIG_MFD_MAX77663_SMPL_DEFAULT_ENABLE
 #define CONFIG_MFD_MAX77663_FOR_USED_SCRATCH_REGISTER
+#endif
 
 /*
  * Interrupts
@@ -129,6 +131,7 @@ enum max77663_chip_version {
 	MAX77663_DRV_24,
 };
 
+#ifdef CONFIG_MACH_X3
 #define MAX77663_SCRATCH_REG_RESERVE_0		(1<<0)
 #define MAX77663_SCRATCH_REG_RESET			MAX77663_SCRATCH_REG_RESERVE_0
 #define	MAX77663_SCRATCH_REG_RESERVE_1		(1<<1)
@@ -140,6 +143,7 @@ enum max77663_chip_version {
 #define MAX77663_SCRATCH_REG_BOOTLOADER	    MAX77663_SCRATCH_REG_RESERVE_1
 #define MAX77663_SCRATCH_REG_BL_UNLOCK	    MAX77663_SCRATCH_REG_RESERVE_2
 #define	MAX77663_SCRATCH_REG_RESERVE_DO_NOT_USED (1<<7)
+#endif
 
 /*
  * Flags
@@ -183,15 +187,19 @@ int max77663_write(struct device *dev, u8 addr, void *values, u32 len,
 		   bool is_rtc);
 int max77663_set_bits(struct device *dev, u8 addr, u8 mask, u8 value,
 		      bool is_rtc);
+#ifdef CONFIG_MACH_X3
 int max77663_get_bits(struct device *dev, u8 addr, u8 mask,
 		      bool is_rtc);
 int max77663_power_off(void);
+#endif
 int max77663_gpio_set_alternate(int gpio, int alternate);
 int max77663_read_chip_version(struct device *dev, u8 *val);
 
+#ifdef CONFIG_MACH_X3
 int max77663_get_acok_stat(void);
 int max77663_power_rst_wkup(int on);
 int max77663_set_ScratchRegister(u8 bit);
+#endif
 
 #else
 static inline int max77663_read(struct device *dev, u8 addr, void *values,
@@ -212,17 +220,18 @@ static inline int max77663_set_bits(struct device *dev, u8 addr, u8 mask,
 	return 0;
 }
 
+#ifdef CONFIG_MACH_X3
 static inline int max77663_get_bits(struct device *dev, u8 addr, u8 mask,
 		      bool is_rtc)
 {
 	return 0;
 }
 
-
 static inline int max77663_power_off(void)
 {
 	return 0;
 }
+#endif
 
 static inline int max77663_gpio_set_alternate(int gpio, int alternate)
 {
@@ -234,6 +243,7 @@ static inline int max77663_read_chip_version(struct device *dev, u8 *val)
 	return 0;
 }
 
+#ifdef CONFIG_MACH_X3
 static inline int max77663_get_acok_stat(void) {
 	return 0;
 }
@@ -248,6 +258,7 @@ static inline int max77663_set_ScratchRegister(u8 bit)
 
 	return 0;
 }
+#endif
 
 #endif /* defined(CONFIG_MFD_MAX77663) */
 

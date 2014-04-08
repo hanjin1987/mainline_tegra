@@ -37,8 +37,10 @@ struct i2c_algo_bit_data {
 	void (*setscl) (void *data, int state);
 	int  (*getsda) (void *data);
 	int  (*getscl) (void *data);
+#ifdef CONFIG_MACH_X3
 	void (*setsdadirinput) (void *data);
 	void (*setsdadiroutput) (void *data, int state);
+#endif
 	int  (*pre_xfer)  (struct i2c_adapter *);
 	void (*post_xfer) (struct i2c_adapter *);
 

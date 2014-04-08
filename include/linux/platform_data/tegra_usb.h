@@ -103,7 +103,9 @@ struct tegra_usb_phy_platform_ops {
 	void (*pre_phy_on)(void);
 	void (*post_phy_on)(void);
 	void (*port_power)(void);
+#ifdef CONFIG_MACH_X3
 	int (*usb_phy_ready)(void);
+#endif
 	void (*close)(void);
 };
 

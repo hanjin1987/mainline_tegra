@@ -430,9 +430,11 @@ void cpufreq_frequency_table_get_attr(struct cpufreq_frequency_table *table,
 
 void cpufreq_frequency_table_put_attr(unsigned int cpu);
 
+#ifdef CONFIG_MACH_X3
 /* cpufreq pm qos */
 int cpufreq_set_min_freq(void *data, s32 val);
 int cpufreq_set_max_freq(void *data, s32 val);
+#endif
 
 /*********************************************************************
  *                     UNIFIED DEBUG HELPERS                         *

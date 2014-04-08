@@ -35,7 +35,10 @@ extern TYPE_CHARGING_MODE charging_mode;
 #define RESTRICTED_CLOCK	700000
 #define RESTRICTED_CORE		2
 #endif
+
+#ifdef CONFIG_MACH_X+
 #define LGE_EARLYSUSPEND_DEBUG  1  // [20110131:geayoung.baek] suspend, resume monitoring
+#endif
 
 enum {
 	DEBUG_USER_STATE = 1U << 0,
@@ -44,7 +47,7 @@ enum {
 };
 
 #ifdef CONFIG_MACH_X3 
-static int debug_mask = DEBUG_USER_STATE|DEBUG_SUSPEND;  //[20110131:geayoung.baek] suspend, resume monitoring
+static int debug_mask = DEBUG_USER_STATE|DEBUG_SUSPEND;  // [20110131:geayoung.baek] suspend, resume monitoring
 #else
 static int debug_mask = DEBUG_USER_STATE;
 #endif

@@ -15,7 +15,7 @@
  */
 
 #ifndef BASEBAND_XMM_POWER_H
-#define BASREBAND_XMM_POWER_H
+#define BASEBAND_XMM_POWER_H
 
 #include <linux/pm.h>
 #include <linux/suspend.h>
@@ -120,4 +120,4 @@ irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id);
 void baseband_xmm_power_switch(bool power_on); //To_Ril-recovery Nvidia_Patch_20111226
 void baseband_xmm_set_power_status(unsigned int status);
 
-#endif	//__BASEBAND_XMM_POWER_H__
+#endif	// BASEBAND_XMM_POWER_H

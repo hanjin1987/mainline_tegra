@@ -8,8 +8,10 @@
 
 struct platform_pwm_backlight_data {
 	int pwm_id;
-	unsigned int max_brightness;	
-	unsigned int max_current;		//                               
+	unsigned int max_brightness;
+#ifdef CONFIG_MACH_X3
+	unsigned int max_current;
+#endif
 	unsigned int dft_brightness;
 	unsigned int lth_brightness;
 	unsigned int pwm_period_ns;

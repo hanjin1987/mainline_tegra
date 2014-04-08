@@ -38,12 +38,10 @@ struct pn_sock {
 	u16		sobject;
 	u16		dobject;
 	u8		resource;
-//                                              
 #if defined(CONFIG_MACH_PEGASUS)	
 	u8		resource_type; 
 	u8		resource_subtype;	
-#endif	
-//                                              
+#endif
 };
 
 static inline struct pn_sock *pn_sk(struct sock *sk)
@@ -54,11 +52,9 @@ static inline struct pn_sock *pn_sk(struct sock *sk)
 extern const struct proto_ops phonet_dgram_ops;
 
 void pn_sock_init(void);
-//                                              
 #if defined(CONFIG_MACH_PEGASUS)	
 struct sock *pn_find_sock_by_sa_and_skb(struct net *net, const struct sockaddr_pn *spn, struct sk_buff *skb); //                                              
-#endif	
-//                                              
+#endif
 struct sock *pn_find_sock_by_sa(struct net *net, const struct sockaddr_pn *sa);
 void pn_deliver_sock_broadcast(struct net *net, struct sk_buff *skb);
 void phonet_get_local_port_range(int *min, int *max);

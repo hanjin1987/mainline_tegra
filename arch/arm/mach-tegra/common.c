@@ -1081,7 +1081,7 @@ void __init tegra_ram_console_debug_reserve(unsigned long ram_console_size)
 		goto fail;
 
 #ifdef CONFIG_REBOOT_MONITOR
-	res->end = res->start + ram_console_size / 2 -1;
+	res->end = res->start + ram_console_size / 2 - 1;
 #endif
 
 	return;

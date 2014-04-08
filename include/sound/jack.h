@@ -24,14 +24,14 @@
  */
 
 #include <sound/core.h>
-//                                             
+#ifdef CONFIG_MACH_X3
 #include <linux/switch.h>
 #include <linux/input.h>
-//                                             
+#endif
 
 
 struct input_dev;
-//                                             
+#ifdef CONFIG_MACH_X3
 extern struct headset_switch_data	*headset_sw_data;
 typedef enum {
 	X3_NONE,
@@ -43,7 +43,6 @@ typedef enum {
 	HOOK_PRESSED,
 	HOOK_RELEASED
 } hook_status_enum;
-//                                             
 
 struct headset_switch_data {
 	struct switch_dev sdev;
@@ -58,10 +57,10 @@ struct headset_switch_data {
 	int hook_irq;
 	struct work_struct work;
 	struct delayed_work delayed_work;
-	struct delayed_work hook_delayed_work[4]; //20130110 keunhui.park [Audio] prevent pressing hook key while unplugging headset
-	struct input_dev *ip_dev;	//                                                      
+	struct delayed_work hook_delayed_work[4]; // 20130110 keunhui.park [Audio] prevent pressing hook key while unplugging headset
+	struct input_dev *ip_dev;
 };
-
+#endif
 
 /**
  * Jack types which can be reported.  These values are used as a

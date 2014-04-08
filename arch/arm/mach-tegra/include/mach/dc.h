@@ -377,7 +377,7 @@ struct tegra_dc_out {
 #ifdef CONFIG_MACH_X3
 	int	(*prepoweron)(void); /* wakeup time from LP0 ** Nvidia patch */	
 #endif
-	int	(*prepoweroff)(void); 
+	int	(*prepoweroff)(void);
 	int	(*disable)(void);
 
 	int	(*hotplug_init)(void);

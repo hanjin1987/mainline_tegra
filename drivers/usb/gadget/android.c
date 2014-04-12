@@ -902,7 +902,6 @@ static struct android_usb_function rndis_function = {
 	.attributes	= rndis_function_attributes,
 };
 #endif
-#endif
 
 struct mass_storage_function_config {
 	struct fsg_config fsg;

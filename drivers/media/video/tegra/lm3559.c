@@ -398,7 +398,7 @@ static ssize_t torch_store(struct device* dev,
 		struct device_attribute* attr, const char* buf, size_t count)
 {
 	int val;
-	sscanf(buf, "%ld", &val );
+	sscanf(buf, "%d", &val);
 
 	if (val <= 0) {
 		lm3559_power_onoff(info, LM3559_POWER_OFF);

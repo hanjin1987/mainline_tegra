@@ -36,7 +36,7 @@ extern TYPE_CHARGING_MODE charging_mode;
 #define RESTRICTED_CORE		2
 #endif
 
-#ifdef CONFIG_MACH_X+
+#ifdef CONFIG_MACH_X3
 #define LGE_EARLYSUSPEND_DEBUG  1  // [20110131:geayoung.baek] suspend, resume monitoring
 #endif
 
@@ -68,7 +68,7 @@ enum {
 };
 static int state;
 
-#if LGE_EARLYSUSPEND_DEBUG
+#ifdef LGE_EARLYSUSPEND_DEBUG
 static int lateResumeCount = 0;
 #endif
 
@@ -159,7 +159,7 @@ static void late_resume(struct work_struct *work)
 	mutex_lock(&early_suspend_lock);
 	spin_lock_irqsave(&state_lock, irqflags);
 
-#if LGE_EARLYSUSPEND_DEBUG
+#ifdef LGE_EARLYSUSPEND_DEBUG
 	--lateResumeCount;
 #endif
 
@@ -203,7 +203,7 @@ void request_suspend_state(suspend_state_t new_state)
 		getnstimeofday(&ts);
 		rtc_time_to_tm(ts.tv_sec, &tm);
 
-#if LGE_EARLYSUSPEND_DEBUG		// [20110131:geayoung.baek] logging
+#ifdef LGE_EARLYSUSPEND_DEBUG		// [20110131:geayoung.baek] logging
 		pr_info("request_suspend_state: %s (%d->%d) at %lld "
 			"(%d-%02d-%02d %02d:%02d:%02d.%09lu UTC) state[%d]\n",
 			new_state != PM_SUSPEND_ON ? "sleep" : "wakeup",
@@ -225,7 +225,7 @@ void request_suspend_state(suspend_state_t new_state)
 		state |= SUSPEND_REQUESTED;
 		queue_work(suspend_work_queue, &early_suspend_work);
 
-#if LGE_EARLYSUSPEND_DEBUG
+#ifdef LGE_EARLYSUSPEND_DEBUG
 		if (lateResumeCount > 2) {
 			pr_info("===============================[Start][%d]\n", lateResumeCount);
 			show_state_filter(TASK_UNINTERRUPTIBLE);
@@ -233,7 +233,7 @@ void request_suspend_state(suspend_state_t new_state)
 		}
 #endif
 	} else if (old_sleep && new_state == PM_SUSPEND_ON) {
-#if LGE_EARLYSUSPEND_DEBUG
+#ifdef LGE_EARLYSUSPEND_DEBUG
 		++lateResumeCount;
 #endif
 
@@ -244,7 +244,7 @@ void request_suspend_state(suspend_state_t new_state)
 #ifdef CONFIG_MACH_X3
 	else
 	{
-#if LGE_EARLYSUSPEND_DEBUG		// [20110131:geayoung.baek] logging		
+#ifdef LGE_EARLYSUSPEND_DEBUG		// [20110131:geayoung.baek] logging		
 		pr_info("request_suspend_state (case)[%d][%d]\n", old_sleep, new_state);
 #else
 		if (new_state != PM_SUSPEND_ON) {

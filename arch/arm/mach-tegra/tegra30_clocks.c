@@ -25,7 +25,9 @@
 #include <linux/delay.h>
 #include <linux/err.h>
 #ifdef CONFIG_MACH_X3
+#ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
+#endif
 #endif
 #include <linux/io.h>
 #include <linux/clk.h>
@@ -5001,16 +5003,15 @@ struct tegra_cpufreq_table_data *tegra_cpufreq_table_get(void)
 				ret = clip_cpu_rate_limits(
 					&cpufreq_tables[i],
 					&policy, cpu_clk_g, cpu_clk_lp);
-#ifdef CONFIG_MACH_X3
 				if (!ret) {
+#ifdef CONFIG_MACH_X3
+#ifdef CONFIG_HAS_EARLYSUSPEND
 					selected_cpufreq_table =
 						cpufreq_tables[i].freq_table;
+#endif
+#endif
 					return &cpufreq_tables[i];
 				}
-#else
-				if (!ret)
-					return &cpufreq_tables[i];
-#endif
 			}
 		}
 	}

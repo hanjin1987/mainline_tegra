@@ -14,9 +14,9 @@
 #include <linux/ioctl.h>  /* For IOCTL macros */
 #include <linux/i2c.h>
 
-#define DW9714_IOCTL_GET_CONFIG		  _IOR('o', 10, struct dw9714_config)
-#define DW9714_IOCTL_SET_POSITION	  _IOW('o', 11, __u32)
-#define DW9714_IOCTL_SET_MODE		    _IOW('o', 12, __u32)
+#define DW9714_IOCTL_GET_CONFIG		_IOR('o', 10, struct dw9714_config)
+#define DW9714_IOCTL_SET_POSITION	_IOW('o', 11, __u32)
+#define DW9714_IOCTL_SET_MODE		_IOW('o', 12, __u32)
 
 struct dw9714_config {
 	__u32 settle_time;
@@ -27,6 +27,7 @@ struct dw9714_config {
 	float fnumber;
 	float max_aperture;
 };
+
 struct dw9714_info {
 	struct i2c_client *i2c_client;
 	struct dw9714_config config;

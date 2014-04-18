@@ -1,5 +1,5 @@
 /*
- * arch/arm/mach-tegra/board-x3.c
+ * arch/arm/mach-tegra/lge/x3/board-x3-misc.c
  *
  * Copyright (c) 2011, NVIDIA Corporation.
  *
@@ -65,7 +65,7 @@ static struct lm3559_flash_led_platform_data flash_led_data = {
 
 #define CABC_ENABLE
 
-/* backlight platform data*/
+/* backlight platform data */
 struct lge_backlight_platform_data {
 	void (*platform_init)(void);
 	int gpio;
@@ -114,9 +114,11 @@ static int max8971_init_gpio(void)
 		gpio_free(MAX8971_IRQB_GPIO);
 		return ret;
 	}
+#if 0
 	else {
 		tegra_gpio_enable(MAX8971_IRQB_GPIO);
 	}
+#endif
 
 	return ret;
 }
@@ -157,7 +159,7 @@ struct max8971_platform_data max8971_data = {
 	.chg_proctection= 0x3,		// Charging protection 	// unlock
 	.m_input_vol	= 0x1,		// Monitor input voltage
 	.suspend_usb	= 0x0,		// USB suspend 		// disable
-	.irqb_pgio	= TEGRA_GPIO_TO_IRQ(MAX8971_IRQB_GPIO),
+//	.irqb_pgio	= gpio_to_irq(MAX8971_IRQB_GPIO), // moved to x3_i2c_dev_init (board-x3-i2c-dev.c)
 	.gpio_init	= max8971_init_gpio,
 };
 #endif /*CONFIG_MAX8971_CHARGER*/
@@ -178,9 +180,11 @@ static int max14526_init_gpio(void)
 		gpio_free(MUIC_GPIO);
 		return ret;
 	}
+#if 0
 	else {
 		tegra_gpio_enable(MUIC_GPIO);
 	}
+#endif
 
 	return ret;
 }
@@ -195,7 +199,7 @@ static int max14526_enable_charger(muic_mode_t mode)
 {
 	// should use platform data..
 	struct power_supply *psy = power_supply_get_by_name("charger");
-	union power_supply_propval value;
+	union power_supply_propval value;	
 
 	if (!psy) {
 		printk("%s: fail to get battery ps\n", __func__);

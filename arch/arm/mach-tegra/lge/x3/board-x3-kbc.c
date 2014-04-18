@@ -1,5 +1,5 @@
 /*
- * arch/arm/mach-tegra/board-x3-kbc.c
+ * arch/arm/mach-tegra/lge/x3/board-x3-kbc.c
  * Keys configuration for Nvidia tegra3 x3 platform.
  *
  * Copyright (C) 2011 NVIDIA, Inc.
@@ -22,17 +22,19 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/input.h>
+#include <linux/gpio_keys.h>
+#include <linux/dma-mapping.h>
 #include <mach/io.h>
 #include <mach/iomap.h>
 #include <mach/kbc.h>
-#include <linux/gpio_keys.h>
-#include <linux/dma-mapping.h>
+#include <mach/gpio-tegra.h>
 
 #include <mach-tegra/gpio-names.h>
 #include <mach-tegra/board.h>
-#include <lge/board-x3.h>
 #include <mach-tegra/devices.h>
 #include <mach-tegra/wakeups-t3.h>
+
+#include <lge/board-x3.h>
 
 #if !defined(CONFIG_MACH_X3)
 #define X3_ROW_COUNT	2
@@ -60,16 +62,19 @@ static struct tegra_kbc_wake_key x3_wake_cfg[] = {
 };
 
 static struct tegra_kbc_platform_data x3_kbc_platform_data = {
-	.debounce_cnt = 20 * 32, /* 20 ms debaunce time */
+	.debounce_cnt = 20 * 32, /* 20 ms debounce time */
 	.repeat_cnt = 1,
 	.scan_count = 30,
 	.wakeup = true,
 	.keymap_data = &keymap_data,
 	.wake_cnt = 4,
 	.wake_cfg = &x3_wake_cfg[0],
+#ifdef CONFIG_ANDROID
+	.disable_ev_rep = true,
+#endif
 };
 
-#else
+#else /* !defined(CONFIG_MACH_X3) */
 #define GPIO_KEY(_id, _gpio, _iswake)		\
 	{					\
 		.code = _id,			\
@@ -134,7 +139,7 @@ static struct gpio_keys_platform_data x3_keys_platform_data = {
 	.buttons	= x3_keys,
 	.nbuttons	= ARRAY_SIZE(x3_keys),
 	.rep		= 0,
-	.wakeup_key  = x3_wakeup_key,
+	.wakeup_key	= x3_wakeup_key,
 };
 
 static struct platform_device x3_keys_device = {
@@ -144,18 +149,17 @@ static struct platform_device x3_keys_device = {
 		.platform_data  = &x3_keys_platform_data,
 	},
 };
-#endif
+#endif /* !defined(CONFIG_MACH_X3) */
 
 int __init x3_kbc_init(void)
 {
 #if defined(CONFIG_MACH_X3)
-	int i;
-//	int ret = 0;
+//	int i;
 
 	pr_info("Registering tegra-kbc-gpio\n");
 
-	for (i = 0; i < ARRAY_SIZE(x3_keys); i++)
-		tegra_gpio_enable(x3_keys[i].gpio);
+//	for (i = 0; i < ARRAY_SIZE(x3_keys); i++)
+//		tegra_gpio_enable(x3_keys[i].gpio);
 
 	platform_device_register(&x3_keys_device);
 
@@ -168,12 +172,11 @@ int __init x3_kbc_init(void)
 	BUG_ON((KBC_MAX_ROW + KBC_MAX_COL) > KBC_MAX_GPIO);
 	for (i = 0; i < X3_ROW_COUNT; i++) {
 		data->pin_cfg[i].num = i;
-		data->pin_cfg[i].is_row = true;
-		data->pin_cfg[i].en = true;
+		data->pin_cfg[i].type = PIN_CFG_ROW;
 	}
 	for (i = 0; i < X3_COL_COUNT; i++) {
-		data->pin_cfg[i + KBC_MAX_ROW].num = i;
-		data->pin_cfg[i + KBC_MAX_ROW].en = true;
+		data->pin_cfg[i + KBC_PIN_GPIO_16].num = i;
+		data->pin_cfg[i + KBC_PIN_GPIO_16].type = PIN_CFG_COL;
 	}
 	platform_device_register(&tegra_kbc_device);
 #endif

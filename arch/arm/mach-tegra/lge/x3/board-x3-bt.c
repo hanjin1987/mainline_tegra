@@ -1,5 +1,5 @@
 /*
- * arch/arm/mach-tegra/board-x3.c
+ * arch/arm/mach-tegra/lge/x3/board-x3.c
  *
  * Copyright (c) 2011, NVIDIA Corporation.
  *
@@ -74,12 +74,14 @@ static struct platform_device lbee9qmb_device = {
 
 void x3_bt_rfkill(void)
 {
+#if 0
 	tegra_gpio_enable(GPIO_BT_RESET);
 	printk(KERN_DEBUG "%s : tegra_gpio_enable(reset) [%d]", __func__, GPIO_BT_RESET);
 	tegra_gpio_enable(GPIO_BT_WAKE);
 	printk(KERN_DEBUG "%s : tegra_gpio_enable(btwake) [%d]", __func__, GPIO_BT_WAKE);
 	tegra_gpio_enable(GPIO_BT_HOSTWAKE);
 	printk(KERN_DEBUG "%s : tegra_gpio_enable(hostwake) [%d]", __func__, GPIO_BT_HOSTWAKE);
+#endif
 
 	if (platform_device_register(&lbee9qmb_device))
 		printk(KERN_DEBUG "%s: lbee9qmb_device registration failed \n", __func__);
@@ -131,8 +133,11 @@ void __init x3_setup_bluesleep(void)
 		pr_err("unable to add bluesleep device\n");
 		goto err_free_res;
 	}
+
+#if 0
 	tegra_gpio_enable(TEGRA_GPIO_PS4);
 	tegra_gpio_enable(TEGRA_GPIO_PS3);
+#endif
 
 	return;
 

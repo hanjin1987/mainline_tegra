@@ -49,6 +49,7 @@ struct nct1008_platform_data {
 	int (*suspend_with_wakeup)(void);
 };
 
+/*
 struct nct1008_data {
 	struct workqueue_struct *workqueue;
 	struct work_struct work;
@@ -68,8 +69,6 @@ struct nct1008_data {
 
 	void (*alert_func)(void *);
 	void *alert_data;
-	bool running;
-	bool irq_running;
 #ifdef CONFIG_MACH_X3
 	bool running;
 	bool irq_running;
@@ -110,6 +109,6 @@ static inline int nct1008_thermal_set_alert(struct nct1008_data *data,
 static inline int nct1008_thermal_set_shutdown_temp(struct nct1008_data *data,
 					long shutdown_temp)
 { return -EINVAL; }
-#endif
+#endif*/
 
 #endif /* _LINUX_NCT1008_H */

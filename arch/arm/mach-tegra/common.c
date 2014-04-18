@@ -1787,7 +1787,11 @@ void __init tegra_ram_console_debug_reserve(unsigned long ram_console_size)
 	int ret;
 
 	ram.start = memblock_end_of_DRAM() - ram_console_size;
+#ifdef CONFIG_REBOOT_MONITOR
+	ram.size = ram_console_size / 2;
+#else
 	ram.size = ram_console_size;
+#endif
 	ram.descs->size = ram_console_size;
 
 	INIT_LIST_HEAD(&ram.node);
@@ -1795,10 +1799,6 @@ void __init tegra_ram_console_debug_reserve(unsigned long ram_console_size)
 	ret = persistent_ram_early_init(&ram);
 	if (ret)
 		goto fail;
-
-#ifdef CONFIG_REBOOT_MONITOR
-	res->end = res->start + ram_console_size / 2 - 1;
-#endif
 
 	return;
 

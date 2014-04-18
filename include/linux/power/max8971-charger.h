@@ -89,16 +89,14 @@ enum {
 };
 
 struct max8971_platform_data {
-//                                                                          
-//                    
 #if defined(CONFIG_MACH_VU10) || defined(CONFIG_MACH_X3)
 	u8	chgcc_400;
 #endif
-//                                                                          
+
 	u8	chgcc_usb500;       // Fast Charge Current
 	u8	chgcc_ta;           // Fast Charge Current
-	u8	chgcc_factory;           // Fast Charge Current
-	u8	chgcc_mhl400;       //                                                                              
+	u8	chgcc_factory;      // Fast Charge Current
+	u8	chgcc_mhl400;
 	u8	chgcc_soc700;
 	
 	u8	fchgtime;           // Fast Charge Time
@@ -106,27 +104,27 @@ struct max8971_platform_data {
 	u8	chgrstrt;           // Fast Charge Restart Threshold
 	u8	dcilmt_usb500;      // Input Current Limit Selection	
 	u8	dcilmt_ta;          // Input Current Limit Selection
-	u8	dcilmt_factory;          // Input Current Limit Selection
-	u8	dcilmt_mhl400;      //                                                                                        
+	u8	dcilmt_factory;     // Input Current Limit Selection
+	u8	dcilmt_mhl400;
 	u8	dcilmt_soc700;
 
 	u8	topofftime;         // Top Off Timer Setting 
 	u8	topofftshld;        // Done Current Threshold
 	u8	chgcv;              // Charger Termination Voltage
-	u8	ifst2p8_usb500;              // Scales Maximum Fast Charge Current to 2.8A.
-	u8	ifst2p8_ta;              // Scales Maximum Fast Charge Current to 2.8A.
-	u8	ifst2p8_factory;              // Scales Maximum Fast Charge Current to 2.8A.
-	u8	ifst2p8_mhl400;              //                                                                                                      
+	u8	ifst2p8_usb500;     // Scales Maximum Fast Charge Current to 2.8A.
+	u8	ifst2p8_ta;         // Scales Maximum Fast Charge Current to 2.8A.
+	u8	ifst2p8_factory;    // Scales Maximum Fast Charge Current to 2.8A.
+	u8	ifst2p8_mhl400;
 
 	u8	regtemp;            // Die temperature thermal regulation loop setpoint
 	u8	safetyreg;          // JEITA Safety region selection
 	u8	thm_config;         // Thermal monitor configuration
 
 	u8	int_mask;           // CHGINT_MASK
-	u32	irqb_pgio;		//IRQB GPIO
-	u32  chg_proctection; //CHG PROTECTION
+	u32	irqb_pgio;          // IRQB GPIO
+	u32	chg_proctection;    // CHG PROTECTION
 
-	u8	m_input_vol;	//monitor input voltage 
+	u8	m_input_vol;        // monitor input voltage 
 	u8	suspend_usb;
 	int 	(*gpio_init)(void);
 };

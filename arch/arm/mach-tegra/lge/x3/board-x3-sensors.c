@@ -1,7 +1,7 @@
 /*
- * arch/arm/mach-tegra/board-x3-sensors.c
+ * arch/arm/mach-tegra/lge/x3/board-x3-sensors.c
  *
- * Copyright (c) 2011, NVIDIA CORPORATION, All rights reserved.
+ * Copyright (c) 2011-2013, NVIDIA CORPORATION, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -33,30 +33,40 @@
 
 #include <linux/i2c.h>
 #include <linux/delay.h>
+#include <linux/nct1008.h>
 #include <linux/err.h>
 #include <linux/mpu.h>
-#include <linux/nct1008.h>
-#include <linux/regulator/consumer.h>
 #ifdef CONFIG_SENSORS_INA230
 #include <linux/platform_data/ina230.h>
 #endif
-#include <mach/gpio.h>
+#include <linux/regulator/consumer.h>
+#include <linux/slab.h>
+#include <linux/gpio.h>
+#include <linux/clk.h>
+
+#include <asm/mach-types.h>
 #include <media/ar0832_main.h>
-#include <media/imx111.h>
-#include <media/mt9m114.h>
 #include <media/tps61050.h>
 #include <media/ov9726.h>
-#include <mach/edp.h>
-#include <linux/slab.h>
-#include <mach/thermal.h>
 
+#include <mach/edp.h>
+#include <mach/gpio-tegra.h>
+#include <mach/clk.h>
 
 #include <mach-tegra/cpu-tegra.h>
 #include <mach-tegra/gpio-names.h>
+#include <mach-tegra/devices.h>
 #include <lge/board-x3.h>
+#include <mach-tegra/board.h>
+#include <mach-tegra/clock.h>
+
 #if defined(CONFIG_VIDEO_IMX119)
 #include <media/imx119.h>
 #endif
+
+#include <media/imx111.h>
+#include <media/mt9m114.h>
+#include <mach/thermal.h>
 
 #include <media/lm3559.h>
 #include <media/dw9714.h>
@@ -67,8 +77,189 @@ static struct lm3559_platform_data flash_led_data = {
 
 static struct dw9714_info focuser_data = {
 };
+
 #define X3_NCT1008_IRQ	TEGRA_GPIO_PI5
 
+#ifdef CONFIG_TEGRA_THERMAL_THROTTLE
+static struct throttle_table tj_throttle_table[] = {
+		/* CPU_THROT_LOW cannot be used by other than CPU */
+		/* NO_CAP cannot be used by CPU */
+		/*      CPU,    CBUS,    SCLK,     EMC */
+		{ { 1000000,  NO_CAP,  NO_CAP,  NO_CAP } },
+		{ {  760000,  NO_CAP,  NO_CAP,  NO_CAP } },
+		{ {  760000,  NO_CAP,  NO_CAP,  NO_CAP } },
+		{ {  620000,  NO_CAP,  NO_CAP,  NO_CAP } },
+		{ {  620000,  NO_CAP,  NO_CAP,  NO_CAP } },
+		{ {  620000,  437000,  NO_CAP,  NO_CAP } },
+		{ {  620000,  352000,  NO_CAP,  NO_CAP } },
+		{ {  475000,  352000,  NO_CAP,  NO_CAP } },
+		{ {  475000,  352000,  NO_CAP,  NO_CAP } },
+		{ {  475000,  352000,  250000,  375000 } },
+		{ {  475000,  352000,  250000,  375000 } },
+		{ {  475000,  247000,  204000,  375000 } },
+		{ {  475000,  247000,  204000,  204000 } }, // EMC is 375000 in original
+		{ {  475000,  247000,  204000,  204000 } }, // EMC is 375000 in original
+	  { { CPU_THROT_LOW,  247000,  204000,  102000 } }, // commented in original
+};
+
+static struct balanced_throttle tj_throttle = {
+	.throt_tab_size = ARRAY_SIZE(tj_throttle_table),
+	.throt_tab = tj_throttle_table,
+};
+
+static int __init x3_throttle_init(void)
+{
+	balanced_throttle_register(&tj_throttle, "tegra-balanced");
+	return 0;
+}
+module_init(x3_throttle_init);
+#endif
+
+static struct nct1008_platform_data x3_nct1008_pdata = {
+	.supported_hwrev = true,
+	.ext_range = true,
+	.conv_rate = 0x08,
+	.offset = 8, /* 4 * 2C. Bug 844025 - 1C for device accuracies */
+
+	.shutdown_ext_limit = 90, /* C */
+	.shutdown_local_limit = 100, /* C */
+
+	.passive_delay = 2000,
+
+	.num_trips = 1,
+	.trips = {
+		/* Thermal Throttling */
+		[0] = {
+			.cdev_type = "tegra-balanced",
+			.trip_temp = 80000,
+			.trip_type = THERMAL_TRIP_PASSIVE,
+			.upper = THERMAL_NO_LIMIT,
+			.lower = THERMAL_NO_LIMIT,
+			.hysteresis = 0,
+		},
+	},
+};
+
+static struct i2c_board_info x3_i2c4_nct1008_board_info[] = {
+	{
+		I2C_BOARD_INFO("nct1008", 0x4C),
+		//.irq = TEGRA_GPIO_TO_IRQ(X3_NCT1008_IRQ), // moved to function below
+		.platform_data = &x3_nct1008_pdata,
+	}
+};
+
+static void x3_nct1008_init(void)
+{
+	int ret;
+
+//	tegra_gpio_enable(X3_NCT1008_IRQ);
+	ret = gpio_request(X3_NCT1008_IRQ, "temp_alert");
+	if (ret < 0) {
+		pr_err("%s: gpio_request failed %d\n", __func__, ret);
+		return;
+	}
+
+	ret = gpio_direction_input(X3_NCT1008_IRQ);
+	if (ret < 0) {
+		pr_err("%s: gpio_direction_input failed %d\n", __func__, ret);
+		gpio_free(X3_NCT1008_IRQ);
+		return;
+	}
+
+	tegra_platform_edp_init(x3_nct1008_pdata.trips,
+				&x3_nct1008_pdata.num_trips,
+				0); /* edp temperature margin */
+
+	x3_i2c4_nct1008_board_info[0].irq = gpio_to_irq(X3_NCT1008_IRQ);
+	i2c_register_board_info(4, x3_i2c4_nct1008_board_info,
+				ARRAY_SIZE(x3_i2c4_nct1008_board_info));
+}
+
+#ifdef CONFIG_TEGRA_SKIN_THROTTLE
+static struct thermal_trip_info skin_trips[] = {
+	{
+		.cdev_type = "skin-balanced",
+		.trip_temp = 43000,
+		.trip_type = THERMAL_TRIP_PASSIVE,
+		.upper = THERMAL_NO_LIMIT,
+		.lower = THERMAL_NO_LIMIT,
+		.hysteresis = 0,
+	},
+};
+
+static struct therm_est_subdevice skin_devs[] = {
+	{
+		.dev_data = "Tdiode",
+		.coeffs = {
+			2, 1, 1, 1,
+			1, 1, 1, 1,
+			1, 1, 1, 0,
+			1, 1, 0, 0,
+			0, 0, -1, -7
+		},
+	},
+	{
+		.dev_data = "Tboard",
+		.coeffs = {
+			-11, -7, -5, -3,
+			-3, -2, -1, 0,
+			0, 0, 1, 1,
+			1, 2, 2, 3,
+			4, 6, 11, 18
+		},
+	},
+};
+
+static struct therm_est_data skin_data = {
+	.num_trips = ARRAY_SIZE(skin_trips),
+	.trips = skin_trips,
+	.toffset = 9793,
+	.polling_period = 1100,
+	.passive_delay = 5000,
+	.tc1 = 5,
+	.tc2 = 1,
+	.ndevs = ARRAY_SIZE(skin_devs),
+	.devs = skin_devs,
+};
+
+static struct throttle_table skin_throttle_table[] = {
+		/* CPU_THROT_LOW cannot be used by other than CPU */
+		/* NO_CAP cannot be used by CPU */
+		/*      CPU,    CBUS,    SCLK,     EMC */
+		{ { 1000000,  NO_CAP,  NO_CAP,  NO_CAP } },
+		{ {  760000,  NO_CAP,  NO_CAP,  NO_CAP } },
+		{ {  760000,  NO_CAP,  NO_CAP,  NO_CAP } },
+		{ {  620000,  NO_CAP,  NO_CAP,  NO_CAP } },
+		{ {  620000,  NO_CAP,  NO_CAP,  NO_CAP } },
+		{ {  620000,  437000,  NO_CAP,  NO_CAP } },
+		{ {  620000,  352000,  NO_CAP,  NO_CAP } },
+		{ {  475000,  352000,  NO_CAP,  NO_CAP } },
+		{ {  475000,  352000,  NO_CAP,  NO_CAP } },
+		{ {  475000,  352000,  250000,  375000 } },
+		{ {  475000,  352000,  250000,  375000 } },
+		{ {  475000,  247000,  204000,  375000 } },
+		{ {  475000,  247000,  204000,  204000 } }, // EMC is 375000 in original
+		{ {  475000,  247000,  204000,  204000 } }, // EMC is 375000 in original
+	  { { CPU_THROT_LOW,  247000,  204000,  102000 } }, // commented in original
+};
+
+static struct balanced_throttle skin_throttle = {
+	.throt_tab_size = ARRAY_SIZE(skin_throttle_table),
+	.throt_tab = skin_throttle_table,
+};
+
+static int __init x3_skin_init(void)
+{
+	balanced_throttle_register(&skin_throttle, "skin-balanced");
+	tegra_skin_therm_est_device.dev.platform_data = &skin_data;
+	platform_device_register(&tegra_skin_therm_est_device);
+
+	return 0;
+}
+late_initcall(x3_skin_init);
+#endif
+
+#if 0
 static int nct_get_temp(void *_data, long *temp)
 {
 	struct nct1008_data *data = _data;
@@ -106,7 +297,7 @@ static int nct_set_shutdown_temp(void *_data, long shutdown_temp)
 	return nct1008_thermal_set_shutdown_temp(data,
 						shutdown_temp);
 }
-//                                       
+
 #ifdef CONFIG_TEGRA_SKIN_THROTTLE
 static int nct_get_itemp(void *dev_data, long *temp)
 {
@@ -137,87 +328,46 @@ static void nct1008_probe_callback(struct nct1008_data *data)
 	thermal_device->set_shutdown_temp = nct_set_shutdown_temp;
 
 	tegra_thermal_device_register(thermal_device);
-//                                       
+
 #ifdef CONFIG_TEGRA_SKIN_THROTTLE
-        {
-                struct tegra_thermal_device *int_nct;
-                int_nct = kzalloc(sizeof(struct tegra_thermal_device     ),
-                                                GFP_KERNEL);
-                if (!int_nct) {
-                        kfree(int_nct);
-                        pr_err("unable to allocate thermal device\n"     );
-                        return;
-                }
-
-                int_nct->name = "nct_int";
-                int_nct->id = THERMAL_DEVICE_ID_NCT_INT;
-                int_nct->data = data;
-                int_nct->get_temp = nct_get_itemp;
-
-                tegra_thermal_device_register(int_nct);
-        }
-#endif
-
-}
-
-static struct nct1008_platform_data x3_nct1008_pdata = {
-	.supported_hwrev	= true,
-	.ext_range		= true,
-	.conv_rate		= 0x08,
-	/* 4 * 2C. Bug 844025 - 1C for device accuracies */
-	.offset			= 8, 
-	.probe_callback		= nct1008_probe_callback,
-};
-
-static struct i2c_board_info x3_i2c4_nct1008_board_info[] = {
 	{
-		I2C_BOARD_INFO("nct1008", 0x4C),
-		.irq = TEGRA_GPIO_TO_IRQ(X3_NCT1008_IRQ),
-		.platform_data = &x3_nct1008_pdata,
-	}
-};
+		struct tegra_thermal_device *int_nct;
+		int_nct = kzalloc(sizeof(struct tegra_thermal_device),
+					GFP_KERNEL);
+		if (!int_nct) {
+			kfree(int_nct);
+			pr_err("unable to allocate thermal device\n");
+			return;
+		}
 
-static void x3_nct1008_init(void)
-{
-	int ret;
+		int_nct->name = "nct_int";
+		int_nct->id = THERMAL_DEVICE_ID_NCT_INT;
+		int_nct->data = data;
+		int_nct->get_temp = nct_get_itemp;
 
-	tegra_gpio_enable(X3_NCT1008_IRQ);
-	ret = gpio_request(X3_NCT1008_IRQ, "temp_alert");
-	if (ret < 0) {
-		pr_err("%s: gpio_request failed %d\n", __func__, ret);
-		return;
+		tegra_thermal_device_register(int_nct);
 	}
-
-	ret = gpio_direction_input(X3_NCT1008_IRQ);
-	if (ret < 0) {
-		pr_err("%s: gpio_direction_input failed %d\n", __func__, ret);
-		gpio_free(X3_NCT1008_IRQ);
-		return;
-	}
-	
-	i2c_register_board_info(4, x3_i2c4_nct1008_board_info,
-				ARRAY_SIZE(x3_i2c4_nct1008_board_info));
+#endif
 }
+#endif
 
 static inline void x3_msleep(u32 t)
 {
 	/*
-	If timer value is between ( 10us - 20ms),
-	usleep_range() is recommended.
-	Please read Documentation/timers/timers-howto.txt.
-	*/
-	usleep_range(t*1000, t*1000 + 500);
+	 * If timer value is between ( 10us - 20ms),
+	 * usleep_range() is recommended.
+	 * Please read Documentation/timers/timers-howto.txt.
+	 */
+	usleep_range(t * 1000, t * 1000 + 500);
 }
 
-/*
+#ifdef CONFIG_SENSORS_ISL29028	
 static struct i2c_board_info x3_i2c0_isl_board_info[] = {
 	{
 		I2C_BOARD_INFO("isl29028", 0x44),
 	}
 };
-*/
 
-#ifdef CONFIG_SENSORS_ISL29028	
 static void x3_isl_init(void)
 {
 	i2c_register_board_info(0, x3_i2c0_isl_board_info,
@@ -225,8 +375,7 @@ static void x3_isl_init(void)
 }
 #endif
 
-#ifdef CONFIG_STEREO_CAMERA_USE //                        
-
+#ifdef CONFIG_STEREO_CAMERA_USE
 enum CAMERA_INDEX {
 	CAM_REAR_LEFT,
 	CAM_REAR_RIGHT,
@@ -410,7 +559,7 @@ struct ov9726_platform_data x3_ov9726_data = {
 };
 
 static struct tps61050_pin_state x3_tps61050_pinstate = {
-	.mask		= 0x0008, /*VGP3*/
+	.mask		= 0x0008, /* VGP3 */
 	.values		= 0x0008,
 };
 
@@ -454,7 +603,6 @@ fail_regulator_flash_reg:
 	x3_flash_reg = NULL;
 	return ret;
 }
-
 
 struct x3_cam_gpio {
 	int gpio;
@@ -507,88 +655,80 @@ static struct tps61050_platform_data x3_tps61050_data = {
 #if defined(CONFIG_VIDEO_AR0832)
 static int x3_ar0832_power_on(void)
 {  
-#if 0 
-  int ret;
-  ret = x3_camera_power_on();
-  return ret;
+#if 0
+	return x3_camera_power_on();
 #else
-  return 0;
+	return 0;
 #endif
 }
   
 static int x3_ar0832_power_off(void)
 {
-#if 0 
-  int ret;
-  ret = x3_camera_power_off();
-  return ret;
+#if 0
+	return x3_camera_power_off();
 #else
-  return 0;
+	return 0;
 #endif
 }
 
 struct ar0832_platform_data x3_ar0832_data = {
-    .power_on = x3_ar0832_power_on,
-    .power_off = x3_ar0832_power_off,
+	.power_on = x3_ar0832_power_on,
+	.power_off = x3_ar0832_power_off,
 };
 
-#endif //defined(CONFIG_VIDEO_AR0832)
+#endif // defined(CONFIG_VIDEO_AR0832)
 
 #if defined(CONFIG_VIDEO_IMX111)
-#if 0 //hyojin.an 111104 
+#if 0 // hyojin.an 111104 
 static int x3_imx111_power_on(void)
 {  
-#if 0 
-  int ret;
-  ret = x3_camera_power_on();
-  return ret;
+#if 0
+	return x3_camera_power_on();
 #else
-  return 0;
+	return 0;
 #endif
 }
   
 static int x3_imx111_power_off(void)
 {
-#if 0 
-  int ret;
-  ret = x3_camera_power_off();
-  return ret;
+#if 0
+	return x3_camera_power_off();
 #else
-  return 0;
+	return 0;
 #endif
 }
 #endif
+
 struct imx111_platform_data x3_imx111_data = {
 	//hyojin.an 111104 .power_on = x3_imx111_power_on,
 	//hyojin.an 111104 .power_off = x3_imx111_power_off,
 };
 
-#endif //defined(CONFIG_VIDEO_IMX111)
+#endif // defined(CONFIG_VIDEO_IMX111)
 
 #if defined(CONFIG_VIDEO_MT9M114)
-
 static int x3_mt9m114_power_on(void)
 {
 #if 0  
 	int ret;
 	//struct board_info board_info;
 
-  pr_err("%s\n", __func__);
+	pr_err("%s\n", __func__);
 	//tegra_get_board_info(&board_info);
 	//sub camera enable
-		tegra_gpio_enable(SUB_CAM_EN);
+//		tegra_gpio_enable(SUB_CAM_EN);
 		ret = gpio_request(SUB_CAM_EN, "sub_cam_en");
 		if (ret < 0)
 			pr_err("%s: gpio_request failed for gpio %s\n",
 				__func__, "SUB_CAM_EN");
 
-    		tegra_gpio_enable(SUB_CAM_RESET_N);
+//		tegra_gpio_enable(SUB_CAM_RESET_N);
 		ret = gpio_request(SUB_CAM_RESET_N, "sub_cam_reset_n");
 		if (ret < 0)
 			pr_err("%s: gpio_request failed for gpio %s\n",
 				__func__, "SUB_CAM_RESET_N");
 
-		tegra_gpio_enable(SUB_CAM_PWDN);
+//		tegra_gpio_enable(SUB_CAM_PWDN);
 		ret = gpio_request(SUB_CAM_PWDN, "sub_cam_pwdn");
 		if (ret < 0)
 			pr_err("%s: gpio_request failed for gpio %s\n",
@@ -597,20 +737,22 @@ static int x3_mt9m114_power_on(void)
 		gpio_direction_output(SUB_CAM_EN, 1);
 
 		gpio_set_value(SUB_CAM_EN, 1);
-  //I2C switch direction 1: out 0 : in (from AP30)
+
+		//I2C switch direction 1: out 0 : in (from AP30)
 		gpio_direction_output(CAM_I2C_SEL1, 1);
 		gpio_direction_output(CAM_I2C_SEL2, 1);
 		gpio_direction_output(CAM_SEL_3D, 0);
-    //I2C Switch set value
-    gpio_set_value(CAM_I2C_SEL1, 1);
+
+		//I2C Switch set value
+		gpio_set_value(CAM_I2C_SEL1, 1);
 		gpio_set_value(CAM_I2C_SEL2, 1);
 		gpio_set_value(CAM_SEL_3D, 0);
 
-  //sub cam direction 1: out 0 : in (from AP30)
+		//sub cam direction 1: out 0 : in (from AP30)
 		gpio_direction_output(SUB_CAM_RESET_N, 1);
 		gpio_direction_output(SUB_CAM_PWDN, 1);
 
-    //sub cam set value
+		//sub cam set value
 		gpio_set_value(SUB_CAM_RESET_N, 1);
 		gpio_set_value(SUB_CAM_PWDN, 1);
 #endif
@@ -619,7 +761,7 @@ static int x3_mt9m114_power_on(void)
 
 static int x3_mt9m114_power_off(void)
 {
-  pr_err("%s\n", __func__);
+	pr_err("%s\n", __func__);
 	return 0;
 }
 
@@ -628,7 +770,7 @@ struct mt9m114_platform_data x3_mt9m114_data = {
 //	.power_off = x3_mt9m114_power_off,
 };
 
-#endif //#if defined(CONFIG_VIDEO_MT9M114)
+#endif // #if defined(CONFIG_VIDEO_MT9M114)
 
 #if defined(CONFIG_VIDEO_IMX119)
 struct imx119_platform_data x3_imx119_data = {
@@ -645,7 +787,7 @@ struct imx119_platform_data x3_imx119_data = {
  
 #if defined(CONFIG_VIDEO_AR0832) // hyojin.an 110624
 static struct i2c_board_info ar0832_i2c2_boardinfo[] = {
-#ifdef CONFIG_STEREO_CAMERA_USE //                        
+#ifdef CONFIG_STEREO_CAMERA_USE
 	{
 		/* 0x30: alternative slave address */
 		I2C_BOARD_INFO("ar0832", 0x36),
@@ -674,32 +816,29 @@ static struct i2c_board_info ar0832_i2c2_boardinfo[] = {
     //hyojin.an 110715 },
 #endif
   };
-#endif //defined(CONFIG_VIDEO_AR0832)
+#endif // defined(CONFIG_VIDEO_AR0832)
 
 #if defined(CONFIG_VIDEO_IMX111)
 static struct i2c_board_info imx111_i2c2_boardinfo[] = {
-      {
-        //chen.yingchun 20111221 slave address change for conflict with LM3533 on rev.b board
-        //I2C_BOARD_INFO("imx111", 0x36),
-        I2C_BOARD_INFO("imx111", 0x10),
-        .platform_data = &x3_imx111_data,
-      },
-
-      {
-         //I2C_BOARD_INFO("imx111_focuser", 0x18),
+	{
+		// chen.yingchun 20111221 slave address change for conflict with LM3533 on rev.b board
+		//I2C_BOARD_INFO("imx111", 0x36),
+		I2C_BOARD_INFO("imx111", 0x10),
+		.platform_data = &x3_imx111_data,
+	},
+	{
+		//I2C_BOARD_INFO("imx111_focuser", 0x18),
 		I2C_BOARD_INFO("dw9714", 0x0c),
 		.platform_data  = &focuser_data,
-      },
-      
-      {
-         I2C_BOARD_INFO("lm3559",  0x53),
-         .platform_data  = &flash_led_data,
-      },
-
-      {
-         //2012-03-24 kyungrae.jo : nvidia patch of camera sensor eeprom driver
-         I2C_BOARD_INFO("m24c08", 0x50),
-      },
+	},
+	{
+		I2C_BOARD_INFO("lm3559",  0x53),
+		.platform_data  = &flash_led_data,
+	},
+	{
+		// 2012-03-24 kyungrae.jo : nvidia patch of camera sensor eeprom driver
+		I2C_BOARD_INFO("m24c08", 0x50),
+	},
 };
 #endif
 
@@ -743,7 +882,7 @@ static int x3_cam_init(void)
 		gpio_direction_output(x3_cam_gpio_data[i].gpio,
 				x3_cam_gpio_data[i].value);
 		gpio_export(x3_cam_gpio_data[i].gpio, false);
-		tegra_gpio_enable(x3_cam_gpio_data[i].gpio);
+//		tegra_gpio_enable(x3_cam_gpio_data[i].gpio);
 	}
 #endif
 
@@ -768,12 +907,12 @@ static int x3_cam_init(void)
 
 	return 0;
 
-#ifdef CONFIG_STEREO_CAMERA_USE //                        
+#ifdef CONFIG_STEREO_CAMERA_USE
 fail_free_gpio:
 	pr_err("%s x3_cam_init failed!\n", __func__);
 #endif
 
-#ifdef CONFIG_STEREO_CAMERA_USE //                        
+#ifdef CONFIG_STEREO_CAMERA_USE
 	while (i--)
 		gpio_free(x3_cam_gpio_data[i].gpio);
 #endif  
@@ -817,4 +956,3 @@ int __init x3_sensors_init(void)
 
 	return ret;
 }
-

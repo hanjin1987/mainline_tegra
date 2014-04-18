@@ -38,6 +38,8 @@
 #include "signal.h"
 
 #if defined(CONFIG_MACH_X3)  || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+#include <asm/gpio.h>
+
 #include "../arch/arm/mach-tegra/gpio-names.h"
 #include "../arch/arm/mach-tegra/lge/x3/include/lge/board-x3-nv.h"
 #include "../arch/arm/mach-tegra/lge/x3/include/lge/board-x3.h"

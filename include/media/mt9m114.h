@@ -232,6 +232,7 @@ struct mt9m114_power_rail {
 struct mt9m114_platform_data {
 	int (*power_on)(struct mt9m114_power_rail *pw);
 	int (*power_off)(struct mt9m114_power_rail *pw);
+};
 
 #if 0
 struct mt9m114_status {
@@ -254,8 +255,7 @@ struct mt9m114_table_reg {
 	const struct mt9m114_i2c_reg_conf * snap_tbl;
 	const unsigned short snaptbl_size;
 };
-//                                          
-//                                                                           
+
 #if 1
 typedef enum {
 	YUVCamEffectMode_Color = 0,
@@ -296,13 +296,14 @@ typedef enum {
     YUVCamSceneMode_Force32 = 0x7FFFFFFF
 } YUVCamSceneMode;
 #endif
-//                                                                           
+
 #ifdef __KERNEL__
 struct mt9m114_platform_data {
 	int (*power_on)(void);
 	int (*power_off)(void);
-#endif
 };
+#endif
+#endif
 #endif /* __KERNEL__ */
 
 #endif  /* __MT9M114_H__ */

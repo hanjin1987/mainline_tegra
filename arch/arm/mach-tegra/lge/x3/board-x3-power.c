@@ -1,5 +1,5 @@
 /*
- * arch/arm/mach-tegra/board-x3-power.c
+ * arch/arm/mach-tegra/lge/x3/board-x3-power.c
  *
  * Copyright (C) 2011 NVIDIA, Inc.
  *
@@ -17,28 +17,33 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
  * 02111-1307, USA
  */
+
 #include <linux/i2c.h>
 #include <linux/pda_power.h>
 #include <linux/platform_device.h>
 #include <linux/resource.h>
 #include <linux/regulator/machine.h>
-#include <linux/regulator/gpio-switch-regulator.h>
+#include <linux/regulator/fixed.h>
 #include <linux/mfd/tps80031.h>
 #include <linux/regulator/tps80031-regulator.h>
-#include <linux/mfd/aat2870.h>
-#include <linux/mfd/max77663-core.h>
-#include <linux/regulator/max77663-regulator.h>
+#include <linux/tps80031-charger.h>
 #include <linux/gpio.h>
 #include <linux/io.h>
 #include <linux/platform_data/tegra_bpc_mgmt.h>
-#include <linux/kmsg_dump.h>
+#include <linux/regulator/driver.h>
+#include <linux/regulator/gpio-regulator.h>
 
+#include <linux/regulator/gpio-switch-regulator.h>
+#include <linux/regulator/max77663-regulator.h>
+#include <linux/mfd/aat2870.h>
+#include <linux/mfd/max77663-core.h>
+#include <linux/kmsg_dump.h>
 
 #include <mach/edp.h>
 #include <mach/iomap.h>
 #include <mach/irqs.h>
 #include <mach/pinmux.h>
-#include <linux/tps80031-charger.h>
+#include <mach/gpio-tegra.h>
 
 #include <mach-tegra/gpio-names.h>
 #include <mach-tegra/board.h>
@@ -213,7 +218,7 @@ int battery_charger_init(void *board_data)
 				" charger fails\n", __func__);
 	}
 	gpio_direction_output(TEGRA_GPIO_PF6, 1);
-	tegra_gpio_enable(TEGRA_GPIO_PF6);
+	//tegra_gpio_enable(TEGRA_GPIO_PF6);
 	return 0;
 }
 
@@ -292,6 +297,7 @@ static struct tps80031_platform_data tps_platform = {
 	.gpio_base	= ENT_TPS80031_GPIO_BASE,
 	.clk32k_pdata	= &clk32k_pdata,
 };
+
 #endif // CONFIG_REGULATOR_TPS80031
 /************************ TPS80031 based regulator ****************/
 
@@ -392,98 +398,99 @@ static struct max77663_regulator_fps_cfg max77663_fps_cfg[] = {
 	},
 };
 
-#define MAX77663_PDATA_INIT(_id, _min_uV, _max_uV, _supply_reg,		\
-			    _always_on, _boot_on, _apply_uV,		\
-			    _init_apply, _init_enable, _init_uV,	\
-			    _fps_src, _fps_pu_period, _fps_pd_period, _flags) \
-	static struct max77663_regulator_platform_data max77663_regulator_pdata_##_id = \
-	{								\
-		.init_data = {						\
-			.constraints = {				\
-				.min_uV = _min_uV,			\
-				.max_uV = _max_uV,			\
-				.valid_modes_mask = (REGULATOR_MODE_NORMAL |  \
-						     REGULATOR_MODE_STANDBY), \
-				.valid_ops_mask = (REGULATOR_CHANGE_MODE |    \
-						   REGULATOR_CHANGE_STATUS |  \
-						   REGULATOR_CHANGE_VOLTAGE), \
-				.always_on = _always_on,		\
-				.boot_on = _boot_on,			\
-				.apply_uV = _apply_uV,			\
-			},						\
-			.num_consumer_supplies =			\
-				ARRAY_SIZE(max77663_##_id##_supply),	\
-			.consumer_supplies = max77663_##_id##_supply,	\
-			.supply_regulator = _supply_reg,		\
-		},							\
-		.init_apply = _init_apply,				\
-		.init_enable = _init_enable,				\
-		.init_uV = _init_uV,					\
-		.fps_src = _fps_src,					\
-		.fps_pu_period = _fps_pu_period,			\
-		.fps_pd_period = _fps_pd_period,			\
-		.fps_cfgs = max77663_fps_cfg,				\
-		.flags = _flags,					\
+#define MAX77663_PDATA_INIT(_reg_id, _id, _min_uV, _max_uV, _supply_reg,	\
+			    _always_on, _boot_on, _apply_uV,			\
+			    _fps_src, _fps_pu_period, _fps_pd_period, _flags)	\
+	static struct regulator_init_data max77663_regulator_idata_##_id = {	\
+		.constraints = {						\
+			.name = max77663_rails(_id),				\
+			.min_uV = _min_uV,					\
+			.max_uV = _max_uV,					\
+			.valid_modes_mask = (REGULATOR_MODE_NORMAL |		\
+					REGULATOR_MODE_STANDBY),		\
+			.valid_ops_mask = (REGULATOR_CHANGE_MODE |		\
+					REGULATOR_CHANGE_STATUS |		\
+					REGULATOR_CHANGE_VOLTAGE),		\
+			.always_on = _always_on,				\
+			.boot_on = _boot_on,					\
+			.apply_uV = _apply_uV,					\
+		},								\
+		.num_consumer_supplies =					\
+			ARRAY_SIZE(max77663_##_id##_supply),			\
+		.consumer_supplies = max77663_##_id##_supply,			\
+		.supply_regulator = _supply_reg,				\
+	};									\
+	static struct max77663_regulator_platform_data max77663_regulator_pdata_##_id = { \
+		.reg_init_data = &max77663_regulator_idata_##_id,		\
+		.id = MAX77663_REGULATOR_ID_##_reg_id,				\
+		.fps_src = _fps_src,						\
+		.fps_pu_period = _fps_pu_period,				\
+		.fps_pd_period = _fps_pd_period,				\
+		.fps_cfgs = max77663_fps_cfg,					\
+		.flags = _flags,						\
 	}
 
 #if defined(CONFIG_MFD_MAX77663_SD_FORCED_PWM)
-MAX77663_PDATA_INIT(sd0,  600000, 3387500, NULL, 1, 0, 0,
-		    0, 0, -1, FPS_SRC_NONE, -1, -1, EN2_CTRL_SD0|SD_FORCED_PWM_MODE);
+MAX77663_PDATA_INIT(SD0, sd0,  600000, 3387500, NULL, 1, 0, 0,
+		    FPS_SRC_NONE, -1, -1, EN2_CTRL_SD0|SD_FORCED_PWM_MODE);
 #else
-MAX77663_PDATA_INIT(sd0,  600000, 3387500, NULL, 1, 0, 0,
-		    0, 0, -1, FPS_SRC_NONE, -1, -1, EN2_CTRL_SD0);
+MAX77663_PDATA_INIT(SD0, sd0,  600000, 3387500, NULL, 1, 0, 0,
+		    FPS_SRC_NONE, -1, -1, EN2_CTRL_SD0);
 #endif
 
 #if defined(CONFIG_MFD_MAX77663_SD_FORCED_PWM)
-MAX77663_PDATA_INIT(sd1,  800000, 1587500, NULL, 1, 0, 0,
-		    1, 1, -1, FPS_SRC_1, -1, -1, SD_FORCED_PWM_MODE);
+MAX77663_PDATA_INIT(SD1, sd1,  800000, 1587500, NULL, 1, 0, 0,
+		    FPS_SRC_1, -1, -1, SD_FORCED_PWM_MODE);
 #else
-MAX77663_PDATA_INIT(sd1,  800000, 1587500, NULL, 1, 0, 0,
-		    1, 1, -1, FPS_SRC_1, -1, -1, 0);
+MAX77663_PDATA_INIT(SD1, sd1,  800000, 1587500, NULL, 1, 0, 0,
+		    FPS_SRC_1, -1, -1, 0);
 #endif
 
 /* SD2 must be always turned on because used as pull-up signal for NRST_IO. */
-MAX77663_PDATA_INIT(sd2,  600000, 3387500, NULL, 1, 0, 0,
-		    1, 1, -1, FPS_SRC_NONE, -1, -1, 0);
+MAX77663_PDATA_INIT(SD2, sd2,  600000, 3387500, NULL, 1, 0, 0,
+		    FPS_SRC_NONE, -1, -1, 0);
 
 #if defined(CONFIG_MFD_MAX77663_SD_FORCED_PWM)
-MAX77663_PDATA_INIT(sd3,  600000, 3387500, NULL, 0, 0, 0,
-		    1, 1, -1, FPS_SRC_NONE, -1, -1, SD_FORCED_PWM_MODE);
+MAX77663_PDATA_INIT(SD3, sd3,  600000, 3387500, NULL, 0, 0, 0,
+		    FPS_SRC_NONE, -1, -1, SD_FORCED_PWM_MODE);
 #else
-MAX77663_PDATA_INIT(sd3,  600000, 3387500, NULL, 0, 0, 0,
-		    1, 1, -1, FPS_SRC_NONE, -1, -1, 0);
+MAX77663_PDATA_INIT(SD3, sd3,  600000, 3387500, NULL, 0, 0, 0,
+		    FPS_SRC_NONE, -1, -1, 0);
 #endif
 
-MAX77663_PDATA_INIT(ldo0, 800000, 2350000, NULL, 0, 0, 0,
-		    1, 1, -1, FPS_SRC_1, -1, -1, 0);
+MAX77663_PDATA_INIT(LDO0, ldo0, 800000, 2350000, NULL, 0, 0, 0,
+		    FPS_SRC_1, -1, -1, 0);
 
-MAX77663_PDATA_INIT(ldo1, 800000, 2350000, NULL, 0, 0, 0,
-		    1, 1, -1, FPS_SRC_NONE, -1, -1, 0);
-//                                                       
-MAX77663_PDATA_INIT(ldo2, 800000, 3950000, NULL, 0, 0, 0,
-		    0, 0, -1, FPS_SRC_NONE, -1, -1, 0);
-MAX77663_PDATA_INIT(ldo3, 3000000, 3000000, NULL, 0, 0, 0,
-		    1, 1, 3000000, FPS_SRC_NONE, -1, -1, 0);
+MAX77663_PDATA_INIT(LDO1, ldo1, 800000, 2350000, NULL, 0, 0, 0,
+		    FPS_SRC_NONE, -1, -1, 0);
+
+MAX77663_PDATA_INIT(LDO2, ldo2, 800000, 3950000, NULL, 0, 0, 0,
+		    FPS_SRC_NONE, -1, -1, 0);
+
+MAX77663_PDATA_INIT(LDO3, ldo3, 3000000, 3000000, NULL, 0, 0, 0,
+		    FPS_SRC_NONE, -1, -1, 0);
+
 /* LDO4 must be always turned on because connected with vdd_rtc. */
-MAX77663_PDATA_INIT(ldo4, 800000, 1587500, NULL, 1, 0, 0,
-		    1, 1, -1, FPS_SRC_0, -1, -1, 0);
+MAX77663_PDATA_INIT(LDO4, ldo4, 800000, 1587500, NULL, 1, 0, 0,
+		    FPS_SRC_0, -1, -1, 0);
 
-MAX77663_PDATA_INIT(ldo5, 800000, 3950000, NULL, 0, 0, 0,
-		    1, 1, -1, FPS_SRC_1, -1, -1, 0);
-//
-//                                                       
-MAX77663_PDATA_INIT(ldo6, 800000, 3950000, NULL, 1, 0, 0,
-		    1, 1, -1, FPS_SRC_NONE, -1, -1, 0);
-MAX77663_PDATA_INIT(ldo7, 800000, 3950000, NULL, 0, 0, 0,
-			1, 0, 1250000, FPS_SRC_NONE, -1, -1, 0);
-MAX77663_PDATA_INIT(ldo8, 800000, 3950000, max77663_rails(sd2), 0, 0, 0,
-			0, 0, -1, FPS_SRC_NONE, -1, -1, 0);
+MAX77663_PDATA_INIT(LDO5, ldo5, 800000, 3950000, NULL, 0, 0, 0,
+		    FPS_SRC_1, -1, -1, 0);
+
+MAX77663_PDATA_INIT(LDO6, ldo6, 800000, 3950000, NULL, 1, 0, 0,
+		    FPS_SRC_NONE, -1, -1, 0);
+
+MAX77663_PDATA_INIT(LDO7, ldo7, 800000, 3950000, NULL, 0, 0, 0,
+		    FPS_SRC_NONE, -1, -1, 0);
+
+MAX77663_PDATA_INIT(LDO8, ldo8, 800000, 3950000, max77663_rails(sd2), 0, 0, 0,
+		    FPS_SRC_NONE, -1, -1, 0);
 
 #define MAX77663_REG(_id, _data)				\
 	{							\
 		.name = "max77663-regulator",			\
 		.id = MAX77663_REGULATOR_ID_##_id,		\
-		.platform_data = &max77663_regulator_pdata_##_data, \
+		.platform_data = &max77663_regulator_pdata_##_data,	\
 		.pdata_size = sizeof(max77663_regulator_pdata_##_data), \
 	}
 
@@ -510,7 +517,6 @@ static struct mfd_cell max77663_subdevs[] = {
 	MAX77663_RTC(),
 };
 
-//                                                       
 struct max77663_gpio_config max77663_gpio_cfg[] = {
 	/*
 	 * 4 AP usb detect..
@@ -519,11 +525,6 @@ struct max77663_gpio_config max77663_gpio_cfg[] = {
 		.gpio		= MAX77663_GPIO1,
 		.dir		= GPIO_DIR_OUT,
 		.out_drv	= GPIO_OUT_DRV_OPEN_DRAIN,
-		/*
-                          
-                                     
-                                            
-   */
 		.alternate	= GPIO_ALT_DISABLE,
 
  	},
@@ -547,7 +548,7 @@ static struct max77663_platform_data max7763_pdata = {
 
 	.num_subdevs	= ARRAY_SIZE(max77663_subdevs),
 	.sub_devices	= max77663_subdevs,
-	.flags			= SLP_LPM_ENABLE,
+	.flags		= SLP_LPM_ENABLE,
 };
 #endif  // CONFIG_REGULATOR_MAX77663
 /************************ MAX77663 based regulator ****************/
@@ -573,7 +574,6 @@ static struct i2c_board_info __initdata x3_regulators[] = {
 
 /************************ GPIO based switch regulator ****************/
 #if defined(CONFIG_REGULATOR_GPIO_SWITCH)
-
 
 static struct regulator_consumer_supply gpio_switch_ldo_mhl_en_supply[] = {
         REGULATOR_SUPPLY("avdd_vhdmi_vtherm", NULL),
@@ -666,7 +666,6 @@ static int gpio_switch_ldo_vdd_fuse_3v3_en_voltages[] = {3300};
 	}
 
 #if 0
-
 #define MHL_LDO_EN      TEGRA_GPIO_PV2
 
 #if defined(MACH_X3_REV_D)
@@ -690,9 +689,7 @@ static struct gpio_switch_regulator_subdev_data *gswitch_subdevs[] = {
         ADD_GPIO_REG(ldo_sensor_1v8_en),
         ADD_GPIO_REG(ldo_vdd_fuse_3v3_en),
 };
-
 #else
-
 
 #define MHL_LDO_EN      TEGRA_GPIO_PV2
 #define THERM_LDO_EN	TEGRA_GPIO_PK6
@@ -776,6 +773,7 @@ static struct platform_device gswitch_regulator_pdata_rev_E = {
 
 static int __init x3_gpio_switch_regulator_init_rev_C(void)
 {
+#if 0
 	int i;
 
 	for (i = 0; i < gswitch_pdata_rev_C.num_subdevs; ++i) {
@@ -784,12 +782,13 @@ static int __init x3_gpio_switch_regulator_init_rev_C(void)
 		if (gswitch_data->gpio_nr <= TEGRA_NR_GPIOS)
 			tegra_gpio_enable(gswitch_data->gpio_nr);
 	}
+#endif
 	return platform_device_register(&gswitch_regulator_pdata_rev_C);
 }
 
-
 static int __init x3_gpio_switch_regulator_init_rev_D(void)
 {
+#if 0
 	int i;
 
 	for (i = 0; i < gswitch_pdata_rev_D.num_subdevs; ++i) {
@@ -798,11 +797,13 @@ static int __init x3_gpio_switch_regulator_init_rev_D(void)
 		if (gswitch_data->gpio_nr <= TEGRA_NR_GPIOS)
 			tegra_gpio_enable(gswitch_data->gpio_nr);
 	}
+#endif
 	return platform_device_register(&gswitch_regulator_pdata_rev_D);
 }
 
 static int __init x3_gpio_switch_regulator_init_rev_E(void)
 {
+#if 0
 	int i;
 
 	for (i = 0; i < gswitch_pdata_rev_E.num_subdevs; ++i) {
@@ -811,14 +812,12 @@ static int __init x3_gpio_switch_regulator_init_rev_E(void)
 		if (gswitch_data->gpio_nr <= TEGRA_NR_GPIOS)
 			tegra_gpio_enable(gswitch_data->gpio_nr);
 	}
+#endif
 	return platform_device_register(&gswitch_regulator_pdata_rev_E);
 }
-
 #endif
 
-
 #if 0
-
 static struct gpio_switch_regulator_platform_data  gswitch_pdata = {
 	.num_subdevs	= ARRAY_SIZE(gswitch_subdevs),
 	.subdevs	= gswitch_subdevs,
@@ -834,6 +833,7 @@ static struct platform_device gswitch_regulator_pdata = {
 
 static int __init x3_gpio_switch_regulator_init(void)
 {
+#if 0
 	int i;
 
 	for (i = 0; i < gswitch_pdata.num_subdevs; ++i) {
@@ -842,9 +842,9 @@ static int __init x3_gpio_switch_regulator_init(void)
 		if (gswitch_data->gpio_nr <= TEGRA_NR_GPIOS)
 			tegra_gpio_enable(gswitch_data->gpio_nr);
 	}
+#endif
 	return platform_device_register(&gswitch_regulator_pdata);
 }
-
 #endif
 
 #endif // CONFIG_REGULATOR_GPIO_SWITCH
@@ -854,19 +854,19 @@ static int __init x3_gpio_switch_regulator_init(void)
  * AAT2870 backlight and regulator
  */
 static struct regulator_consumer_supply aat2870_ldoa_supply[] = {
-	REGULATOR_SUPPLY("vddio_lcd_1v8", NULL), /*           */
+	REGULATOR_SUPPLY("vddio_lcd_1v8", NULL),
 };
 
 static struct regulator_consumer_supply aat2870_ldob_supply[] = {
-	REGULATOR_SUPPLY("vdd_lcd_3v0", NULL), /*           */
+	REGULATOR_SUPPLY("vdd_lcd_3v0", NULL),
 };
 
 static struct regulator_consumer_supply aat2870_ldoc_supply[] = {
-	REGULATOR_SUPPLY("vddio_touch_1v8", NULL), /*           */
+	REGULATOR_SUPPLY("vddio_touch_1v8", NULL),
 };
 
 static struct regulator_consumer_supply aat2870_ldod_supply[] = {
-	REGULATOR_SUPPLY("vdd_touch_3v0", NULL), /*           */
+	REGULATOR_SUPPLY("vdd_touch_3v0", NULL),
 };
 
 #define AAT2870_PDATA_INIT(_id, _minmv, _maxmv, _supply_reg, _always_on, \
@@ -927,16 +927,16 @@ struct aat2870_subdev_info aat2870_subdevs[] = {
 
 static int aat2870_init(struct aat2870_data *aat2870)
 {
-	if (aat2870->en_pin >= 0)
-		tegra_gpio_enable(aat2870->en_pin);
+	//if (aat2870->en_pin >= 0)
+	//	tegra_gpio_enable(aat2870->en_pin);
 
 	return 0;
 }
 
 static void aat2870_uninit(struct aat2870_data *aat2870)
 {
-	if (aat2870->en_pin >= 0)
-		tegra_gpio_disable(aat2870->en_pin);
+	//if (aat2870->en_pin >= 0)
+	//	tegra_gpio_disable(aat2870->en_pin);
 }
 
 static struct aat2870_platform_data aat2870_pdata = {
@@ -969,7 +969,7 @@ static void x3_power_off(void)
 #endif /* defined(CONFIG_MFD_TPS80031) */
 #if defined(CONFIG_MFD_MAX77663)
 	/*
-	 * power-code should be completed in tps80031
+	 * power-code should be completed in max77663
 	 */
 	ret = max77663_power_off();
 #endif
@@ -978,7 +978,6 @@ static void x3_power_off(void)
 
 	while(1);
 }
-
 
 int __init x3_regulator_init(void)
 {
@@ -1016,8 +1015,7 @@ int __init x3_regulator_init(void)
 #if 0
 	x3_gpio_switch_regulator_init();
 #else
-	switch(x3_get_hw_rev_pcb_version())
-	{
+	switch (x3_get_hw_rev_pcb_version()) {
 		case hw_rev_pcb_type_A :
 		case hw_rev_pcb_type_B :
 		case hw_rev_pcb_type_C :
@@ -1054,16 +1052,24 @@ static struct tegra_suspend_platform_data x3_suspend_data = {
 	.cpu_off_timer	= 200,
 	.suspend_mode	= TEGRA_SUSPEND_LP0,
 	.core_timer	= 0x7e7e,
-	.core_off_timer = 0,
+	.core_off_timer = 0x80,
 	.corereq_high	= true,
 	.sysclkreq_high	= true,
 //	.wake_low	   =  TEGRA_WAKE_GPIO_PV0,
 //	.wake_enb	  = TEGRA_WAKE_GPIO_PV0,
 	.board_suspend = x3_board_suspend,
 	.board_resume = x3_board_resume,
-//                                  
-        .cpu_wake_freq = CPU_WAKE_FREQ_LOW,
-        .cpu_lp2_min_residency = 20000,
+#ifdef CONFIG_TEGRA_LP1_950
+	.lp1_lowvolt_support = true,
+	.i2c_base_addr = TEGRA_I2C5_BASE,
+	.pmuslave_addr = 0x24,
+	.core_reg_addr = 0x5B,
+	.lp1_core_volt_low_cold = 0x1D,
+	.lp1_core_volt_low = 0x1D,
+	.lp1_core_volt_high = 0x33,
+#endif
+//	.cpu_wake_freq = CPU_WAKE_FREQ_LOW,
+	.cpu_lp2_min_residency = 20000,
 };
 
 static void x3_init_deep_sleep_mode(void)
@@ -1082,7 +1088,6 @@ int __init x3_suspend_init(void)
 {
 	x3_init_deep_sleep_mode();
 	tegra_init_suspend(&x3_suspend_data);
-
 	return 0;
 }
 
@@ -1120,9 +1125,9 @@ static struct platform_device x3_bpc_mgmt_device = {
 void __init x3_bpc_mgmt_init(void)
 {
 #ifdef CONFIG_SMP
-	int int_gpio = TEGRA_GPIO_TO_IRQ(TEGRA_BPC_TRIGGER);
+	int int_gpio = gpio_to_irq(TEGRA_BPC_TRIGGER);
 
-	tegra_gpio_enable(TEGRA_BPC_TRIGGER);
+	//tegra_gpio_enable(TEGRA_BPC_TRIGGER);
 
 	cpumask_setall(&(bpc_mgmt_platform_data.affinity_mask));
 	irq_set_affinity_hint(int_gpio,
@@ -1133,7 +1138,6 @@ void __init x3_bpc_mgmt_init(void)
 
 	return;
 }
-
 
 static irqreturn_t max77663_irq_manualreset_warning(int irq, void *data)
 {

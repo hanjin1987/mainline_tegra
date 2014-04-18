@@ -1,4 +1,6 @@
 /*
+ * arch/arm/mach-tegra/lge/x3/board-x3-memory.c
+ *
  * Copyright (C) 2011 NVIDIA, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,15 +20,18 @@
 
 #include <linux/kernel.h>
 #include <linux/init.h>
+#include <linux/platform_data/tegra_emc.h>
 
 #include <lge/board-x3.h>
 #include <mach-tegra/tegra3_emc.h>
+#include <mach-tegra/board.h>
+#include <mach-tegra/devices.h>
 
 #define EMC_REV_3_2
 #define USE_533BCT
 
 #if defined(USE_533BCT)
-static const struct tegra_emc_table x3_emc_tables_k4p8g304eb[] = 
+static const struct tegra30_emc_table x3_emc_tables_k4p8g304eb[] = 
 {
 	{
 		0x32,       /* Rev 3.2 */
@@ -630,7 +635,7 @@ static const struct tegra_emc_table x3_emc_tables_k4p8g304eb[] =
 	},
 };
 #else
-static const struct tegra_emc_table x3_emc_tables_k4p8g304eb[] = 
+static const struct tegra30_emc_table x3_emc_tables_k4p8g304eb[] = 
 {
 	{
 		0x31,       /* Rev 3.1 */
@@ -1228,11 +1233,10 @@ static const struct tegra_emc_table x3_emc_tables_k4p8g304eb[] =
 		0x00020004, /* Mode Register 2 */
 	},	
 };
-
 #endif
 
 #if defined(EMC_REV_3_2)
-static const struct tegra_emc_table x3_emc_tables_k4p8g304eb_v32[] = {
+static const struct tegra30_emc_table x3_emc_tables_k4p8g304eb_v32[] = {
 	{
 		0x32,       /* Rev 3.2 */
 		12750,      /* SDRAM frequency */
@@ -2074,17 +2078,36 @@ static const struct tegra_emc_table x3_emc_tables_k4p8g304eb_v32[] = {
 		0x00000000, /* EMC_CFG.DYN_SELF_REF */
 	},
 };
-;
 #endif /* defined(EMC_REV_3_2) */
+
+#if defined(EMC_REV_3_2)
+static struct tegra30_emc_pdata x3_emc_chip_k4p8g304eb_v32 = {
+	.description = "k4p8g304eb_v32",
+	.tables = (struct tegra30_emc_table *)x3_emc_tables_k4p8g304eb_v32,
+	.num_tables = ARRAY_SIZE(x3_emc_tables_k4p8g304eb_v32)
+};
+#else
+static struct tegra30_emc_pdata x3_emc_chip_k4p8g304eb = {
+	.description = "k4p8g304eb",
+	.tables = (struct tegra30_emc_table *)x3_emc_tables_k4p8g304eb,
+	.num_tables = ARRAY_SIZE(x3_emc_tables_k4p8g304eb)
+};
+#endif
 
 int x3_emc_init(void)
 {
+	struct tegra30_emc_pdata *emc_platdata;
+
 #if defined(EMC_REV_3_2)
-	tegra_init_emc(x3_emc_tables_k4p8g304eb_v32,
-		ARRAY_SIZE(x3_emc_tables_k4p8g304eb_v32));
+	emc_platdata = &x3_emc_chip_k4p8g304eb_v32;
 #else
-	tegra_init_emc(x3_emc_tables_k4p8g304eb,
-		ARRAY_SIZE(x3_emc_tables_k4p8g304eb));
+	emc_platdata = &x3_emc_chip_k4p8g304eb;
 #endif
+
+	tegra_emc_device.dev.platform_data = emc_platdata;
+	platform_device_register(&tegra_emc_device);
+
+	tegra30_init_emc();
+
 	return 0;
 }

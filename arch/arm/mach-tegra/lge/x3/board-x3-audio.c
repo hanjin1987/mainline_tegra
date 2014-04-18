@@ -1,7 +1,7 @@
 /*
- * arch/arm/mach-tegra/board-x3.c
+ * arch/arm/mach-tegra/lge/x3/board-x3.c
  *
- * Copyright (c) 2011, NVIDIA Corporation.
+ * Copyright (c) 2011-2013, NVIDIA CORPORATION. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,6 @@
 #include <mach/i2s.h>
 #include <mach/tegra_asoc_pdata.h>
 
-
 #include <mach-tegra/board.h>
 #include <mach-tegra/clock.h>
 #include <lge/board-x3.h>
@@ -49,22 +48,15 @@
 #include <mach-tegra/devices.h>
 #include <mach-tegra/gpio-names.h>
 
-//                                         
 #include <sound/pcm.h>
-//                                         
 
-//                                  
 #if defined(CONFIG_SND_SOC_WM8994)
 #include <linux/mfd/wm8994/pdata.h>
 #elif defined(CONFIG_SND_SOC_TEGRA_MAX98088)
 #include <sound/max98088.h>
 #endif 
 #include <linux/switch.h>
-//                                
 
-/* Equalizer filter coefs generated from the MAXIM MAX98088
- * evkit software tool */
-//                                  
 #if defined(CONFIG_SND_SOC_WM8994)
 static struct wm8994_drc_cfg wm8994_drc_data[] = {
 	{
@@ -83,6 +75,8 @@ struct wm8994_pdata wm8994_data = {
 };
 
 #elif defined(CONFIG_SND_SOC_TEGRA_MAX98088)
+/* Equalizer filter coefs generated from the MAXIM MAX98088
+ * evkit software tool */
 static struct max98088_eq_cfg max98088_eq_cfg[] = {
         {
                 .name = "FLAT",
@@ -156,29 +150,27 @@ static struct max98088_eq_cfg max98088_eq_cfg[] = {
                 .band4 = {0x2BE0, 0xF385, 0x04FD, 0x3EC5, 0x3FCE},
                 .band5 = {0x7FEF, 0x4000, 0x0BAB, 0x0000, 0x3EED},
         },
-//                                          
-		{
-				.name = "FACTORYSPEC",
-				.rate = 48000,
-				.band1 = {0x0809, 0xC001, 0x3E56, 0x000C, 0x0E7B},
-				.band2 = {0x0821, 0xC001, 0x3ED1, 0x000C, 0x0C40},
-				.band3 = {0x0821, 0xC001, 0x3E1E, 0x0019, 0x0F65},
-				.band4 = {0x0839, 0xC001, 0x3EB4, 0x0019, 0x0CCF},
-				.band5 = {0x0821, 0xC001, 0x3E7A, 0x0019, 0x0DDF},
-		},
-		{
-				.name = "FACTORYSPEC_HP",
-				.rate = 48000,
-				.band1 = {0x0809, 0xC001, 0x3FCB, 0x000C, 0x0518},
-				.band2 = {0x0809, 0xC001, 0x3FCB, 0x000C, 0x0518},
-				.band3 = {0x2000, 0xC322, 0x4000, 0x13C6, 0x0000},
-				.band4 = {0x2000, 0xE783, 0x4000, 0x3B20, 0x0000},
-				.band5 = {0x2000, 0x4000, 0x4000, 0x0000, 0x0000},
-		},
-//                                          
+	{
+		.name = "FACTORYSPEC",
+		.rate = 48000,
+		.band1 = {0x0809, 0xC001, 0x3E56, 0x000C, 0x0E7B},
+		.band2 = {0x0821, 0xC001, 0x3ED1, 0x000C, 0x0C40},
+		.band3 = {0x0821, 0xC001, 0x3E1E, 0x0019, 0x0F65},
+		.band4 = {0x0839, 0xC001, 0x3EB4, 0x0019, 0x0CCF},
+		.band5 = {0x0821, 0xC001, 0x3E7A, 0x0019, 0x0DDF},
+	},
+	{
+		.name = "FACTORYSPEC_HP",
+		.rate = 48000,
+		.band1 = {0x0809, 0xC001, 0x3FCB, 0x000C, 0x0518},
+		.band2 = {0x0809, 0xC001, 0x3FCB, 0x000C, 0x0518},
+		.band3 = {0x2000, 0xC322, 0x4000, 0x13C6, 0x0000},
+		.band4 = {0x2000, 0xE783, 0x4000, 0x3B20, 0x0000},
+		.band5 = {0x2000, 0x4000, 0x4000, 0x0000, 0x0000},
+	},
 };
 
-struct max98088_pdata max98088_pdata = {
+struct max98088_pdata x3_max98088_pdata = {
         /* equalizer configuration */
         .eq_cfg = max98088_eq_cfg,
         .eq_cfgcnt = ARRAY_SIZE(max98088_eq_cfg),
@@ -194,25 +186,26 @@ struct max98088_pdata max98088_pdata = {
         .receiver_mode = 0,     /* 0 = amplifier, 1 = line output */
 };
 #endif
-//                                             
+
 static struct tegra_asoc_platform_data x3_audio_pdata = {
-	.name				= "h2w",
+	.name			= "h2w",
 	.gpio_hook  		= TEGRA_GPIO_HP_HOOK,
 	.gpio_ear_mic		= TEGRA_GPIO_EAR_MIC,
 	.gpio_spkr_en		= -1,
 	.gpio_hp_det		= TEGRA_GPIO_HP_DET,
 	.gpio_hp_mute		= -1,
-//                                         
+
 	.gpio_int_mic_en	= TEGRA_GPIO_SUB_MIC,
-//                                         
 	.gpio_ext_mic_en	= -1,
 	.debounce_time_hp	= -1,
-	/*defaults for Enterprise board*/
+
+	/* defaults for X3 board */
 	.i2s_param[HIFI_CODEC]	= {
 		.audio_port_id	= 0,
 		.is_i2s_master	= 1,
 		.i2s_mode	= TEGRA_DAIFMT_I2S,
 		.sample_size	= 16,
+		.channels	= 2,
 	},
 	.i2s_param[BASEBAND]	= {
 		.audio_port_id	= 2,
@@ -220,36 +213,31 @@ static struct tegra_asoc_platform_data x3_audio_pdata = {
 		.i2s_mode	= TEGRA_DAIFMT_DSP_A,
 		.sample_size	= 16,
 		.rate		= 16000,
-//                                                          
 #if defined(CONFIG_MACH_PEGASUS)
-		.channels = 2,
+		.channels	= 2,
 #else
-		.channels = 1,
+		.channels	= 1,
 #endif
-//                                                          
-
+		.bit_clk	= 2048000,
 	},
 	.i2s_param[BT_SCO]	= {
 		.audio_port_id	= 3,
 		.is_i2s_master	= 1,
 		.i2s_mode	= TEGRA_DAIFMT_DSP_A,
 		.sample_size	= 16,
-		.rate		=8000,
-		.channels = 1,
+		.rate		= 8000,
+		.channels	= 1,
 	},
-
-//                                         
-	.hifi_param 	= {
-		.i2s_num = 0,
-		.rate = SNDRV_PCM_RATE_48000,
-		.channels = 2,
+	.hifi_param		= {
+		.i2s_num	= 0,
+		.rate		= SNDRV_PCM_RATE_48000,
+		.channels	= 2,
 	},
 	.bt_param		= {
-		.i2s_num = 3,
-		.rate = SNDRV_PCM_RATE_8000,
-		.channels = 1,
+		.i2s_num	= 3,
+		.rate		= SNDRV_PCM_RATE_8000,
+		.channels	= 1,
 	},
-//                                         
 };
 
 struct gpio_switch_platform_data x3_headset_data = {
@@ -261,11 +249,12 @@ struct gpio_switch_platform_data x3_headset_data = {
 #endif
 };
 
-struct platform_device tegra_headset_detect_device =
-{
-	.name = "x3_headset",
+struct platform_device tegra_headset_detect_device = {
+	.name	= "x3_headset",
 	.id	= -1,
-	.dev.platform_data = &x3_headset_data,
+	.dev	= {
+		.platform_data = &x3_headset_data,
+	},
 };
 
 struct platform_device x3_audio_device = {
@@ -275,4 +264,3 @@ struct platform_device x3_audio_device = {
 		.platform_data  = &x3_audio_pdata,
 	},
 };
-//                                             

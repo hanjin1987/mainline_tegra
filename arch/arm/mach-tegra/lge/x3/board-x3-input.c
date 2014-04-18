@@ -1,5 +1,5 @@
 /*
- * arch/arm/mach-tegra/lge/board-x3-input.c
+ * arch/arm/mach-tegra/lge/x3/board-x3-input.c
  *
  * Copyright (C) 2011 LG Electronics, Inc.
  *
@@ -76,28 +76,32 @@ static int synaptics_t1320_gpio_init(void)
 	int ret = 0;
 
 	ret = gpio_request(TOUCH_3V0_EN, "TOUCH_3V0_EN");
-	if (ret < 0){
+	if (ret < 0) {
 		goto failed_second;
 	}
 	ret = gpio_direction_output(TOUCH_3V0_EN, 0);
-	if (ret < 0){
+	if (ret < 0) {
 		goto failed_second;
 	}
+#if 0
 	else {
 		tegra_gpio_enable(TOUCH_3V0_EN);
 	}
+#endif
 
 	ret = gpio_request(TOUCH_1V8_EN, "TOUCH_1V8_EN");
-	if (ret < 0){
+	if (ret < 0) {
 		goto failed_first;
 	}
 	ret = gpio_direction_output(TOUCH_1V8_EN, 0);
-	if (ret < 0){
+	if (ret < 0) {
 		goto failed_first;
 	}
+#if 0
 	else {
 		tegra_gpio_enable(TOUCH_1V8_EN);
 	}
+#endif
 
 	printk("==> %s : successful\n", __func__);
 
@@ -165,7 +169,7 @@ static int touch_3_3v = TEGRA_GPIO_PD3;
 //static int touch_1_8v = TEGRA_GPIO_PD3;
 int touch_power_control(int on)
 {
-	printk("==>synaptics_t3000_power_on =%d",on);
+	printk("==>synaptics_t3000_power_on = %d",on);
 	if (on) {
 		//gpio_set_value(TEGRA_GPIO_PC6,1);
 		//mdelay(20);
@@ -191,7 +195,7 @@ static int touch_3V0_en = TEGRA_GPIO_PQ1;
 
 int touch_power_control(int on)
 {
-	printk("[TOUCH]==>synaptics_touch_ic_power_on =%d\n",on);
+	printk("[TOUCH]==>synaptics_touch_ic_power_on = %d\n",on);
 
 	if (on) {
 		gpio_set_value(touch_3V0_en, 1);
@@ -224,28 +228,32 @@ int touch_power_init(struct i2c_client *client)
 	printk("[TOUCH] %s [%d][%d]\n", __func__, touch_1V8_en, touch_3V0_en);
 
 	ret = gpio_request(touch_3V0_en, "TOUCH_3V0_EN");
-	if (ret < 0){
+	if (ret < 0) {
 		goto failed_second;
 	}
 	ret = gpio_direction_output(touch_3V0_en, 0);
-	if (ret < 0){
+	if (ret < 0) {
 		goto failed_second;
 	}
+#if 0
 	else {
 		tegra_gpio_enable(touch_3V0_en);
 	}
+#endif
 
 	ret = gpio_request(touch_1V8_en, "TOUCH_1V8_EN");
-	if (ret < 0){
+	if (ret < 0) {
 		goto failed_first;
 	}
 	ret = gpio_direction_output(touch_1V8_en, 0);
-	if (ret < 0){
+	if (ret < 0) {
 		goto failed_first;
 	}
+#if 0
 	else {
 		tegra_gpio_enable(touch_1V8_en);
 	}
+#endif
 
        	printk("[TOUCH] %s : successful\n", __func__);
 
@@ -335,18 +343,18 @@ static s32 x3_apds990x_power_init(void)
 
 	printk(KERN_INFO "%s start!![%d][%d] \n", __func__, __LINE__, prox_ldo_en);
 	//PROX  LDO Enable : 2.6V & 1.8V
-        tegra_gpio_enable(prox_ldo_en);
-        ret = gpio_request(prox_ldo_en, "PROX_LDO_EN");
-        if (ret < 0) {
-                printk("PROX_Sensor[1] : Fail to request Sensor LDO enabling\n");
-                return ret;
-        }
-        ret = gpio_direction_output(prox_ldo_en, 0);
-        if (ret < 0) {
-                printk("PROX_Sensor[2] : Fail to direct Sensor LDO enabling\n");
-                gpio_free(prox_ldo_en);
-                return ret;
-        }
+//	tegra_gpio_enable(prox_ldo_en);
+	ret = gpio_request(prox_ldo_en, "PROX_LDO_EN");
+	if (ret < 0) {
+		printk("PROX_Sensor[1] : Fail to request Sensor LDO enabling\n");
+		return ret;
+	}
+	ret = gpio_direction_output(prox_ldo_en, 0);
+	if (ret < 0) {
+		printk("PROX_Sensor[2] : Fail to direct Sensor LDO enabling\n");
+		gpio_free(prox_ldo_en);
+		return ret;
+	}
 
 	/* PORXI_LDO_EN */
 	//tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_SDMMC3_DAT7, TEGRA_PUPD_NORMAL);
@@ -375,7 +383,7 @@ static int prox_common_power_set(unsigned char onoff, int sensor)
 
 	gpio_set_value(prox_ldo_en,onoff);
 
-	printk(" prox_common_power_set : %d, Line[%d]\n", gpio_get_value(prox_ldo_en), __LINE__);
+	printk("prox_common_power_set : %d, Line[%d]\n", gpio_get_value(prox_ldo_en), __LINE__);
 
 	if (onoff)
 		prox_pwr_mask |= sensor;
@@ -400,10 +408,10 @@ int prox_power_off(int sensor)
 static s32 x3_apds990x_irq_set(void)
 {
 	s32 ret = 0;
-	printk(KERN_INFO"[SENSOR-APDS] %s start(%d, %d)!!!!![%d]\n",__func__, TEGRA_GPIO_PK2, TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PK2), __LINE__);
+	printk(KERN_INFO"[SENSOR-APDS] %s start(%d, %d)!!!!![%d]\n",__func__, TEGRA_GPIO_PK2, gpio_to_irq(TEGRA_GPIO_PK2), __LINE__);
 
 	//PROX INT
-        tegra_gpio_enable(TEGRA_GPIO_PK2);
+//        tegra_gpio_enable(TEGRA_GPIO_PK2);
 
         ret = gpio_request(TEGRA_GPIO_PK2, "PROX_INT");
         if (ret < 0) {
@@ -437,7 +445,7 @@ static s32 x3_mpuirq_init(void)
 
 //SENSOR_LDO_EN pin Enable for GYRO 3.0V
 	if (x3_get_hw_rev_pcb_version() < hw_rev_pcb_type_D) {
-		tegra_gpio_enable(sensors_ldo_en);
+//		tegra_gpio_enable(sensors_ldo_en);
 
 		ret = gpio_request(sensors_ldo_en, "SENSOR_LDO_EN");
 		if (ret < 0) {
@@ -458,7 +466,7 @@ static s32 x3_mpuirq_init(void)
 	}
 
 //SENSOR INT
-	tegra_gpio_enable(TEGRA_GPIO_PH4);
+//	tegra_gpio_enable(TEGRA_GPIO_PH4);
 
 	ret = gpio_request(TEGRA_GPIO_PH4, "SENSOR_INT");
 	if (ret < 0) {
@@ -477,13 +485,13 @@ static s32 x3_mpuirq_init(void)
 }
 #endif  // MPU_SENSORS_MPU6050B1
 
-#if defined (CONFIG_SENSORS_APDS990X)
+#if defined(CONFIG_SENSORS_APDS990X)
 struct apds990x_proximity_platform_data x3_prox_data = {
-        .gpio		= TEGRA_GPIO_PK2,
-      	.irq		= TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PK2),
-        .irqflags	= IRQF_TRIGGER_FALLING,
-        .power_on 	= prox_power_on,
-	.power_off 	= prox_power_off,
+	.gpio		= TEGRA_GPIO_PK2,
+//	.irq		= TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PK2),
+	.irqflags	= IRQF_TRIGGER_FALLING,
+	.power_on	= prox_power_on,
+	.power_off	= prox_power_off,
 };
 #endif
 

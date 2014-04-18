@@ -1,7 +1,7 @@
 /*
  * Cosmopolitan GPS GPIO Control driver
  *
- * linux/arch/arm/mach-omap2/cosmo-gps.c
+ * arch/arm/mach-tegra/lge/x3/board-x3-gps.c
  *
  * Copyright (C) 2010 LGE, Inc.
  * Author: Miok Park <miok.park@lge.com>
@@ -12,7 +12,7 @@
  * (at your option) any later version.
  *
  * taesook.yoon@lge.com 20110426
- * android\kernel\drivers\p940\misc/gps_gpio.c
+ * android/kernel/drivers/p940/misc/gps_gpio.c
  * < GPS on Android >
  * GPS Android SW Architecture.pdf
  * Broadcom GPS driver is a daemon process
@@ -20,6 +20,7 @@
  * The GPIO toggling can be exposed as a sysfs path.
  */
 
+#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/device.h>
 
@@ -127,7 +128,6 @@ static ssize_t gps_gpio_poweron_store(struct device *dev,
 
 	pr_info("%s(gpio_set_value) %d %d\n", __func__,pdata->pwron,value);
 
-
 #if defined(CONFIG_P940_GPS_LNA_SD_USE)
 	gpio_set_value(pdata->lna_sd, value);
 #endif
@@ -190,7 +190,7 @@ static int __devinit gps_gpio_probe(struct platform_device *pdev)
 	}
 	gpio_direction_output(pdata->pwron, 0);
 
-	tegra_gpio_enable(pdata->pwron);
+//	tegra_gpio_enable(pdata->pwron);
 
 	ret = gpio_request(pdata->reset_n, "GPS reset GPIO");
 	if (ret) {
@@ -199,7 +199,7 @@ static int __devinit gps_gpio_probe(struct platform_device *pdev)
 	}
 	gpio_direction_output(pdata->reset_n, 0);
 	
-	tegra_gpio_enable(pdata->reset_n);
+//	tegra_gpio_enable(pdata->reset_n);
 
 	ret = gpio_request(pdata->eclk, "GPS_REF_EN GPIO");
 	if (ret) {
@@ -208,7 +208,7 @@ static int __devinit gps_gpio_probe(struct platform_device *pdev)
 	}
 	gpio_direction_output(pdata->eclk, 0);
 	
-	tegra_gpio_enable(pdata->eclk);
+//	tegra_gpio_enable(pdata->eclk);
 
 #if defined(CONFIG_P940_GPS_LNA_SD_USE)
 	ret = gpio_request(pdata->lna_sd, "GPS extend LNA GPIO");
@@ -218,7 +218,7 @@ static int __devinit gps_gpio_probe(struct platform_device *pdev)
 	}
 	gpio_direction_output(pdata->lna_sd, 0);
 
-	tegra_gpio_enable(pdata->lna_sd);	
+//	tegra_gpio_enable(pdata->lna_sd);	
 #endif
 #if 1
 	ret = gpio_request(TEGRA_GPIO_PY1, "GPS_LDO_EN");
@@ -228,7 +228,7 @@ static int __devinit gps_gpio_probe(struct platform_device *pdev)
 	}
 	gpio_direction_output(TEGRA_GPIO_PY1, 1);
 
-	tegra_gpio_enable(TEGRA_GPIO_PY1);	
+//	tegra_gpio_enable(TEGRA_GPIO_PY1);	
 #endif
 
 	ret = device_create_file(&pdev->dev, &dev_attr_reset);

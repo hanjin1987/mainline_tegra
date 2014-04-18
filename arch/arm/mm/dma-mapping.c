@@ -503,6 +503,7 @@ static void *__alloc_from_pool(size_t size, struct page **ret_page)
 	return ptr;
 }
 
+#ifdef CONFIG_ARM_DMA_USE_IOMMU
 static struct page **__atomic_get_pages(void *addr)
 {
 	struct dma_pool *pool = &atomic_pool;
@@ -511,6 +512,7 @@ static struct page **__atomic_get_pages(void *addr)
 
 	return pages + offs;
 }
+#endif
 
 static bool __in_atomic_pool(void *start, size_t size)
 {

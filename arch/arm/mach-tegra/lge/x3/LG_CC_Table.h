@@ -8,8 +8,7 @@ typedef struct _wifi_cc_table {
 	/* unsigned int mcc; */
 } _wifi_cc_table_t;
 
-_wifi_cc_table_t _WIFI_CC_TABLE[] = 
-{
+_wifi_cc_table_t _WIFI_CC_TABLE[] = {
 	{"AD", "GB" /*, 213  */  }, //Andorra
 	{"AE", "KR/24" /*, 424  */  }, //UAE
 	{"AF", "AF" /*, 412  */  }, //Afghanistan
@@ -249,52 +248,46 @@ inline static char * _cpy_strcpy(char *d, const char *s)
 	size_t i;
 
 	for (i = 0; (d[i] = s[i]) != '\0'; i++);
+
 	return d;
 }
 
 inline static int _cpy_strcmp(const char *s1, const char *s2)
 {
-    int i;
-    int diff;
+	int i;
+	int diff;
 
-    for (i = 0;; i++)
-    {
-        diff = ((unsigned char *)s1)[i] - ((unsigned char *)s2)[i];
-        if (diff != 0 || s1[i] == '\0')
-            return diff;
-    }
+	for (i = 0;; i++) {
+		diff = ((unsigned char *)s1)[i] - ((unsigned char *)s2)[i];
+		if (diff != 0 || s1[i] == '\0')
+			return diff;
+	}
 }
 
-inline static int _getWiFiMappedCode( const char *ccode, char *ccode_mapped, int size )
+inline static int _getWiFiMappedCode(const char *ccode, char *ccode_mapped, int size)
 {
 	int bot = 0;
-	int top = (int) ( sizeof( _WIFI_CC_TABLE ) / sizeof( _wifi_cc_table_t ));
+	int top = (int) (sizeof(_WIFI_CC_TABLE) / sizeof(_wifi_cc_table_t));
 	int mid = 0 ;
 	
 	// Check there are enough buffer.
-	if( size < _LG_WIFI_MAX_MAPPED_CCODE )
-	{
+	if (size < _LG_WIFI_MAX_MAPPED_CCODE) {
 		return -2;
 	}
 	
-	// Compair		
-	while(bot <= top)
-	{
+	// Compare
+	while (bot <= top) {
 		mid = (bot + top) / 2;       
-		if ( _cpy_strcmp(_WIFI_CC_TABLE[mid].ccode, ccode) == 0 )
-		{
-			_cpy_strcpy( ccode_mapped, _WIFI_CC_TABLE[mid].ccode_mapped );
+		if (_cpy_strcmp(_WIFI_CC_TABLE[mid].ccode, ccode) == 0) {
+			_cpy_strcpy(ccode_mapped, _WIFI_CC_TABLE[mid].ccode_mapped);
 			return 0;
 		}
-		else if ( _cpy_strcmp(_WIFI_CC_TABLE[mid].ccode, ccode) > 0)
-		{
+		else if (_cpy_strcmp(_WIFI_CC_TABLE[mid].ccode, ccode) > 0) {
 			top = mid - 1;
 		}
-		else
-		{
+		else {
 			bot = mid + 1;
-		}  
-
+		}
 	}
 	
 	// Can't find Country Code.

@@ -1,7 +1,7 @@
 /*
- * arch/arm/mach-tegra/board-x3-panel.c
+ * arch/arm/mach-tegra/lge/x3/board-x3-panel.c
  *
- * Copyright (c) 2011, NVIDIA Corporation.
+ * Copyright (c) 2011-2013, NVIDIA CORPORATION. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,21 +22,22 @@
 #include <linux/gpio.h>
 #include <linux/regulator/consumer.h>
 #include <linux/resource.h>
-#include <asm/mach-types.h>
 #include <linux/platform_device.h>
-#include <linux/earlysuspend.h>
 #include <linux/tegra_pwm_bl.h>
 #include <linux/pwm_backlight.h>
-#include <asm/atomic.h>
 #include <linux/nvhost.h>
 #include <linux/nvmap.h>
+//#include <linux/spi/spi.h>
+
+#include <asm/mach-types.h>
+#include <asm/atomic.h>
+
 #include <mach/irqs.h>
 #include <mach/iomap.h>
 #include <mach/dc.h>
 #include <mach/fb.h>
-#include <linux/spi/spi.h>
 #include <mach/hardware.h>
-#include <linux/pwm_backlight.h>
+#include <mach/gpio-tegra.h>
 
 #include <mach-tegra/board.h>
 #include <lge/board-x3.h>
@@ -63,7 +64,7 @@ static struct regulator *x3_hdmi_vddio = NULL;
 
 //static struct regulator *x3_lgit_hdmi_pll = NULL;
 
-//static atomic_t sd_brightness = ATOMIC_INIT(255);
+static atomic_t sd_brightness = ATOMIC_INIT(255);
 
 unsigned long long wake_status_backup = 0;
 
@@ -132,8 +133,8 @@ static struct platform_tegra_pwm_backlight_data x3_disp1_backlight_data = {
 	.max_brightness	= 255,
 	.dft_brightness	= 224,
 	.notify 	= x3_backlight_notify,
-	.period 		= 0xFF,
-	.clk_div		= 0x3FF,
+	.period 	= 0xFF,
+	.clk_div	= 0x3FF,
 	.clk_select 	= 0,
 };
 
@@ -173,13 +174,13 @@ static struct platform_device x3_backlight_device = {
 #endif
 
 static bool first_disp_boot = TRUE;
-static int x3_panel_enable(void)
+static int x3_panel_enable(struct device *dev)
 {
-	printk("%s -- x3_hddisplay_on:%d \n",__func__,x3_hddisplay_on);
-	if(!x3_hddisplay_on){
+	printk("%s -- x3_hddisplay_on:%d \n", __func__, x3_hddisplay_on);
+	if (!x3_hddisplay_on) {
 #if defined(CONFIG_MACH_RGB_CONVERTOR_SPI)
-		//printk("system_state:%d, first_disp_boot:%d \n",system_state,first_disp_boot);
-		if((system_state != SYSTEM_BOOTING) && (first_disp_boot != TRUE)){
+		//printk("system_state:%d, first_disp_boot:%d \n", system_state, first_disp_boot);
+		if ((system_state != SYSTEM_BOOTING) && (first_disp_boot != TRUE)) {
 			/*
 			 * This will be NULL by x3_bridge_on
 			 * when device is woken from LP0, however,
@@ -189,12 +190,11 @@ static int x3_panel_enable(void)
 			ssd2825_bridge_enable();
 			x3_hddisplay_on = TRUE;
 			return 0;
-		}
-		else{
+		} else {
 			first_disp_boot = FALSE;
 		}
 #endif
-	x3_hddisplay_on = TRUE;
+		x3_hddisplay_on = TRUE;
 	}
 	return 0;
 }
@@ -248,12 +248,12 @@ static int x3_panel_postsuspend(void)
 	return 0;
 }
 
-
-static int x3_hdmi_vddio_enable(void)
+static int x3_hdmi_vddio_enable(struct device *dev)
 {
 	int ret;
+
 	if (!x3_hdmi_vddio) {
-		x3_hdmi_vddio = regulator_get(NULL, "avdd_hdmi");
+		x3_hdmi_vddio = regulator_get(dev, "avdd_hdmi");
 		if (IS_ERR_OR_NULL(x3_hdmi_vddio)) {
 			ret = PTR_ERR(x3_hdmi_vddio);
 			pr_err("hdmi: couldn't get regulator avdd_hdmi\n");
@@ -281,13 +281,27 @@ static int x3_hdmi_vddio_disable(void)
 	return 0;
 }
 
-static int x3_hdmi_enable(void)
+static int x3_hdmi_enable(struct device *dev)
 {
 	int ret;
 
 	printk("################HDMI LS Output Enable by Heebae##############\n");
+	if (!x3_hdmi_reg) {
+		x3_hdmi_reg = regulator_get(dev, "avdd_hdmi");
+		if (IS_ERR_OR_NULL(x3_hdmi_reg)) {
+			pr_err("hdmi: couldn't get regulator avdd_hdmi\n");
+			x3_hdmi_reg = NULL;
+			return PTR_ERR(x3_hdmi_reg);
+		}
+	}
+	ret = regulator_enable(x3_hdmi_reg);
+	if (ret < 0) {
+		pr_err("hdmi: couldn't enable regulator avdd_hdmi\n");
+		return ret;
+	}
+
 	if (!x3_hdmi_pll) {
-		x3_hdmi_pll = regulator_get(NULL, "avdd_hdmi_pll");
+		x3_hdmi_pll = regulator_get(dev, "avdd_hdmi_pll");
 		if (IS_ERR_OR_NULL(x3_hdmi_pll)) {
 			pr_err("hdmi: couldn't get regulator avdd_hdmi_pll\n");
 			x3_hdmi_pll = NULL;
@@ -307,12 +321,17 @@ static int x3_hdmi_enable(void)
 static int x3_hdmi_disable(void)
 {
 	printk("################HDMI LS Output Disable by Heebae##############\n");
+	regulator_disable(x3_hdmi_reg);
+	regulator_put(x3_hdmi_reg);
+	x3_hdmi_reg = NULL;
+
 	regulator_disable(x3_hdmi_pll);
 	regulator_put(x3_hdmi_pll);
 	x3_hdmi_pll = NULL;
 
 	return 0;
 }
+
 static struct resource x3_disp1_resources[] = {
 	{
 		.name	= "irq",
@@ -375,32 +394,32 @@ static struct tegra_dc_mode x3_panel_modes[] = {
 		.v_ref_to_sync = 2,
 		.h_sync_width = 4,
 		.v_sync_width = 1,
-		.h_back_porch = 62,//26,
-		.v_back_porch = 3,//4,
+		.h_back_porch = 62, //26,
+		.v_back_porch = 3, //4,
 		.h_active = 720,
 		.v_active = 1280,
-		.h_front_porch = 92,//136,
+		.h_front_porch = 92, //136,
 		.v_front_porch = 6,
 	},
 #elif defined(CONFIG_MACH_VIEW5_HITACHI)
 	{
-	.pclk = 62000000,
-	.h_ref_to_sync = 2,
-	.v_ref_to_sync = 2,
-	.h_sync_width = 5, //4,
-	.v_sync_width = 2,
-	.h_back_porch = 81, //80,
-	.v_back_porch = 8, //7,
-	.h_active = 768,
-	.v_active = 1024,
-	.h_front_porch = 116,
-	.v_front_porch = 24, //27,
+		.pclk = 62000000,
+		.h_ref_to_sync = 2,
+		.v_ref_to_sync = 2,
+		.h_sync_width = 5, //4,
+		.v_sync_width = 2,
+		.h_back_porch = 81, //80,
+		.v_back_porch = 8, //7,
+		.h_active = 768,
+		.v_active = 1024,
+		.h_front_porch = 116,
+		.v_front_porch = 24, //27,
 	},
 #endif
 };
 
 static struct tegra_dc_out_pin ssd2825_dc_out_pins[] = {
-{
+	{
 		.name	= TEGRA_DC_OUT_PIN_H_SYNC,
 		.pol	= TEGRA_DC_OUT_PIN_POL_LOW,
 	},
@@ -414,10 +433,9 @@ static struct tegra_dc_out_pin ssd2825_dc_out_pins[] = {
 	},
 };
 
-#if 0
 static struct tegra_dc_sd_settings x3_sd_settings = {
 	.enable = 1, /* Normal mode operation */
-	.use_auto_pwm = true,
+	.use_auto_pwm = false, //true,
 	.hw_update_delay = 0,
 	.bin_width = -1,
 	.aggressiveness = 1,
@@ -504,18 +522,22 @@ static struct tegra_dc_sd_settings x3_sd_settings = {
 			},
 		},
 	.sd_brightness = &sd_brightness,
-	.bl_device = &x3_backlight_device,
-};
+//	.bl_device = &x3_backlight_device,
+#if IS_EXTERNAL_PWM
+	.bl_device_name = "pwm-backlight",
+#else
+	.bl_device_name = "tegra-pwm-bl",
 #endif
+};
 
 static struct tegra_fb_data x3_fb_data = {
-	.win        = 0,
+	.win		= 0,
 #if defined(CONFIG_MACH_VIEW5_HITACHI)
-	.xres        = 768,
-	.yres        = 1024,
+	.xres		= 768,
+	.yres		= 1024,
 #else
-	.xres        = 720,
-	.yres        = 1280,
+	.xres		= 720,
+	.yres		= 1280,
 #endif
 	.bits_per_pixel	= 32, //16, //24,
 	.flags		= TEGRA_FB_FLIP_ON_PROBE,
@@ -532,7 +554,7 @@ static struct tegra_fb_data x3_hdmi_fb_data = {
 static struct tegra_dc_out x3_disp2_out = {
 	.type		= TEGRA_DC_OUT_HDMI,
 	.flags		= TEGRA_DC_OUT_HOTPLUG_HIGH,
-	.parent_clk = "pll_d2_out0",
+	.parent_clk	= "pll_d2_out0",
 
 	.dcc_bus	= 3,
 	.hotplug_gpio	= x3_hdmi_hpd,
@@ -544,11 +566,8 @@ static struct tegra_dc_out x3_disp2_out = {
 
 	.enable		= x3_hdmi_enable,
 	.disable	= x3_hdmi_disable,
-
-
 	.postsuspend	= x3_hdmi_vddio_disable,
 	.hotplug_init	= x3_hdmi_vddio_enable,
-
 };
 
 static struct tegra_dc_platform_data x3_disp2_pdata = {
@@ -583,10 +602,10 @@ int ssd2825_bridge_enable_queue(void)
 	return 1;
 }
 
-
 static struct tegra_dc_out x3_disp1_out = {
 	.align		= TEGRA_DC_ALIGN_MSB,
 	.order		= TEGRA_DC_ORDER_RED_BLUE,
+	.sd_settings	= &x3_sd_settings,
 
 	.height 	= 105,
 	.width		= 59,
@@ -614,7 +633,8 @@ static struct tegra_dc_platform_data x3_disp1_pdata = {
 	.emc_clk_rate	= 300000000,
 	.fb		= &x3_fb_data,
 };
-static struct nvhost_device x3_disp1_device = {
+
+static struct platform_device x3_disp1_device = {
 	.name		= "tegradc",
 	.id		= 0,
 	.resource	= x3_disp1_resources,
@@ -624,7 +644,7 @@ static struct nvhost_device x3_disp1_device = {
 	},
 };
 
-static struct nvhost_device x3_disp2_device = {
+static struct platform_device x3_disp2_device = {
 	.name		= "tegradc",
 	.id		= 1,
 	.resource	= x3_disp2_resources,
@@ -634,6 +654,7 @@ static struct nvhost_device x3_disp2_device = {
 	},
 };
 
+#if defined(CONFIG_TEGRA_NVMAP)
 static struct nvmap_platform_carveout x3_carveouts[] = {
 	[0] = NVMAP_HEAP_CARVEOUT_IRAM_INIT,
 	[1] = {
@@ -657,9 +678,12 @@ static struct platform_device x3_nvmap_device = {
 		.platform_data = &x3_nvmap_data,
 	},
 };
+#endif
 
 static struct platform_device *x3_gfx_devices[] __initdata = {
+#if defined(CONFIG_TEGRA_NVMAP)
 	&x3_nvmap_device,
+#endif
 #if 0
 #if IS_EXTERNAL_PWM
 	&tegra_pwfm3_device,
@@ -702,15 +726,15 @@ static void x3_panel_early_suspend(struct early_suspend *h)
 {
 	unsigned i;
 	printk("%s \n", __func__);
-	for (i = 0; i < num_registered_fb; i++){
-		if(1 != i)//                                                                                          
+	for (i = 0; i < num_registered_fb; i++) {
+		if (1 != i)
 			fb_blank(registered_fb[i], FB_BLANK_POWERDOWN);
 	}
 
 	if (!rgb_bridge_gpio_init && ARRAY_SIZE(rgb_bridge_gpios) > 0) {
 		for (i = 0; i < ARRAY_SIZE(rgb_bridge_gpios); i++)
 			gpio_request(rgb_bridge_gpios[i].gpio,
-						 rgb_bridge_gpios[i].name);
+				     rgb_bridge_gpios[i].name);
 		rgb_bridge_gpio_init = 1;
 	}
 
@@ -719,7 +743,7 @@ static void x3_panel_early_suspend(struct early_suspend *h)
 			gpio_to_pingroup[rgb_bridge_gpios[i].gpio],
 			TEGRA_TRI_TRISTATE);
 		gpio_direction_input(rgb_bridge_gpios[i].gpio);
-		tegra_gpio_enable(rgb_bridge_gpios[i].gpio);
+		//tegra_gpio_enable(rgb_bridge_gpios[i].gpio);
 	}
 }
 
@@ -733,8 +757,8 @@ static void x3_panel_late_resume(struct early_suspend *h)
 		tegra_gpio_disable(rgb_bridge_gpios[i].gpio);
 	}
 
-	for (i = 0; i < num_registered_fb; i++){
-		if(1 != i) // hdmi id is 1
+	for (i = 0; i < num_registered_fb; i++) {
+		if (1 != i) // hdmi id is 1
 			fb_blank(registered_fb[i], FB_BLANK_UNBLANK);
 	}
 	printk("%s ended \n", __func__);
@@ -764,12 +788,11 @@ static struct spi_board_info lgd_spi_dev[] = {
 		.chip_select = 2,
 		.max_speed_hz = 1000000,
 #if defined(CONFIG_SPI_SOLOMON_BRIDGE)
-		.mode = SPI_MODE_3, //clk pol = 1, clk phase = 1
+		.mode = SPI_MODE_3, // clk pol = 1, clk phase = 1
 #elif defined(CONFIG_SPI_TOSHIBA_BRIDGE)
-		.mode = SPI_MODE_3, //clk pol = 1, clk phase = 1
+		.mode = SPI_MODE_3, // clk pol = 1, clk phase = 1
 #endif
 		.platform_data = &rgb_platform_data1,
-
 	},
 };
 
@@ -778,43 +801,48 @@ static struct spi_board_info lgd_spi_dev[] = {
 int __init x3_panel_init(void)
 {
 	int err;
-	struct resource *res;
-
-	bl_output = x3_bl_output_measured;
+	struct resource __maybe_unused *res;
+	struct platform_device *phost1x;
 
 	if (WARN_ON(ARRAY_SIZE(x3_bl_output_measured) != 256))
 		pr_err("bl_output array does not have 256 elements\n");
+
+	bl_output = x3_bl_output_measured;
 
 #if !defined(CONFIG_MACH_RGB_CONVERTOR_SPI)
 	gpio_init_set();
 #endif
 
+#if defined(CONFIG_TEGRA_NVMAP)
 	x3_carveouts[1].base = tegra_carveout_start;
 	x3_carveouts[1].size = tegra_carveout_size;
-
-	tegra_gpio_enable(x3_hdmi_hpd);
-	gpio_request(x3_hdmi_hpd, "hdmi_hpd");
-	gpio_direction_input(x3_hdmi_hpd);
-
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	x3_panel_early_suspender.suspend = x3_panel_early_suspend;
-	x3_panel_early_suspender.resume = x3_panel_late_resume;
-	x3_panel_early_suspender.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
-	register_early_suspend(&x3_panel_early_suspender);
 #endif
 
-#ifdef CONFIG_TEGRA_GRHOST
-	err = tegra3_register_host1x_devices();
-	if (err)
+	//tegra_gpio_enable(x3_hdmi_hpd);
+	err = gpio_request(x3_hdmi_hpd, "hdmi_hpd");
+	if (err < 0) {
+		pr_err("%s: gpio_request failed %d\n", __func__, err);
 		return err;
-#endif
+	}
+	err = gpio_direction_input(x3_hdmi_hpd);
+	if (err < 0) {
+		pr_err("%s: gpio_direction_input failed %d\n",
+			__func__, err);
+		gpio_free(x3_hdmi_hpd);
+		return err;
+	}
 
 	err = platform_add_devices(x3_gfx_devices,
 				ARRAY_SIZE(x3_gfx_devices));
 
+#ifdef CONFIG_TEGRA_GRHOST
+	phost1x = tegra3_register_host1x_devices();
+	if (!phost1x)
+		return -EINVAL;
+#endif
+
 #if defined(CONFIG_TEGRA_GRHOST) && defined(CONFIG_TEGRA_DC)
-	res = nvhost_get_resource_byname(&x3_disp1_device,
+	res = platform_get_resource_byname(&x3_disp1_device,
 					 IORESOURCE_MEM, "fbmem");
 	res->start = tegra_fb_start;
 	res->end = tegra_fb_start + tegra_fb_size - 1;
@@ -825,28 +853,48 @@ int __init x3_panel_init(void)
 #endif
 
 	/* Copy the bootloader fb to the fb. */
-	tegra_move_framebuffer(tegra_fb_start, tegra_bootloader_fb_start,
+	__tegra_move_framebuffer(&x3_nvmap_device,
+		tegra_fb_start, tegra_bootloader_fb_start,
 		min(tegra_fb_size, tegra_bootloader_fb_size));
 
 #if defined(CONFIG_TEGRA_GRHOST) && defined(CONFIG_TEGRA_DC)
-	if (!err)
-		err = nvhost_device_register(&x3_disp1_device);
+	if (!err) {
+		x3_disp1_device.dev.parent = &phost1x->dev;
+		err = platform_device_register(&x3_disp1_device);
+	}
 
-	res = nvhost_get_resource_byname(&x3_disp2_device,
+	res = platform_get_resource_byname(&x3_disp2_device,
 					 IORESOURCE_MEM, "fbmem");
 	res->start = tegra_fb2_start;
 	res->end = tegra_fb2_start + tegra_fb2_size - 1;
-
-	if (!err)
-		err = nvhost_device_register(&x3_disp2_device);
+	if (!err) {
+		x3_disp2_device.dev.parent = &phost1x->dev;
+		err = platform_device_register(&x3_disp2_device);
+	}
 #endif
 
 #if defined(CONFIG_TEGRA_GRHOST) && defined(CONFIG_TEGRA_NVAVP)
-	if (!err)
-		err = nvhost_device_register(&nvavp_device);
+	if (!err) {
+		nvavp_device.dev.parent = &phost1x->dev;
+		err = platform_device_register(&nvavp_device);
+	}
 #endif
+
+#if 0
+	if (!err)
+		err = platform_add_devices(x3_bl_devices,
+				ARRAY_SIZE(x3_bl_devices));
+#endif
+
 	bridge_work_queue =
 		create_singlethread_workqueue("bridge_spi_transaction");
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	x3_panel_early_suspender.suspend = x3_panel_early_suspend;
+	x3_panel_early_suspender.resume = x3_panel_late_resume;
+	x3_panel_early_suspender.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
+	register_early_suspend(&x3_panel_early_suspender);
+#endif
 
 	return err;
 }

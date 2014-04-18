@@ -1,6 +1,5 @@
 /*
- * arch/arm/mach-tegra/board-x3-nv.c
- * Keys configuration for Nvidia tegra3 x3 platform.
+ * arch/arm/mach-tegra/lge/x3/board-x3-nv.c
  *
  * Copyright (C) 2011 NVIDIA, Inc.
  *

@@ -16,14 +16,14 @@
 #define __TEGRA_BPC_MGMT_H
 #include <linux/cpumask.h>
 
-#ifdef CONFIG_MACH_X3
+#if defined(CONFIG_MACH_X3) && defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 #endif
 
 struct tegra_bpc_mgmt_platform_data {
 	int gpio_trigger;
 	struct cpumask affinity_mask;
-#ifdef CONFIG_MACH_X3
+#if defined(CONFIG_MACH_X3) && defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend bpc_mgmt_early_suspend;
 #endif
 	int bpc_mgmt_timeout;

@@ -170,7 +170,7 @@ static struct max98088_eq_cfg max98088_eq_cfg[] = {
 	},
 };
 
-struct max98088_pdata x3_max98088_pdata = {
+struct max98088_pdata max98088_pdata = {
         /* equalizer configuration */
         .eq_cfg = max98088_eq_cfg,
         .eq_cfgcnt = ARRAY_SIZE(max98088_eq_cfg),

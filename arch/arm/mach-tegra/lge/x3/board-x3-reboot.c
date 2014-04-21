@@ -62,8 +62,15 @@ int x3_wdt_kick_disabled = 0;
  * system reboot    : wmm
  */
 
+/* Don't use it until not implemented in new ram_console code. */
+#if 0 //def CONFIG_REBOOT_MONITOR
 extern void write_cmd_reserved_buffer(unsigned char *buf, size_t len);
 extern void read_cmd_reserved_buffer(unsigned char *buf, size_t len);
+#else
+#define write_cmd_reserved_buffer(buf, len)
+#define read_cmd_reserved_buffer(buf, len)
+#endif
+
 static int x3_panic_notify(struct notifier_block *this,
                                unsigned long event, void *ptr)
 {

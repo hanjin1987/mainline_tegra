@@ -543,6 +543,7 @@ config TEGRA_CLUSTER_CONTROL
 	default y if PM_SLEEP
 
 config TEGRA_CPUQUIET
+	select CPUQUIET_FRAMEWORK
 	bool
 
 config TEGRA_AUTO_HOTPLUG

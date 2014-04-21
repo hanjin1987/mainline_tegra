@@ -995,11 +995,12 @@ static void touch_work_func_a(struct work_struct *work)
 	}
 
 #ifdef LGE_RESTRICT_POWER_DURING_SLEEP
-	if(ts->wait_first_touch_detected)
-	{
+	if (ts->wait_first_touch_detected) {
 		ts->wait_first_touch_detected = 0;
 		cpufreq_set_max_freq(NULL, LONG_MAX);
+#ifndef CONFIG_CPUQUIET_FRAMEWORK
 		tegra_auto_hotplug_set_max_cpus(0);
+#endif
 	}
 #endif
 
@@ -1305,11 +1306,12 @@ static void touch_work_func_b(struct work_struct *work)
 	}
 
 #ifdef LGE_RESTRICT_POWER_DURING_SLEEP
-	if(ts->wait_first_touch_detected)
-	{
+	if (ts->wait_first_touch_detected) {
 		ts->wait_first_touch_detected = 0;
 		cpufreq_set_max_freq(NULL, LONG_MAX);
+#ifndef CONFIG_CPUQUIET_FRAMEWORK
 		tegra_auto_hotplug_set_max_cpus(0);
+#endif
 	}
 #endif
 
@@ -1621,11 +1623,12 @@ static void touch_work_func_c(struct work_struct *work)
 	}
 
 #ifdef LGE_RESTRICT_POWER_DURING_SLEEP
-	if(ts->wait_first_touch_detected)
-	{
+	if (ts->wait_first_touch_detected) {
 		ts->wait_first_touch_detected = 0;
 		cpufreq_set_max_freq(NULL, LONG_MAX);
+#ifndef CONFIG_CPUQUIET_FRAMEWORK
 		tegra_auto_hotplug_set_max_cpus(0);
+#endif
 	}
 #endif
 

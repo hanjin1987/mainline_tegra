@@ -170,7 +170,7 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
 		gpio_direction_output(pdata->sda_pin, 1);
 #else
 		gpio_direction_output(pdata->sda_pin, 0);
-		tegra_gpio_enable(pdata->sda_pin);
+//		tegra_gpio_enable(pdata->sda_pin);
 #endif
 		bit_data->setsda = i2c_gpio_setsda_val;
 	} else {
@@ -183,7 +183,7 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
 		gpio_direction_output(pdata->scl_pin, 1);
 #else
 		gpio_direction_output(pdata->scl_pin, 0);
-		tegra_gpio_enable(pdata->scl_pin);
+//		tegra_gpio_enable(pdata->scl_pin);
 #endif
 		bit_data->setscl = i2c_gpio_setscl_val;
 	} else {

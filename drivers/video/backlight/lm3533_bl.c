@@ -508,7 +508,7 @@ static int __devinit lm3533_bl_probe(struct i2c_client *i2c_dev,
 #endif
 
 	i2c_set_clientdata(i2c_dev, dev);
-	tegra_gpio_enable(dev->hwen_gpio);
+//	tegra_gpio_enable(dev->hwen_gpio);
 	if (dev->hwen_gpio && 
 			gpio_request(dev->hwen_gpio, "lm3533 reset") != 0) {
 		dev_err(&i2c_dev->dev, "gpio_request(%d) failed\n",

@@ -33,7 +33,7 @@ int pn544_gpio_to_irq(struct pn544_dev *dev)
 
 void pn544_gpio_enable(struct pn544_dev *pn544_dev)
 {
-#if defined(CONFIG_LGE_NFC_HW_NV_AP3X)
+#if 0 //defined(CONFIG_LGE_NFC_HW_NV_AP3X)
 	tegra_gpio_enable(pn544_dev->ven_gpio);
 	tegra_gpio_enable(pn544_dev->firm_gpio);
 	tegra_gpio_enable(pn544_dev->irq_gpio);

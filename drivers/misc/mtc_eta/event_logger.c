@@ -17,6 +17,7 @@
  *  along with this program; if not, you can find it at http://www.fsf.org
  */
 
+#include <linux/module.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
 #include <linux/fs.h>

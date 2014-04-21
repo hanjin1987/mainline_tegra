@@ -156,7 +156,7 @@ static int __devinit lp8720_probe(struct i2c_client *client, const struct i2c_de
 {
 	int ret;
 	struct lp8720_platform_data *pdata;
-	printk("[lp8720]  lp8720_probe ver 1.2\n");
+	printk("[lp8720] lp8720_probe ver 1.2\n");
 
 	if (i2c_get_clientdata(client))
 		return -EBUSY;
@@ -166,10 +166,10 @@ static int __devinit lp8720_probe(struct i2c_client *client, const struct i2c_de
 
 	ret = gpio_request(pdata->en_gpio_num, "lp8720");
 	if (ret < 0) {
-		printk("[lp8720] gpio_request : en_gpio_num=%d, ret=%x \n",pdata->en_gpio_num,ret);
+		printk("[lp8720] gpio_request : en_gpio_num=%d, ret=%x\n",pdata->en_gpio_num,ret);
 	}
 
-	tegra_gpio_enable(pdata->en_gpio_num);
+//	tegra_gpio_enable(pdata->en_gpio_num);
 	udelay(10);
   
 	//lp8720_init();

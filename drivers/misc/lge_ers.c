@@ -15,12 +15,14 @@
  *
  */
 
+#include <linux/module.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
-#include <asm/uaccess.h>
 #include <linux/syscalls.h>
 #include <linux/fcntl.h>
 #include <linux/limits.h>
+
+#include <asm/uaccess.h>
 
 #define ERS_DRIVER_NAME "lge-ers-kernel"
 

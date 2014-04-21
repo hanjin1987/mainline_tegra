@@ -464,7 +464,7 @@ static int cpwatcher_probe(struct platform_device *pdev)
         //Rev.B : temporary port (TEGRA_GPIO_PP1) for verifiy the CP CRASH
         //Rev.C: KB_ROW13 / TEGRA_GPIO_PS5
 
-        tegra_gpio_enable(cp_crash_int_pin);
+//        tegra_gpio_enable(cp_crash_int_pin);
         
         ret = gpio_request(cp_crash_int_pin, "CP_CRASH_INT");
         if (ret < 0)
@@ -482,7 +482,7 @@ static int cpwatcher_probe(struct platform_device *pdev)
         }               
 	printk("[CPW] CP_CRASH_INT : %d, Line[%d]\n",	gpio_get_value(cp_crash_int_pin),__LINE__); 	
 	
-        ret = request_irq(TEGRA_GPIO_TO_IRQ(cp_crash_int_pin), cpwatcher_irq_handler,
+        ret = request_irq(gpio_to_irq(cp_crash_int_pin), cpwatcher_irq_handler,
               IRQF_TRIGGER_FALLING,
               "cpwatcher", dev);
 
@@ -534,7 +534,7 @@ fail_input_register:
 	input_free_device(dev->input);
 
 //fail_free_irq:
-	free_irq(TEGRA_GPIO_TO_IRQ(cp_crash_int_pin), dev);
+	free_irq(gpio_to_irq(cp_crash_int_pin), dev);
 
 fail_input_allocate:
 	kfree(dev);
@@ -553,7 +553,7 @@ static int __devexit cpwatcher_remove(struct platform_device *pdev)
 
 	input_free_device(cpwatcher->input);
 
-	free_irq(TEGRA_GPIO_TO_IRQ(cp_crash_int_pin), cpwatcher);
+	free_irq(gpio_to_irq(cp_crash_int_pin), cpwatcher);
         wake_lock_destroy(&cpwatcher->wake_lock);
 
 	kfree(cpwatcher);

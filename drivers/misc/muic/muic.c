@@ -172,7 +172,7 @@ static int muic_cp_request(void)
 		printk( "[MUIC] gpio_11 TEGRA_GPIO_PR5 direction initialization failed!\n");
 		 return -ENOSYS;
 	}
-	tegra_gpio_enable(TEGRA_GPIO_PV1);
+//	tegra_gpio_enable(TEGRA_GPIO_PV1);
 
 
 	ret = gpio_request(TEGRA_GPIO_PO0, "TEGRA_GPIO_PR5 switch control 1 GPIO");
@@ -186,7 +186,7 @@ static int muic_cp_request(void)
 		printk( "[MUIC] gpio_11 TEGRA_GPIO_PR5 direction initialization failed!\n");
 		 return -ENOSYS;
 	}
-	tegra_gpio_enable(TEGRA_GPIO_PO0);
+//	tegra_gpio_enable(TEGRA_GPIO_PO0);
 	
 	return 0;
 }
@@ -1021,7 +1021,7 @@ static s32 __devinit muic_probe(struct i2c_client *client, const struct i2c_devi
 		printk(KERN_INFO "[MUIC] gpio_16 USIF_IN_1_GPIO direction initialization failed!\n");
 		return -ENOSYS;
 	}
-	tegra_gpio_enable(USIF_IN_1_GPIO);
+//	tegra_gpio_enable(USIF_IN_1_GPIO);
 
 	/*
 	 * Initializes gpio_11 (OMAP_UART_SW) and gpio_12 (IFX_UART_SW).
@@ -1038,7 +1038,7 @@ static s32 __devinit muic_probe(struct i2c_client *client, const struct i2c_devi
 		printk(KERN_INFO "[MUIC] gpio_11 DP3T_IN_1_GPIO direction initialization failed!\n");
 		return -ENOSYS;
 	}
-	tegra_gpio_enable(DP3T_IN_1_GPIO);
+//	tegra_gpio_enable(DP3T_IN_1_GPIO);
 
 	ret = gpio_request(IFX_USB_VBUS_EN_GPIO, "DP3T switch control 2 GPIO");
 	if (ret < 0) {
@@ -1051,8 +1051,8 @@ static s32 __devinit muic_probe(struct i2c_client *client, const struct i2c_devi
 		printk(KERN_INFO "[MUIC] gpio_55 IFX_USB_VBUS_EN_GPIO direction initialization failed!\n");
 		return -ENOSYS;
 	}
-	tegra_gpio_enable(IFX_USB_VBUS_EN_GPIO);
-#endif//
+//	tegra_gpio_enable(IFX_USB_VBUS_EN_GPIO);
+#endif
 
 	ret = gpio_request(MUIC_GPIO, "pj0");
 	if (ret < 0)
@@ -1068,8 +1068,10 @@ static s32 __devinit muic_probe(struct i2c_client *client, const struct i2c_devi
 		gpio_free(MUIC_GPIO);
 		return -ENOSYS;
 	}
+#if 0
 	else
 		tegra_gpio_enable(MUIC_GPIO);
+#endif
 
 #if defined (MUIC_SLEEP)
 	wake_lock_init(&muic_wake_lock, WAKE_LOCK_SUSPEND, "muic_lock");

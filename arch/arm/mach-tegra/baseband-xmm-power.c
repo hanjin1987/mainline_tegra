@@ -446,6 +446,41 @@ static void pm_qos_worker(struct work_struct *work)
 static DEVICE_ATTR(xmm_onoff, S_IRUSR | S_IWUSR | S_IRGRP,
 		NULL, xmm_onoff);
 
+#ifdef CONFIG_MACH_X3
+void baseband_xmm_power_switch(bool power_on)
+{
+	mm_segment_t oldfs;
+	struct file *filp;
+
+	pr_info("%s {\n", __func__);
+	pr_info("power_on(%d)\n", power_on);
+
+	/* check if enumeration succeeded */
+
+	if (power_onoff == power_on)
+		pr_err("%s: Ignored, due to same CP power state(%d)\n", __func__, power_onoff);
+	else {
+		oldfs = get_fs();
+		set_fs(KERNEL_DS);
+		filp = filp_open(XMM_ONOFF_PATH, O_RDWR, 0);
+		if (IS_ERR(filp) || (filp == NULL)) {
+			pr_err("open xmm_onoff failed %ld\n", PTR_ERR(filp));
+		} else {
+			if (power_on)
+				filp->f_op->write(filp, "1", 1, &filp->f_pos);
+			else
+				filp->f_op->write(filp, "0", 1, &filp->f_pos);
+
+			filp_close(filp, NULL);
+		}
+		set_fs(oldfs);
+	}
+
+	pr_info("%s }\n", __func__);
+}
+EXPORT_SYMBOL_GPL(baseband_xmm_power_switch);
+#endif
+
 /* Do the work for AP/CP initiated L2->L0 */
 static void xmm_power_l2_resume(void)
 {

@@ -275,6 +275,8 @@ int tegra_pinctrl_dt_subnode_to_map(struct device *dev,
 		goto exit;
 
 	of_property_for_each_string(np, "nvidia,pins", prop, group) {
+		(void)prop;
+
 		if (function) {
 			ret = add_map_mux(map, reserved_maps, num_maps,
 					  group, function);

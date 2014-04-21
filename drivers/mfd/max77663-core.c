@@ -358,7 +358,7 @@ static inline int max77663_i2c_read(struct max77663_chip *chip, u8 addr,
 
 	if (is_rtc)
 		regmap = chip->regmap_rtc;
-	ret = regmap_bulk_read(regmap, addr, dest, bytes);
+		ret = regmap_bulk_read(regmap, addr, dest, bytes);
 	if (ret < 0) {
 		dev_err(chip->dev, "%s() failed, e %d\n", __func__, ret);
 		return ret;
@@ -417,17 +417,19 @@ int max77663_get_bits(struct device *dev, u8 addr, u8 mask,
 		      bool is_rtc)
 {
 	struct max77663_chip *chip = dev_get_drvdata(dev);
-	struct i2c_client *client = NULL;
+//	struct i2c_client *client = NULL;
 	u8 tmp = 0;
 	int ret = 0;
 
 	mutex_lock(&chip->io_lock);
+#if 0
 	if (!is_rtc)
 		client = chip->i2c_power;
 	else
 		client = chip->i2c_rtc;
+#endif
 
-	ret = max77663_i2c_read(client, addr, &tmp, 1);
+	ret = max77663_i2c_read(chip, addr, &tmp, 1, is_rtc);
 	if (ret == 0) {
 		ret = tmp & mask;
 	}

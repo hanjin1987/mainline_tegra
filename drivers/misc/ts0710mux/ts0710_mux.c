@@ -222,11 +222,10 @@ static struct tty_driver *mux_driver;
 
 static struct tty_struct *mux_table[TS0710MAX_CHANNELS];
 static struct ktermios *mux_termios[TS0710MAX_CHANNELS];
-static struct ktermios *mux_termios_locked[TS0710MAX_CHANNELS];
+//static struct ktermios *mux_termios_locked[TS0710MAX_CHANNELS];
 static volatile short int mux_tty[TS0710MAX_CHANNELS];
-//                                       
+
 static volatile struct file * mux_filp[TS0710MAX_CHANNELS];
-//                                     
 
 #ifdef min
 #undef min
@@ -708,7 +707,7 @@ static int mux_send_frame(u8 dlci, int initiator,
     switch (frametype)
     {
       case MUX_UIH:
-      case ACK:
+      case MUX_ACK:
         pf = 0;
         crc_len = len;
         break;
@@ -748,7 +747,8 @@ static int mux_send_frame(u8 dlci, int initiator,
         memcpy(&framebuf[pos], data, len);
     pos += len;
 
-    framebuf[pos++] = mux_fcs_compute(framebuf + 1, pos - 1 - crc_len);
+    framebuf[pos] = mux_fcs_compute(framebuf + 1, pos - 1 - crc_len);
+    ++pos;
 
     /*if (dlc->muxer->option == mux_option_advanced)
     	pos = mux_frame_escape(framebuf + 1, pos - 1) + 1;
@@ -977,9 +977,11 @@ void process_mcc(u8 * data, u32 len, ts0710_con * ts0710, int longpkt)
             //Description: data throughput
             for (j = 0; j < TS0710_MAX_CHN; j++)
             {
+                int ret;
+
                 ts0710->dlci[j].state = CONNECTED;
                 up(&spi_write_data_sema[j]);
-                (void)down_trylock(&spi_write_data_sema[j]);
+                ret = down_trylock(&spi_write_data_sema[j]);
             }
             //                                    
             ts0710_fcon_msg(ts0710, MCC_RSP);
@@ -1026,12 +1028,13 @@ void process_mcc(u8 * data, u32 len, ts0710_con * ts0710, int longpkt)
                 }
                 else if (MUX_STOPPED(ts0710, dlci))
                 {
+                    int ret;
+
                     ts0710->dlci[dlci].state = CONNECTED;
                     TS0710_LOG ("MUX Received Flow on on dlci %d\n", dlci);
-                    //                                       
+
                     up(&spi_write_data_sema[dlci]);
-                    (void)down_trylock(&spi_write_data_sema[dlci]);
-                    //                                    
+                    ret = down_trylock(&spi_write_data_sema[dlci]);
                 }
 
                 ts0710_msc_msg(ts0710, v24_sigs, MCC_RSP, dlci);
@@ -2513,6 +2516,7 @@ static int ts_ldisc_tx_looper(void *param)
     struct spi_data_send_struct *next_ptr = NULL;
     struct spi_data_send_struct *prev_ptr = NULL;
 //    unsigned long flag;
+    int ret = 0;
 
     set_freezable(); //20120312 - Nv_bug_946018 recommend code to fix schedule issue
     
@@ -2652,14 +2656,10 @@ static int ts_ldisc_tx_looper(void *param)
             up(&spi_write_data_sema[dlci]);
             //                                     
         }
-    	/*                                        
-                                                    
-                                                  
-      */
+
 	    try_to_freeze();
 
-        down_timeout(&spi_write_sema, TS0710MUX_TIME_OUT);
-        //                                    
+        ret = down_timeout(&spi_write_sema, TS0710MUX_TIME_OUT);
     }
     //                               
     //20110418, ramesh.chandrasekaran@teleca.com, Polling tty IPC driver
@@ -2727,7 +2727,7 @@ static int ts_ldisc_open(struct tty_struct *tty)
     //Description: data throughput
     for (i = 0; i < TS0710_MAX_CHN; i++)
     {
-        spi_write_data_sema[i].lock = __SPIN_LOCK_UNLOCKED(spi_write_data_sema[i].lock);
+        spi_write_data_sema[i].lock = __RAW_SPIN_LOCK_UNLOCKED(spi_write_data_sema[i].lock);
         spi_write_data_sema[i].count = 0;
         spi_write_data_sema[i].wait_list.next = &(spi_write_data_sema[i].wait_list);
         spi_write_data_sema[i].wait_list.prev = &(spi_write_data_sema[i].wait_list);
@@ -3121,7 +3121,7 @@ static int __init mux_init(void)
 
     /* mux_driver.ttys = mux_table; */
     mux_driver->termios = mux_termios;
-    mux_driver->termios_locked = mux_termios_locked;
+    /* mux_driver->termios_locked = mux_termios_locked; */
     /* mux_driver.driver_state = mux_state; */
     mux_driver->other = NULL;
 

@@ -15,6 +15,7 @@
  *
  */
 
+#include <linux/module.h>
 #include <linux/delay.h>
 #include <linux/hrtimer.h>
 #include <linux/i2c.h>
@@ -22,9 +23,11 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
+#if defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
+#endif
 #include <linux/jiffies.h>
-#include <linux/sysdev.h>
+//#include <linux/sysdev.h>
 #include <linux/types.h>
 #include <linux/time.h>
 #include <linux/version.h>
@@ -32,11 +35,11 @@
 #include <linux/input.h>
 
 #include <linux/cpufreq.h>
-#include <linux/pm_qos_params.h>
+//#include <linux/pm_qos_params.h>
 #include <mach/clk.h>
 
 #include <asm/atomic.h>
-#include <mach/gpio.h>
+#include <asm/gpio.h>
 
 #include <linux/input/lge_touch_core.h>
 
@@ -55,7 +58,9 @@ struct lge_touch_data
 	struct delayed_work		work_init;
 	struct delayed_work		work_touch_lock;
 	struct work_struct  		work_fw_upgrade;
+#if defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend		early_suspend;
+#endif
 	struct touch_platform_data 	*pdata;
 	struct touch_data		ts_data;
 	struct touch_fw_info		fw_info;
@@ -2644,18 +2649,28 @@ static const struct sysfs_ops lge_touch_sysfs_ops = {
 };
 
 static struct kobj_type lge_touch_kobj_type = {
-	.sysfs_ops		= &lge_touch_sysfs_ops,
+	.sysfs_ops	= &lge_touch_sysfs_ops,
 	.default_attrs 	= lge_touch_attribute_list,
 };
 
+#if 0
 static struct sysdev_class lge_touch_sys_class = {
-	.name = LGE_TOUCH_NAME,
+	.name	= LGE_TOUCH_NAME,
 };
 
 static struct sys_device lge_touch_sys_device = {
-	.id		= 0,
+	.id	= 0,
 	.cls	= &lge_touch_sys_class,
 };
+#else
+static struct platform_driver lge_touch_platform_driver = {
+	.driver = {
+		.name = LGE_TOUCH_NAME,
+	},
+};
+
+static struct platform_device *lge_touch_platform_device;
+#endif
 
 static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -2817,7 +2832,7 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 		gpio_direction_input(ts->pdata->int_pin);
 
 		/* Interrupt pin enable */
-		tegra_gpio_enable(ts->pdata->int_pin);
+//		tegra_gpio_enable(ts->pdata->int_pin);
 		mdelay(20);
 		TOUCH_DEBUG_MSG("ts->pdata->int_pin\n");
 
@@ -2868,18 +2883,34 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 	register_early_suspend(&ts->early_suspend);
 #endif
 
+#if 0
 	/* Register sysfs for making fixed communication path to framework layer */
 	ret = sysdev_class_register(&lge_touch_sys_class);
 	if (ret < 0) {
-		TOUCH_ERR_MSG("sysdev_class_register is failed\n");
+		TOUCH_ERR_MSG("sysdev_class_register has failed\n");
 		goto err_lge_touch_sys_class_register;
 	}
 
 	ret = sysdev_register(&lge_touch_sys_device);
 	if (ret < 0) {
-		TOUCH_ERR_MSG("sysdev_register is failed\n");
+		TOUCH_ERR_MSG("sysdev_register has failed\n");
 		goto err_lge_touch_sys_dev_register;
 	}
+#else
+	ret = platform_driver_register(&lge_touch_platform_driver);
+	if (ret) {
+		TOUCH_ERR_MSG("platform_driver_register has failed\n");
+		goto err_lge_touch_platform_driver_register;
+	}
+
+	lge_touch_platform_device = platform_device_register_simple(
+						lge_touch_platform_driver.driver.name, 0, NULL, 0);
+	if (IS_ERR(lge_touch_platform_device)) {
+		TOUCH_ERR_MSG("platform_device_register_simple has failed\n");
+		ret = PTR_ERR(lge_touch_platform_device);
+		goto err_lge_touch_platform_device_register_simple;
+	}
+#endif
 
 	ret = kobject_init_and_add(&ts->lge_touch_kobj, &lge_touch_kobj_type,
 			ts->input_dev->dev.kobj.parent,
@@ -2896,11 +2927,20 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 
 err_lge_touch_sysfs_init_and_add:
 	kobject_del(&ts->lge_touch_kobj);
+#if 0
 err_lge_touch_sys_dev_register:
 	sysdev_unregister(&lge_touch_sys_device);
 err_lge_touch_sys_class_register:
 	sysdev_class_unregister(&lge_touch_sys_class);
+#else
+err_lge_touch_platform_device_register_simple:
+	platform_driver_unregister(&lge_touch_platform_driver);
+err_lge_touch_platform_driver_register:
+	platform_device_unregister(lge_touch_platform_device);
+#endif
+#if defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&ts->early_suspend);
+#endif
 err_interrupt_failed:
 	if (ts->pdata->role->operation_mode)
 		free_irq(ts->client->irq, ts);
@@ -2931,10 +2971,17 @@ static int touch_remove(struct i2c_client *client)
 	touch_power_cntl(ts, POWER_OFF);
 
 	kobject_del(&ts->lge_touch_kobj);
+#if 0
 	sysdev_unregister(&lge_touch_sys_device);
 	sysdev_class_unregister(&lge_touch_sys_class);
+#else
+	platform_device_unregister(lge_touch_platform_device);
+	platform_driver_unregister(&lge_touch_platform_driver);
+#endif
 
+#if defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&ts->early_suspend);
+#endif
 
 	if (ts->pdata->role->operation_mode)
 		free_irq(client->irq, ts);

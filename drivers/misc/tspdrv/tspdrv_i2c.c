@@ -41,8 +41,7 @@ s32 tspdrv_i2c_read_block_data(u8 command, u8 length, u8 *values)
 	s32 status;
 	status = i2c_smbus_read_i2c_block_data(tspdrv_i2c_client, command, length, values);
 
-	if (status < 0)
-	{
+	if (status < 0) {
 		printk("%s : I2C read block fail ,  RECOVER !!\n",__func__);
 	}
 
@@ -54,8 +53,7 @@ s32 tspdrv_i2c_read_byte_data(u8 command)
 	s32 status;
 	status = i2c_smbus_read_byte_data(tspdrv_i2c_client, command);
 
-	if (status < 0)
-	{
+	if (status < 0) {
 		printk("%s : I2C read byte fail ,  RECOVER !!\n",__func__);
 	}
 	
@@ -68,8 +66,7 @@ s32 tspdrv_i2c_write_block_data(u8 command, u8 length, const u8 *values)
 	
 	status = i2c_smbus_write_block_data(tspdrv_i2c_client , command, length, values );
 //	printk("***%s : I2C write block status : %d , val[0] :  0x%x, val[1] : 0x%x, ***\n",__func__,status, values[0], values[1]);
-	if (status < 0)
-	{
+	if (status < 0) {
 		printk("%s : I2C write block fail val[0] : 0x%u, val[1] : 0x%u,  RECOVER !!(%d)\n",__func__, values[0], values[1], status);
 	}
 	
@@ -80,8 +77,7 @@ s32 tspdrv_i2c_write_byte_data(u8 command, u8 value)
 	s32 status;
 	
 	status = i2c_smbus_write_byte_data(tspdrv_i2c_client, command, value); /* wake up */
-	if (status < 0)
-	{
+	if (status < 0) {
 		printk("%s : I2C write byte fail ,  RECOVER !!\n",__func__);
 	}
 	
@@ -90,30 +86,23 @@ s32 tspdrv_i2c_write_byte_data(u8 command, u8 value)
 
 void tspdrv_control_vibrator(u8 onoff)
 {
-	if(onoff)
-	{
+	if (onoff) {
 		gpio_set_value(tspdrv_gpio_en, 1);
-	}
-	else
-	{
+	} else {
 		gpio_set_value(tspdrv_gpio_en, 0);
 	}
 }
 
 void tspdrv_control_pwm(u8 onoff, int duty_ns, int period_ns)
 {
-	if(onoff)
-	{
+	if (onoff) {
 	   	pwm_config(tspdrv_pwm, duty_ns, period_ns);		
 //		printk("====================pwm_enable====\n");
 
 		pwm_enable(tspdrv_pwm);
-	}
-	else
-	{
+	} else {
 		pwm_disable(tspdrv_pwm);
 	}
-	
 }
 
 static int tspdrv_i2c_probe(struct i2c_client *client,
@@ -137,23 +126,23 @@ static int tspdrv_i2c_probe(struct i2c_client *client,
 	pdata = client->dev.platform_data;
 
 	ret = gpio_request(pdata->en_gpio, "vib_en");
-	if (ret < 0)
-	{
+	if (ret < 0) {
 		goto err_gpio;
 	}
 
-	ret=gpio_direction_output(pdata->en_gpio, 0);
-	if (ret < 0)
-	{
+	ret = gpio_direction_output(pdata->en_gpio, 0);
+	if (ret < 0) {
 		gpio_free(pdata->en_gpio);
 		goto err_gpio;
 	}
+#if 0
 	else
 		tegra_gpio_enable(pdata->en_gpio);
+#endif
 
 	tspdrv_gpio_en = pdata->en_gpio;
 
-	tspdrv_pwm	=	pwm_request(pdata->pwm_id, "vibrator");
+	tspdrv_pwm = pwm_request(pdata->pwm_id, "vibrator");
 	if (IS_ERR(tspdrv_pwm)) {
 		goto	err_pwm;
 	}
@@ -171,7 +160,6 @@ err_gpio:
 err_pwm:
 	printk("tspdrv_i2c PWM error!!\n");	
 	return ret;
-
 }
 
 static int tspdrv_i2c_remove(struct i2c_client *client)

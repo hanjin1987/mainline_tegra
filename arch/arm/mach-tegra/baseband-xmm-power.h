@@ -21,6 +21,9 @@
 #include <linux/suspend.h>
 
 #define TEGRA_EHCI_DEVICE "/sys/devices/platform/tegra-ehci.1/ehci_power"
+#ifdef CONFIG_MACH_X3
+#define XMM_ONOFF_PATH "/sys/devices/platform/baseband_xmm_power/xmm_onoff"
+#endif
 
 #define XMM_MODEM_VER_1121	0x1121
 #define XMM_MODEM_VER_1130	0x1130
@@ -110,6 +113,9 @@ enum ipc_ap_wake_state_t {
 
 irqreturn_t xmm_power_ipc_ap_wake_irq(int value);
 
+#ifdef CONFIG_MACH_X3
+void baseband_xmm_power_switch(bool power_on);
+#endif
 void baseband_xmm_set_power_status(unsigned int status);
 extern struct xmm_power_data xmm_power_drv_data;
 

@@ -117,6 +117,11 @@ struct nct1008_data {
 
 	struct thermal_zone_device *nct_int;
 	struct thermal_zone_device *nct_ext;
+
+#ifdef CONFIG_MACH_X3
+	bool running;
+	bool irq_running;
+#endif
 };
 
 static const struct i2c_device_id nct1008_id[] = {
@@ -497,7 +502,11 @@ static int nct1008_thermal_set_limits(struct nct1008_data *data,
 
 	if (data->current_lo_limit != lo_limit) {
 		value = temperature_to_value(extended_range, lo_limit);
+#ifdef CONFIG_MACH_X3
+		pr_debug("%s: %d[%ldmC]\n", __func__, value, lo_limit_milli);
+#else
 		pr_debug("%s: set lo_limit %ld\n", __func__, lo_limit);
+#endif
 		err = nct1008_write_reg(data->client,
 				EXT_TEMP_LO_LIMIT_HI_BYTE_WR, value);
 		if (err)
@@ -508,7 +517,11 @@ static int nct1008_thermal_set_limits(struct nct1008_data *data,
 
 	if (data->current_hi_limit != hi_limit) {
 		value = temperature_to_value(extended_range, hi_limit);
+#ifdef CONFIG_MACH_X3
+		pr_debug("%s: %d[%ldmC]\n", __func__, value, hi_limit_milli);
+#else
 		pr_debug("%s: set hi_limit %ld\n", __func__, hi_limit);
+#endif
 		err = nct1008_write_reg(data->client,
 				EXT_TEMP_HI_LIMIT_HI_BYTE_WR, value);
 		if (err)
@@ -822,7 +835,7 @@ static int nct1008_debuginit(struct nct1008_data *nct)
 {
 	int err = 0;
 	struct dentry *d;
-	char *name = nct1008_id[nct->chip].name;
+	const char *name = nct1008_id[nct->chip].name;
 
 	/* create debugfs by selecting chipid */
 	d = debugfs_create_file(name, S_IRUGO, NULL,
@@ -940,7 +953,7 @@ static irqreturn_t nct1008_irq(int irq, void *dev_id)
 static void nct1008_power_control(struct nct1008_data *data, bool is_enable)
 {
 	int ret;
-	char *name = nct1008_id[data->chip].name;
+	const char *name = nct1008_id[data->chip].name;
 
 	if (!data->nct_reg) {
 		data->nct_reg = regulator_get(&data->client->dev, "vdd");
@@ -977,7 +990,6 @@ static void nct1008_power_control(struct nct1008_data *data, bool is_enable)
 #ifdef CONFIG_MACH_X3
 	data->running = is_enable;
 #endif
-
 }
 
 #if VERIFY_I2C
@@ -1020,6 +1032,12 @@ static int nct1008_configure_sensor(struct nct1008_data *data)
 
 	if (!pdata || !pdata->supported_hwrev)
 		return -ENODEV;
+
+#if VERIFY_I2C
+	err = nct1008_i2c_verify_for_onoff(data);
+	if (err < 0)
+		goto error;
+#endif
 
 	/* Initially place in Standby */
 	err = nct1008_write_reg(client, CONFIG_WR, STANDBY_BIT);
@@ -1150,7 +1168,7 @@ error:
 
 static int __devinit nct1008_configure_irq(struct nct1008_data *data)
 {
-	char *name = nct1008_id[data->chip].name;
+	const char *name = nct1008_id[data->chip].name;
 
 	data->workqueue = create_singlethread_workqueue(name);
 
@@ -1162,13 +1180,14 @@ static int __devinit nct1008_configure_irq(struct nct1008_data *data)
 		return request_irq(data->client->irq, nct1008_irq,
 			IRQF_TRIGGER_LOW,
 #ifdef CONFIG_MACH_X3
-			DRIVER_NAME, data);
+			DRIVER_NAME,
 #else
 			name,
 #endif
 			data);
 }
 
+#if 0
 int nct1008_thermal_get_temp(struct nct1008_data *data, long *temp)
 {
 	return nct1008_get_temp(&data->client->dev, temp, NULL);
@@ -1186,52 +1205,6 @@ int nct1008_thermal_get_temp_low(struct nct1008_data *data, long *temp)
 #else
 	*temp = 0;
 #endif
-	return 0;
-}
-
-int nct1008_thermal_set_limits(struct nct1008_data *data,
-				long lo_limit_milli,
-				long hi_limit_milli)
-{
-	int err;
-	u8 value;
-	bool extended_range = data->plat_data.ext_range;
-	long lo_limit = MILLICELSIUS_TO_CELSIUS(lo_limit_milli);
-	long hi_limit = MILLICELSIUS_TO_CELSIUS(hi_limit_milli);
-
-	if (lo_limit >= hi_limit)
-		return -EINVAL;
-
-	if (data->current_lo_limit != lo_limit) {
-		value = temperature_to_value(extended_range, lo_limit);
-#ifdef CONFIG_MACH_X3
-		pr_debug("%s: %d[%ldmC]\n", __func__, value, lo_limit_milli);
-#else
-		pr_debug("%s: set lo_limit %ld\n", __func__, lo_limit);
-#endif
-		err = i2c_smbus_write_byte_data(data->client,
-				EXT_TEMP_LO_LIMIT_HI_BYTE_WR, value);
-		if (err)
-			return err;
-
-		data->current_lo_limit = lo_limit;
-	}
-
-	if (data->current_hi_limit != hi_limit) {
-		value = temperature_to_value(extended_range, hi_limit);
-#ifdef CONFIG_MACH_X3
-		pr_debug("%s: %d[%ldmC]\n", __func__, value, hi_limit_milli);
-#else
-		pr_debug("%s: set hi_limit %ld\n", __func__, hi_limit);
-#endif
-		err = i2c_smbus_write_byte_data(data->client,
-				EXT_TEMP_HI_LIMIT_HI_BYTE_WR, value);
-		if (err)
-			return err;
-
-		data->current_hi_limit = hi_limit;
-	}
-
 	return 0;
 }
 
@@ -1279,6 +1252,7 @@ int nct1008_thermal_set_shutdown_temp(struct nct1008_data *data,
 
 	return 0;
 }
+#endif
 
 #if FOR_MONITORING_TEMP
 int get_temp_for_log(long *pTemp)

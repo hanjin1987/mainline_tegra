@@ -55,7 +55,7 @@
 
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
 #include "u_lgeusb.h"
-#include "f_cdrom_storage.c"
+//#include "f_cdrom_storage.c"
 
 //#include "u_lgeusb.c"
 //#include "f_cdrom_storage.c"
@@ -528,11 +528,15 @@ static void adb_closed_callback(void)
 }
 
 
-#define MAX_ACM_INSTANCES 2
-
-#ifndef CONFIG_LGE_USB_GADGET_DRIVER
+#ifdef CONFIG_LGE_USB_GADGET_DRIVER
+/* Serial ports*/
+#define MAX_LG_SERIAL_INSTANCES 1
+/* Restrict Max acm instances to 1 for consistent LG serial port behavior */
+#define MAX_ACM_INSTANCES 1
+#else
 #define MAX_ACM_INSTANCES 4
 #endif
+
 struct acm_function_config {
 	int instances;
 };
@@ -1177,7 +1181,7 @@ static struct android_usb_function mass_storage_function = {
 	.attributes	= mass_storage_function_attributes,
 };
 
-#ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
+#if 0 //def CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
 struct cdrom_storage_function_config {
 	struct cdrom_fsg_config fsg;
 	struct cdrom_fsg_common *common;
@@ -1396,7 +1400,7 @@ static struct android_usb_function *supported_functions[] = {
 	&ffs_function,
 	&adb_function,
 	&acm_function,
-#ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
+#if 0 //def CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
 	&cdrom_storage_function,
 #endif
 #ifdef CONFIG_LGE_USB_GADGET_DRIVER

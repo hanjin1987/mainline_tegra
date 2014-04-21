@@ -231,13 +231,13 @@ static pm_callback_t pm_op(const struct dev_pm_ops *ops, pm_message_t state)
 	switch (state.event) {
 #ifdef CONFIG_SUSPEND
 	case PM_EVENT_SUSPEND:
-#ifdef CONFIG_MACH_X3
+#if 0 //def CONFIG_MACH_X3
 		if (!strcmp(kobject_name(&dev->kobj), "usb1") || !strcmp(kobject_name(&dev->kobj), "1-1"))
 			printk("PM: Suspended Driver: %s\n", kobject_name(&dev->kobj)); 
 #endif
 		return ops->suspend;
 	case PM_EVENT_RESUME:
-#ifdef CONFIG_MACH_X3
+#if 0 //def CONFIG_MACH_X3
 		if (!strcmp(kobject_name(&dev->kobj), "usb1") || !strcmp(kobject_name(&dev->kobj), "1-1"))
 			printk("PM: Resumed Driver: %s\n", kobject_name(&dev->kobj));
 #endif

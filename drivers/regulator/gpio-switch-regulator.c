@@ -22,6 +22,7 @@
 /*#define DEBUG			1*/
 /*#define VERBOSE_DEBUG		1*/
 
+#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/err.h>
@@ -319,7 +320,7 @@ static int __devinit gpio_switch_regulator_probe(struct platform_device *pdev)
 		ri->is_gpio_init = true;
 
 		ri->rdev = regulator_register(&ri->reg_desc, &pdev->dev,
-					&ri->reg_init_data, ri);
+					&ri->reg_init_data, ri, NULL);
 		if (IS_ERR_OR_NULL(ri->rdev)) {
 			dev_err(&pdev->dev, "Failed to register regulator %s\n",
 							ri->reg_desc.name);

@@ -1,35 +1,43 @@
 /*
- * arch/arm/mach-tegra/panel-w1.c
+ * drivers/video/tegra/ssd2825/ssd2825_bridge.c
  */
 
+#include <linux/module.h>
 #include <linux/delay.h>
 #include <linux/regulator/consumer.h>
 #include <linux/resource.h>
-#include <asm/mach-types.h>
 #include <linux/platform_device.h>
 #include <linux/spi/spi.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
+#endif
 #include <linux/nvhost.h>
 #include <linux/nvmap.h>
-#include <mach/irqs.h>
-#include <mach/iomap.h>
-#include <mach/dc.h>
-#include <mach/fb.h>
-#include "ssd2825_bridge.h"
-//                                                                                             
-#if defined(CONFIG_MACH_VU10)
-#include "solomon_spi_table_vu10.h"
-#include "../../../../arch/arm/mach-tegra/lge/x3/include/lge/board-x3.h"	//                                                       
-#else
-#include "solomon_spi_table.h"
-#endif
-//                                                                                             
 #include <linux/gpio.h>
 #include <linux/notifier.h>
 #include <linux/reboot.h>
 #include <linux/err.h>
+
+#include <asm/mach-types.h>
+
+#include <mach/irqs.h>
+#include <mach/iomap.h>
+#include <mach/dc.h>
+#include <mach/fb.h>
+#include <mach/pinmux-tegra30.h>
+
+#include "ssd2825_bridge.h"
+
+#if defined(CONFIG_MACH_VU10)
+#include "solomon_spi_table_vu10.h"
+#include "../../../../arch/arm/mach-tegra/lge/x3/include/lge/board-x3.h"
+#else
+#include "solomon_spi_table.h"
+#endif
+
 #include "../../../../arch/arm/mach-tegra/clock.h"
 #include "../../../../arch/arm/mach-tegra/gpio-names.h"
+
 #define CONFIG_ESD_REG_CHECK
 #ifdef CONFIG_ESD_REG_CHECK
 #include <linux/workqueue.h>
@@ -49,20 +57,22 @@ typedef struct spi_cmd_data32 spi_data;
 static u16 gpio_bridge_en;
 static u16 gpio_lcd_en;
 
-//                                                                                                       
 #if defined(CONFIG_MACH_VU10)
 static u16 gpio_lcd_en_3v;
 #endif
-//                                                                                                       
 
 static u16 gpio_lcd_reset_n;
 static u16 gpio_bridge_reset_n;
 static DEFINE_MUTEX(bridge_init_mutex);
 
 static struct spi_device *bridge_spi;
+#ifdef CONFIG_HAS_EARLYSUSPEND
 static struct early_suspend ssd2825_bridge_early_suspend;
+#endif
+
 #define FALSE 0
 #define TRUE 1
+
 static int x3_bridge_on = FALSE;
 static int ssd2825_disable_end = TRUE;
 static int ssd2825_shutdown = FALSE;
@@ -84,7 +94,6 @@ static int ssd2825_bridge_spi_read2(u8 value);
 #endif
 static int ssd2825_HM_mode = FALSE;
 
-/*                                 */
 extern int dc_set_gamma_rgb(int window_n, int red,int green,int blue);
 struct lcd_gamma_rgb cmdlineRGBvalue;
 static int __init dc_get_gamma_cmdline(char *str)
@@ -114,7 +123,6 @@ static int __init dc_get_gamma_cmdline(char *str)
 	return 1;
 }
 __setup("RGB=", dc_get_gamma_cmdline);
-/*                                 */
 
 static int lm353x_bl_on(void)
 {
@@ -481,9 +489,9 @@ void ssd2825_bridge_enable_spi_pins_to_nomal(void)
 	int i;
 	for (i = 0; i < ARRAY_SIZE(rgb_bridge_gpios_for_spi); i++) {
 		tegra_pinmux_set_tristate(
-			gpio_to_pingroup[rgb_bridge_gpios_for_spi[i].gpio],
+			tegra_pinmux_get_pingroup(rgb_bridge_gpios_for_spi[i].gpio),
 			TEGRA_TRI_NORMAL);
-		tegra_gpio_disable(rgb_bridge_gpios_for_spi[i].gpio);
+//		tegra_gpio_disable(rgb_bridge_gpios_for_spi[i].gpio);
 	}
 }
 
@@ -500,10 +508,10 @@ void ssd2825_bridge_disable_spi_pins_to_tristate(void)
 
 	for (i = 0; i < ARRAY_SIZE(rgb_bridge_gpios_for_spi); i++) {
 		tegra_pinmux_set_tristate(
-			gpio_to_pingroup[rgb_bridge_gpios_for_spi[i].gpio],
+			tegra_pinmux_get_pingroup(rgb_bridge_gpios_for_spi[i].gpio),
 			TEGRA_TRI_TRISTATE);
 		gpio_direction_input(rgb_bridge_gpios_for_spi[i].gpio);
-		tegra_gpio_enable(rgb_bridge_gpios_for_spi[i].gpio);
+//		tegra_gpio_enable(rgb_bridge_gpios_for_spi[i].gpio);
 	}
 }
 
@@ -876,6 +884,20 @@ DEVICE_ATTR(reg_dump, 0660, NULL, ssd2825_bridge_store_reg_dump);
 DEVICE_ATTR(reg_read, 0660, NULL, ssd2825_bridge_reg_read);
 DEVICE_ATTR(reg_read2, 0660, NULL, ssd2825_bridge_reg_read2);
 
+void ssd2825_bridge_spi_shutdown(struct spi_device *spi)
+{
+	int ret;
+	printk(KERN_INFO "%s \n", __func__);
+	ssd2825_disable_end = FALSE;
+	ret = lm353x_bl_off();
+	printk(KERN_INFO "lm353x_bl_off *** state: %d -> 0 \n", ret);
+#ifdef CONFIG_ESD_REG_CHECK
+	cancel_delayed_work_sync(&work_instance->work_reg_check);
+#endif
+	ssd2825_bridge_disable();
+}
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
 void ssd2825_bridge_spi_suspend(struct early_suspend * h)
 {
 /*                                 *//*2012/01/19*/
@@ -895,19 +917,6 @@ void ssd2825_bridge_spi_suspend(struct early_suspend * h)
 	//return 0;
 }
 
-void ssd2825_bridge_spi_shutdown(struct spi_device *spi)
-{
-	int ret;
-	printk(KERN_INFO "%s \n", __func__);
-	ssd2825_disable_end = FALSE;
-	ret=lm353x_bl_off();
-	printk(KERN_INFO "lm353x_bl_off *** state: %d -> 0 \n", ret);
-#ifdef CONFIG_ESD_REG_CHECK
-	cancel_delayed_work_sync(&work_instance->work_reg_check);
-#endif
-	ssd2825_bridge_disable();
-}
-
 void ssd2825_bridge_spi_resume(struct early_suspend * h)
 {
 	printk(KERN_INFO "%s start \n", __func__);
@@ -917,6 +926,7 @@ void ssd2825_bridge_spi_resume(struct early_suspend * h)
 	printk(KERN_INFO "%s end \n", __func__);
 	//return 0;
 }
+#endif
 
 static int ssd2825_bridge_reboot_notify(struct notifier_block *nb,
                                 unsigned long event, void *data)
@@ -933,7 +943,7 @@ static int ssd2825_bridge_reboot_notify(struct notifier_block *nb,
 #ifdef CONFIG_ESD_REG_CHECK
 			cancel_delayed_work(&work_instance->work_reg_check);
 #endif
-			//ret=lm353x_bl_off();
+			//ret = lm353x_bl_off();
 			//printk(KERN_INFO "lm353x_bl_off success *** state: %d -> 0 \n", ret);
 
 			ssd2825_bridge_disable();
@@ -942,7 +952,6 @@ static int ssd2825_bridge_reboot_notify(struct notifier_block *nb,
 	}
 	return NOTIFY_DONE;
 }
-
 
 static struct notifier_block ssd2825_bridge_reboot_nb = {
 	.notifier_call = ssd2825_bridge_reboot_notify,
@@ -954,7 +963,7 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 	int ret,err;
 	pdata = spi->dev.platform_data;
 
-	if(!pdata){
+	if (!pdata) {
 		printk("ssd2825_bridge_spi_probe platform data null pointer \n");
 		return 0;
 	}
@@ -967,14 +976,14 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 	spi->max_speed_hz = pdata->max_speed_hz;
 
 	gpio_lcd_reset_n		= pdata->lcd_reset_n;
-//                                                                                                       
+
 #if defined(CONFIG_MACH_VU10)
 		if (x3_get_hw_rev_pcb_version() > hw_rev_pcb_type_B){
-			gpio_lcd_en		= pdata->lcd_en;
+			gpio_lcd_en	= pdata->lcd_en;
 			gpio_lcd_en_3v  = pdata->lcd_en_3v;
 		}
 		else{
-			gpio_lcd_en		= pdata->lcd_en;
+			gpio_lcd_en	= pdata->lcd_en;
 		}
 #else
 	gpio_lcd_en 		= pdata->lcd_en;
@@ -1016,7 +1025,6 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 		goto gpio_bridge_en_error;
 	}
 
-//                                                                                                       
 #if defined(CONFIG_MACH_VU10)
 	if (x3_get_hw_rev_pcb_version() > hw_rev_pcb_type_B){
 		ret = gpio_request(gpio_lcd_en, "lcd_en");
@@ -1045,37 +1053,33 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 		goto gpio_lcd_en_error;
 	}
 #endif
-//                                                                                                       
 
 	/* gpio direction & enable */
-
 	ret = gpio_direction_output(gpio_bridge_en, 1);
-	tegra_gpio_enable(gpio_bridge_en);
+//	tegra_gpio_enable(gpio_bridge_en);
 
-//                                                                                                       
 #if defined(CONFIG_MACH_VU10)
 	if (x3_get_hw_rev_pcb_version() > hw_rev_pcb_type_B){
 		ret = gpio_direction_output(gpio_lcd_en, 1);
-		tegra_gpio_enable(gpio_lcd_en);
+//		tegra_gpio_enable(gpio_lcd_en);
 
 		ret = gpio_direction_output(gpio_lcd_en_3v, 1);
-		tegra_gpio_enable(gpio_lcd_en_3v);
+//		tegra_gpio_enable(gpio_lcd_en_3v);
 	}
 	else{
 		ret = gpio_direction_output(gpio_lcd_en, 1);
-		tegra_gpio_enable(gpio_lcd_en);
+//		tegra_gpio_enable(gpio_lcd_en);
 	}
 #else
 	ret = gpio_direction_output(gpio_lcd_en, 1);
-	tegra_gpio_enable(gpio_lcd_en);
+//	tegra_gpio_enable(gpio_lcd_en);
 #endif
-//                                                                                                       
 
 	mdelay(10);
 	ret = gpio_direction_output(gpio_bridge_reset_n, 1);
 	ret = gpio_direction_output(gpio_lcd_reset_n, 1);
-	tegra_gpio_enable(gpio_bridge_reset_n);
-	tegra_gpio_enable(gpio_lcd_reset_n);
+//	tegra_gpio_enable(gpio_bridge_reset_n);
+//	tegra_gpio_enable(gpio_lcd_reset_n);
 	x3_bridge_on = TRUE;
 
 	err = device_create_file(&spi->dev, &dev_attr_device_id);
@@ -1089,10 +1093,12 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 
 	bridge_spi = spi;
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
 	ssd2825_bridge_early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB-10;
 	ssd2825_bridge_early_suspend.suspend = ssd2825_bridge_spi_suspend;
 	ssd2825_bridge_early_suspend.resume = ssd2825_bridge_spi_resume;
 	register_early_suspend(&ssd2825_bridge_early_suspend);
+#endif
 
 	register_reboot_notifier(&ssd2825_bridge_reboot_nb);
 
@@ -1115,6 +1121,12 @@ probe_success:
 
 static int __devexit ssd2825_bridge_spi_remove(struct spi_device *spi)
 {
+	unregister_reboot_notifier(&ssd2825_bridge_reboot_nb);
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	unregister_early_suspend(&ssd2825_bridge_early_suspend);
+#endif
+
 	device_remove_file(&spi->dev, &dev_attr_device_id);
 	device_remove_file(&spi->dev, &dev_attr_mipi_lp);
 	device_remove_file(&spi->dev, &dev_attr_mipi_hs);

@@ -2177,13 +2177,6 @@ static struct i2c_driver apds990x_driver = {
 	.id_table = apds990x_id,
 };
 
-<<<<<<< HEAD
-module_i2c_driver(apds990x_driver);
-
-MODULE_DESCRIPTION("APDS990X combined ALS and proximity sensor");
-MODULE_AUTHOR("Samu Onkalo, Nokia Corporation");
-MODULE_LICENSE("GPL v2");
-=======
 static int __init apds990x_init(void)
 {
 	if(x3_get_hw_rev_pcb_version() > hw_rev_pcb_type_C)
@@ -2222,4 +2215,5 @@ MODULE_VERSION(DRIVER_VERSION);
 
 module_init(apds990x_init);
 module_exit(apds990x_exit);
->>>>>>> f720e99... drivers/: Merge LGE changes [2]
+
+module_i2c_driver(apds990x_driver);

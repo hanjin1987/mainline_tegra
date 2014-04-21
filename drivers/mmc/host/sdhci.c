@@ -2661,6 +2661,7 @@ int sdhci_resume_host(struct sdhci_host *host)
 				if (host->card_int_set)
 					mmc->ops->enable_sdio_irq(mmc, true);
 	}
+#endif
 
 	sdhci_enable_card_detection(host);
 

@@ -17,6 +17,7 @@
  *  along with this program; if not, you can find it at http://www.fsf.org
  */
 
+#include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/input.h>
 #include <linux/workqueue.h>
@@ -119,7 +120,6 @@ static void mtc_eta_event_log_disconnect(struct input_handle *handle)
 	kfree(handle);
 }
 
-
 static const struct input_device_id mtc_eta_event_log_ids[] = {
 	{
 		.flags = INPUT_DEVICE_ID_MATCH_EVBIT,
@@ -187,4 +187,3 @@ void hub_stop_key_logging(void)
 	PDEBUG("stop key logging\n");
 	input_unregister_handler(&input_handler);
 }
-

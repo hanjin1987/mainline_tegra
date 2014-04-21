@@ -19,19 +19,23 @@
  * This is usually given by the FAE or the sensor vendor.
  */
 
+#include <linux/module.h>
 #include <linux/delay.h>
 #include <linux/fs.h>
 #include <linux/i2c.h>
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
-#include <media/imx119.h>
 #include <linux/gpio.h>
+
+#include <media/imx119.h>
+
 #if defined(CONFIG_REGULATOR_CAM_SUBPMIC_LP8720)
 #include <linux/regulator/lp8720.h>
 extern void subpm_set_output(subpm_output_enum outnum, int onoff);
 extern void subpm_set_gpio(int onoff);
 #endif
+
 struct imx119_reg {
 	u16 addr;
 	u16  val;
@@ -675,9 +679,9 @@ static int imx119_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, info);
 
-	tegra_gpio_enable(VT_1V8V_EN);
+//	tegra_gpio_enable(VT_1V8V_EN);
 	gpio_request(VT_1V8V_EN, "vt_1.8v_en");
-	tegra_gpio_enable(SUB_CAM_RESET_N);
+//	tegra_gpio_enable(SUB_CAM_RESET_N);
 	gpio_request(SUB_CAM_RESET_N, "sub_cam_reset_n");
 
 	return 0;

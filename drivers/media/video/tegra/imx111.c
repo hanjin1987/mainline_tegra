@@ -13,20 +13,24 @@
  * kind, whether express or implied.
  */
 
+#include <linux/module.h>
 #include <linux/delay.h>
 #include <linux/fs.h>
 #include <linux/i2c.h>
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
-#include <media/tegra_camera.h>   //                                                                                          
-#include <media/imx111.h>
 #include <linux/gpio.h>
+
+#include <video/tegra_camera.h>
+#include <media/imx111.h>
+
 #if defined(CONFIG_REGULATOR_CAM_SUBPMIC_LP8720)
 #include <linux/regulator/lp8720.h>
 extern void subpm_set_output(subpm_output_enum outnum, int onoff);
 extern void subpm_set_gpio(int onoff);
 #endif
+
 #define IMX111_RESET_GPIO       84 //TEGRA_GPIO_PK04
 
 #define IMX111_TABLE_WAIT_MS    0
@@ -37,10 +41,10 @@ extern void subpm_set_gpio(int onoff);
 #define SIZEOF_I2C_TRANSBUF 32
 
 #if 0
-#define IMX111_1080P_SUB_SAMPLING_X3 1 //from X3
+#define IMX111_1080P_SUB_SAMPLING_X3 1 // from X3
 #endif
 
-#define IMX111_USE_OB_LEVEL_64 1 //2012-04-16 kyungrae.jo : black level 64
+#define IMX111_USE_OB_LEVEL_64 1 // 2012-04-16 kyungrae.jo : black level 64
 
 struct imx111_reg {
 	u16 addr;
@@ -54,10 +58,10 @@ struct imx111_info {
 	u8 i2c_trans_buf[SIZEOF_I2C_TRANSBUF];
 };
 
-//[START] 2012-04-06 kyungrae.jo : nvidia fuse id patch
+// [START] 2012-04-06 kyungrae.jo : nvidia fuse id patch
 static u8 FuseID[7];
 static u8 FuseIDAvailable = 0;
-//[END] 2012-04-06 kyungrae.jo : nvidia fuse id patch
+// [END] 2012-04-06 kyungrae.jo : nvidia fuse id patch
 
 static struct imx111_reg mode_3280x2464[] = {
   {0x0100, 0x00},
@@ -1193,7 +1197,7 @@ static int imx111_read_reg(struct i2c_client *client, u16 addr, u8 *val)
 {
 	int err;
 	struct i2c_msg msg[2];
-	unsigned char data[3] = {0x0,}; //                                       
+	unsigned char data[3] = { 0x0 };
 
 	if (!client->adapter)
 		return -ENODEV;
@@ -1214,8 +1218,7 @@ static int imx111_read_reg(struct i2c_client *client, u16 addr, u8 *val)
 
 	err = i2c_transfer(client->adapter, msg, 2);
 
-	if (err != 2)
-	{
+	if (err != 2) {
 		pr_info("imx111_read_reg, err : %d ", err);
 		return -EINVAL;
 	}
@@ -1291,7 +1294,6 @@ static int imx111_write_table(struct i2c_client *client,
 	int i;
 	u16 val;
 
-  //                        
 	//ret = imx111_write_reg(client, 0x0104, 0x0001);
 
 	//pr_info("imx111: imx111_write_table entered");
@@ -1333,30 +1335,31 @@ static int imx111_set_mode(struct imx111_info *info, struct imx111_mode *mode)
 
 	//pr_info("%s: xres %u yres %u framelength %u coarsetime %u gain %u\n",
 	//	__func__, mode->xres, mode->yres, mode->frame_length,mode->coarse_time, mode->gain);
-  pr_info("%s: xres %u yres %u\n", __func__, mode->xres, mode->yres);
+	pr_info("%s: xres %u yres %u\n", __func__, mode->xres, mode->yres);
 
-  if ((mode->xres == 3280 || mode->xres == 3264) && (mode->yres == 2464 || mode->yres == 2448))
-    sensor_mode = IMX111_MODE_3280x2464;    
-  else if ((mode->xres == 3280 || mode->xres == 3264) && (mode->yres == 1848 || mode->yres == 1836))
-    sensor_mode = IMX111_MODE_3280x1848;  
-  else if ((mode->xres == 1952 || mode->xres == 1920) && (mode->yres == 1098 || mode->yres == 1080))
-    sensor_mode = IMX111_MODE_1952x1098;  
-  else if ((mode->xres == 1640 || mode->xres == 1440) && (mode->yres == 1232 || mode->yres == 1080))//                                                                      
-    sensor_mode = IMX111_MODE_1640x1232;
-  else if (mode->xres == 1640 && mode->yres == 924)
-    sensor_mode = IMX111_MODE_1640x924;
-  else if ((mode->xres == 1308 || mode->xres == 1280) && (mode->yres == 736 || mode->yres == 720))
-    sensor_mode = IMX111_MODE_1308x736;
-  else if ((mode->xres == 820 || mode->xres == 640) && (mode->yres == 614 || mode->yres == 480))
-    sensor_mode = IMX111_MODE_820x614;  
-  else if ((mode->xres == 176) && (mode->yres == 144))
-    sensor_mode = IMX111_MODE_180x148;
+	if ((mode->xres == 3280 || mode->xres == 3264) && (mode->yres == 2464 || mode->yres == 2448))
+		sensor_mode = IMX111_MODE_3280x2464;    
+	else if ((mode->xres == 3280 || mode->xres == 3264) && (mode->yres == 1848 || mode->yres == 1836))
+		sensor_mode = IMX111_MODE_3280x1848;  
+	else if ((mode->xres == 1952 || mode->xres == 1920) && (mode->yres == 1098 || mode->yres == 1080))
+		sensor_mode = IMX111_MODE_1952x1098;  
+	else if ((mode->xres == 1640 || mode->xres == 1440) && (mode->yres == 1232 || mode->yres == 1080))
+		sensor_mode = IMX111_MODE_1640x1232;
+	else if (mode->xres == 1640 && mode->yres == 924)
+		sensor_mode = IMX111_MODE_1640x924;
+	else if ((mode->xres == 1308 || mode->xres == 1280) && (mode->yres == 736 || mode->yres == 720))
+		sensor_mode = IMX111_MODE_1308x736;
+	else if ((mode->xres == 820 || mode->xres == 640) && (mode->yres == 614 || mode->yres == 480))
+		sensor_mode = IMX111_MODE_820x614;  
+	else if ((mode->xres == 176) && (mode->yres == 144))
+		sensor_mode = IMX111_MODE_180x148;
 	else {
 		pr_err("%s: invalid resolution supplied to set mode %d %d\n",
 		       __func__, mode->xres, mode->yres);    
-      return -EINVAL;
-    }
-	tegra_camera_set_size(mode->xres, mode->yres);  //                                                                                          
+		return -EINVAL;
+	}
+
+	tegra_camera_set_size(mode->xres, mode->yres);
 
 #if 0
 	/* get a list of override regs for the asking frame length, */
@@ -1365,13 +1368,12 @@ static int imx111_set_mode(struct imx111_info *info, struct imx111_mode *mode)
 	imx111_get_coarse_time_regs(reg_list + 2, mode->coarse_time);
 	imx111_get_gain_reg(reg_list + 5, mode->gain);
 
-	//                                                                                               
-  err = imx111_write_table(info->i2c_client, imx111_mode_table[sensor_mode], reg_list, 6);
+	err = imx111_write_table(info->i2c_client, imx111_mode_table[sensor_mode], reg_list, 6);
 #else
-  err = imx111_write_table(info->i2c_client, imx111_mode_table[sensor_mode], NULL, 0);
+	err = imx111_write_table(info->i2c_client, imx111_mode_table[sensor_mode], NULL, 0);
 #endif
-	if (err){
-    pr_err("%s: mode_table write error(%d)!!\n", __func__, err);
+	if (err) {
+		pr_err("%s: mode_table write error(%d)!!\n", __func__, err);
 		return err;
 	}
 
@@ -1382,20 +1384,19 @@ static int imx111_set_mode(struct imx111_info *info, struct imx111_mode *mode)
 //static int imx111_get_status(struct imx111_info *info, struct imx111_status *dev_status)
 static int imx111_get_status(struct imx111_info *info, u8 *dev_status)
 {
-  #if 0
+#if 0
 	int err;
 	*dev_status = 0;
   
-  pr_info("%s\n", __func__);
+	pr_info("%s\n", __func__);
 	err = imx111_read_reg(info->i2c_client, 0x205, dev_status);
-  pr_info("%s: %u %d################ printing i2c error message\n", __func__, *dev_status, err);
+	pr_info("%s: %u %d################ printing i2c error message\n", __func__, *dev_status, err);
   
 	return err;
-  #else
-  return 0;
-  #endif
+#else
+	return 0;
+#endif
 }
-
 
 static int imx111_get_chip_id(struct imx111_info *info, struct imx111_chip_id *chip_id)
 {
@@ -1430,7 +1431,6 @@ static int imx111_get_chip_id(struct imx111_info *info, struct imx111_chip_id *c
 	return err;
 }
 
-//                                                                                                       
 static int imx111_set_frame_length(struct imx111_info *info, u32 frame_length)
 {
 	int ret;
@@ -1448,7 +1448,6 @@ static int imx111_set_frame_length(struct imx111_info *info, u32 frame_length)
 	return 0;
 }
 
-//                                                                                                     
 static int imx111_set_coarse_time(struct imx111_info *info, u32 coarse_time)  
 {
 	int ret;
@@ -1466,7 +1465,6 @@ static int imx111_set_coarse_time(struct imx111_info *info, u32 coarse_time)
 	return ret;
 }
 
-//                                                                                       
 static int imx111_set_gain(struct imx111_info *info, u16 gain)  
 {
 	int ret;
@@ -1500,14 +1498,13 @@ static int imx111_set_group_hold(struct imx111_info *info, struct imx111_ae *ae)
 	return 0;
 }
 
-
 static long imx111_ioctl(struct file *file,
 			 unsigned int cmd, unsigned long arg)
 {
 	int err;
 	struct imx111_info *info = file->private_data;
 	struct imx111_ae ae = {0};
-  //pr_info("%s, cmd=%x\n", __func__,cmd);
+	//pr_info("%s, cmd=%x\n", __func__,cmd);
 
 	switch (cmd) {
 	case IMX111_IOCTL_SET_MODE:
@@ -1523,34 +1520,33 @@ static long imx111_ioctl(struct file *file,
 		return imx111_set_mode(info, &mode);
 	}
 	case IMX111_IOCTL_SET_FRAME_LENGTH:
-        ae.frame_length = (u32) arg;
-        ae.frame_length_enable = 1;
-        return imx111_set_group_hold(info, &ae);
+        	ae.frame_length = (u32) arg;
+	        ae.frame_length_enable = 1;
+        	return imx111_set_group_hold(info, &ae);
 	case IMX111_IOCTL_SET_COARSE_TIME:
-        ae.coarse_time = (u32) arg;
-        ae.coarse_time_enable = 1;
-        return imx111_set_group_hold(info, &ae);
+        	ae.coarse_time = (u32) arg;
+        	ae.coarse_time_enable = 1;
+        	return imx111_set_group_hold(info, &ae);
 	case IMX111_IOCTL_SET_GAIN:
-        ae.gain = (s32) arg;
-        ae.gain_enable = 1;
-        return imx111_set_group_hold(info, &ae);
+        	ae.gain = (s32) arg;
+        	ae.gain_enable = 1;
+        	return imx111_set_group_hold(info, &ae);
 	case IMX111_IOCTL_GET_STATUS:
-#if 0 //                 
-    return 0;
+#if 0
+		return 0;
 #else
 	{
-    u16 status = 0;
+		u16 status = 0;
 
 		//err = imx111_get_status(info, &status);
-    err = copy_to_user((void __user *)arg, &status,2);
-    if (err) {
-      pr_err("%s %d\n", __func__, __LINE__);
-      return err;
-    }
-    return 0;
+		err = copy_to_user((void __user *)arg, &status,2);
+		if (err) {
+			pr_err("%s %d\n", __func__, __LINE__);
+			return err;
+		}
+		return 0;
 	}
 #endif
-
 	case IMX111_IOCTL_GET_SENSOR_ID:
 	{
 		struct imx111_chip_id chip_id;
@@ -1565,36 +1561,33 @@ static long imx111_ioctl(struct file *file,
 		return 0;
 	}
 
-    //[START] 2012-04-06 kyungrae.jo : nvidia fuse id patch
-    case IMX111_IOCTL_GET_SENSOR_FUSE_ID:
-    {
-        if (FuseIDAvailable == 0)
-        {
-            // read the 7-byte fuse id
-            imx111_read_reg(info->i2c_client, 0x3586, &FuseID[0]);
-            imx111_read_reg(info->i2c_client, 0x3585, &FuseID[1]);
-            imx111_read_reg(info->i2c_client, 0x3584, &FuseID[2]);
-            imx111_read_reg(info->i2c_client, 0x3583, &FuseID[3]);
-            imx111_read_reg(info->i2c_client, 0x3582, &FuseID[4]);
-            imx111_read_reg(info->i2c_client, 0x3581, &FuseID[5]);
-            imx111_read_reg(info->i2c_client, 0x3580, &FuseID[6]);
+	// [START] 2012-04-06 kyungrae.jo : nvidia fuse id patch
+	case IMX111_IOCTL_GET_SENSOR_FUSE_ID:
+	{
+		if (FuseIDAvailable == 0) {
+			// read the 7-byte fuse id
+			imx111_read_reg(info->i2c_client, 0x3586, &FuseID[0]);
+			imx111_read_reg(info->i2c_client, 0x3585, &FuseID[1]);
+			imx111_read_reg(info->i2c_client, 0x3584, &FuseID[2]);
+			imx111_read_reg(info->i2c_client, 0x3583, &FuseID[3]);
+			imx111_read_reg(info->i2c_client, 0x3582, &FuseID[4]);
+			imx111_read_reg(info->i2c_client, 0x3581, &FuseID[5]);
+			imx111_read_reg(info->i2c_client, 0x3580, &FuseID[6]);
 
-            FuseIDAvailable = 1;
-        }
-        if (copy_to_user((void __user *)arg, FuseID,
-                 7)) {
-            pr_info("[CAM] %s %d\n", __func__, __LINE__);
-            return -EFAULT;
-        }
-        return 0;
-    }
-    //[END] 2012-04-06 kyungrae.jo : nvidia fuse id patch
+			FuseIDAvailable = 1;
+		}
+		if (copy_to_user((void __user *)arg, FuseID, 7)) {
+			pr_info("[CAM] %s %d\n", __func__, __LINE__);
+			return -EFAULT;
+		}
+		return 0;
+	}
+	// [END] 2012-04-06 kyungrae.jo : nvidia fuse id patch
 
 	case IMX111_IOCTL_SET_GROUP_HOLD:
 	{
-		if (copy_from_user(&ae,
-						(const void __user *)arg,
-						sizeof(struct imx111_ae))) {
+		if (copy_from_user(&ae, (const void __user *)arg,
+					sizeof(struct imx111_ae))) {
 			pr_info("%s %d\n", __func__, __LINE__);
 			return -EFAULT;
 		}
@@ -1621,56 +1614,53 @@ static struct imx111_info *info;
 
 static int imx111_power_on(void)
 {
-
 #if defined(CONFIG_REGULATOR_CAM_SUBPMIC_LP8720)
-  //pr_info("LP8720 CamPMIC Main Cam Power ON ++\n");
-  subpm_set_gpio(1);
+	//pr_info("LP8720 CamPMIC Main Cam Power ON ++\n");
+	subpm_set_gpio(1);
 
-  subpm_set_output(LDO3,1);
-  subpm_set_output(SWREG,1);
-  subpm_set_output(LDO4,1);
-
+	subpm_set_output(LDO3,1);
+	subpm_set_output(SWREG,1);
+	subpm_set_output(LDO4,1);
 #endif
-  mdelay(1);
-  gpio_direction_output(IMX111_RESET_GPIO, 1);
-  udelay(10);
-  gpio_set_value(IMX111_RESET_GPIO, 1);
-  udelay(100);
+
+	mdelay(1);
+	gpio_direction_output(IMX111_RESET_GPIO, 1);
+	udelay(10);
+	gpio_set_value(IMX111_RESET_GPIO, 1);
+	udelay(100);
 
 	return 0;
 }
 
 static int imx111_power_off(void)
 {
-    gpio_set_value(IMX111_RESET_GPIO, 0);
-    udelay(10);
-    gpio_direction_output(IMX111_RESET_GPIO, 0);
-    udelay(100);
+	gpio_set_value(IMX111_RESET_GPIO, 0);
+	udelay(10);
+	gpio_direction_output(IMX111_RESET_GPIO, 0);
+	udelay(100);
 
 #if defined(CONFIG_REGULATOR_CAM_SUBPMIC_LP8720)
-    //pr_info("LP8720 CamPMIC Main Cam Power OFF ++\n");
+	//pr_info("LP8720 CamPMIC Main Cam Power OFF ++\n");
 
-    subpm_set_output(LDO4,0);
-    subpm_set_output(SWREG,0);
-    subpm_set_output(LDO3,0);
-    udelay(100);
-    //                                                                                                   
+	subpm_set_output(LDO4,0);
+	subpm_set_output(SWREG,0);
+	subpm_set_output(LDO3,0);
+	udelay(100);
 #endif
+
 	return 0;
 }
-
-
 
 static int imx111_open(struct inode *inode, struct file *file)
 {
 	//struct imx111_status dev_status;
-    u8 dev_status;
+	u8 dev_status;
 	int err;
 
 	pr_info("%s\n", __func__);
 	file->private_data = info;
   
-  imx111_power_on();
+	imx111_power_on();
   
 	//dev_status.data = 0;
 	//dev_status.status = 0;
@@ -1681,12 +1671,11 @@ static int imx111_open(struct inode *inode, struct file *file)
 int imx111_release(struct inode *inode, struct file *file)
 {
 	pr_info("imx111: imx111_release");
-  imx111_power_off();
+	imx111_power_off();
   
 	file->private_data = NULL;
 	return 0;
 }
-
 
 static const struct file_operations imx111_fileops = {
 	.owner = THIS_MODULE,
@@ -1724,13 +1713,12 @@ static int imx111_probe(struct i2c_client *client,
 	info->pdata = client->dev.platform_data;
 	info->i2c_client = client;
 
-
 	i2c_set_clientdata(client, info);
-	tegra_gpio_enable(IMX111_RESET_GPIO);
+//	tegra_gpio_enable(IMX111_RESET_GPIO);
 	err = gpio_request(IMX111_RESET_GPIO, "8m_cam_reset");
-  if (err < 0)
-    pr_err("%s: gpio_request failed for gpio %s\n",
-      __func__, "8m_cam_reset");
+	if (err < 0)
+		pr_err("%s: gpio_request failed for gpio %s\n",
+			__func__, "8m_cam_reset");
   
 	return 0;
 }
@@ -1738,7 +1726,7 @@ static int imx111_probe(struct i2c_client *client,
 static int imx111_remove(struct i2c_client *client)
 {
 	struct imx111_info *info;
-  pr_info("%s\n", __func__);
+	pr_info("%s\n", __func__);
 	info = i2c_get_clientdata(client);
 	misc_deregister(&imx111_device);
 	kfree(info);
@@ -1770,14 +1758,13 @@ static int __init imx111_init(void)
 
 static void __exit imx111_exit(void)
 {
-    pr_info("%s\n", __func__);
-    //[START] 2012-04-06 kyungrae.jo : nvidia fuse id patch
-    FuseIDAvailable = 0;
-    pr_info("%s\n", __func__);
-    //[END] 2012-04-06 kyungrae.jo : nvidia fuse id patch
-    i2c_del_driver(&imx111_i2c_driver);
+	pr_info("%s\n", __func__);
+	// [START] 2012-04-06 kyungrae.jo : nvidia fuse id patch
+	FuseIDAvailable = 0;
+	pr_info("%s\n", __func__);
+	// [END] 2012-04-06 kyungrae.jo : nvidia fuse id patch
+	i2c_del_driver(&imx111_i2c_driver);
 }
 
 module_init(imx111_init);
 module_exit(imx111_exit);
-

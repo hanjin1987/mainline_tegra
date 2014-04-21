@@ -55,4 +55,8 @@ enum StereoCameraMode {
 	_IOWR('i', 3, struct tegra_camera_clk_info)
 #define TEGRA_CAMERA_IOCTL_RESET		_IOWR('i', 4, uint)
 
+#ifdef CONFIG_MACH_X3
+int tegra_camera_set_size(int xres, int yres);
+#endif
+
 #endif

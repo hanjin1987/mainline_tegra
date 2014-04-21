@@ -441,7 +441,7 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
 		if (ret)
 			goto err;
 
-#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+#if 0 //defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
 		tegra_gpio_enable(gpios[i].gpio);
 #endif
 
@@ -477,13 +477,13 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
 		ret = gpio_direction_output(headset_sw_data->ear_mic, 0);
 		if (ret)
 			goto err;
-		tegra_gpio_enable(headset_sw_data->ear_mic);
+//		tegra_gpio_enable(headset_sw_data->ear_mic);
 
 		ret = gpio_request(headset_sw_data->hook_gpio, "hook_det");
 		ret = gpio_direction_input(headset_sw_data->hook_gpio);
 		if (ret)
 			goto err;
-		tegra_gpio_enable(headset_sw_data->hook_gpio);		
+//		tegra_gpio_enable(headset_sw_data->hook_gpio);		
 
 		INIT_DELAYED_WORK(&headset_sw_data->hook_delayed_work[0], hook_det_work);
 		INIT_DELAYED_WORK(&headset_sw_data->hook_delayed_work[1], hook_det_work);
@@ -537,7 +537,7 @@ EXPORT_SYMBOL_GPL(snd_soc_jack_add_gpios);
 #if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
 int snd_soc_jack_check(struct snd_soc_jack_gpio *gpios)
 {
-	tegra_gpio_enable(gpios[0].gpio);
+//	tegra_gpio_enable(gpios[0].gpio);
 	snd_soc_jack_gpio_detect(&gpios[0]);
 	return 0;
 }

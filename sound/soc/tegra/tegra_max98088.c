@@ -1483,7 +1483,7 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 		gpio_direction_output(pdata->gpio_hp_mute, 0);
 	}
 
-#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+#if 0 //defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
 	tegra_gpio_enable(pdata->gpio_int_mic_en);
 #endif
 

@@ -479,16 +479,11 @@ static ssize_t evdev_read(struct file *file, char __user *buffer,
 		retval += input_event_size();
 	}
 
-<<<<<<< HEAD
+#ifndef CONFIG_MACH_LGE
 	if (retval == 0 && (file->f_flags & O_NONBLOCK))
 		return -EAGAIN;
-
-=======
-#ifndef CONFIG_MACH_LGE
-	if (retval == 0 && file->f_flags & O_NONBLOCK)
-		retval = -EAGAIN;
 #endif
->>>>>>> a9b28d9... drivers/: Merge LGE changes [1]
+
 	return retval;
 }
 
@@ -730,6 +725,7 @@ static int evdev_disable_suspend_block(struct evdev *evdev,
 	spin_unlock_irq(&client->buffer_lock);
 	return 0;
 }
+#endif /* JB codes */
 
 static int evdev_handle_mt_request(struct input_dev *dev,
 				   unsigned int size,
@@ -752,7 +748,6 @@ static int evdev_handle_mt_request(struct input_dev *dev,
 
 	return 0;
 }
-#endif /* JB codes */
 
 static long evdev_do_ioctl(struct file *file, unsigned int cmd,
 			   void __user *p, int compat_mode)

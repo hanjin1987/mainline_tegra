@@ -19,6 +19,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
+#include <linux/module.h>
 #include <linux/gpio.h>
 #include <linux/leds.h>
 #include <linux/platform_device.h>
@@ -58,7 +59,7 @@ static int __devinit keypad_led_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	tegra_gpio_enable(KP_LEDS_GPIO);	
+//	tegra_gpio_enable(KP_LEDS_GPIO);	
 	ret = gpio_direction_output(KP_LEDS_GPIO, 0); 
 	if(ret){
 		printk(KERN_ERR"[kp_led]: set gpio %d direction out error!\n", KP_LEDS_GPIO);
@@ -95,7 +96,7 @@ static int keypad_led_remove(struct platform_device *pdev)
 {
 	struct keypad_led_data *info = platform_get_drvdata(pdev);
 
-	tegra_gpio_disable(KP_LEDS_GPIO);	
+//	tegra_gpio_disable(KP_LEDS_GPIO);	
 	if (gpio_is_valid(KP_LEDS_GPIO)) {
 		gpio_free(KP_LEDS_GPIO);
 	}

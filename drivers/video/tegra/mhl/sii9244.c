@@ -14,33 +14,34 @@
 * GNU General Public License for more details.
 *
 *****************************************************************************/
+
+#include <linux/module.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/i2c.h>
 #include <linux/gpio.h>
-#include <asm/irq.h>
 #include <linux/delay.h>
 #include <linux/input.h>
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
-#include <linux/syscalls.h> 
-#include <linux/fcntl.h> 
-#include <asm/uaccess.h> 
+#include <linux/syscalls.h>
+#include <linux/fcntl.h>
 #include <linux/regulator/consumer.h>
+#include <linux/mutex.h>
+#include <linux/wakelock.h>
+
+#include <asm/irq.h>
+#include <asm/uaccess.h>
 
 //#include "sii9244_driver.h"
 //#include "Common_Def.h"
 
-//                                                            
-#include <linux/mutex.h>
-//                                  
 #include "sii9244_driver.h"
 
 extern void hdmi_common_send_uevent(char *buf);
-//                                                   
-#include <linux/wakelock.h>
+
 static struct wake_lock mhl_lock;
-//                                  
+
 static int mhl_connected = 0;
 extern void sii9244_driver_init(void);
 extern struct timer_list simg_timer;
@@ -48,11 +49,10 @@ extern struct timer_list simg_timer;
 #ifdef MHL_CTL
 #define MHL_DEV_INPUT_KBMOUSE_EVENT 		"/dev/input/event9"	// for real keyboard & mouse
 #undef MHL_DEV_INPUT_KBMOUSE_EVENT
-//                                                                                      
+
 #ifdef MHL_HW_DEBUG
 extern void set_mhl_ctrl4(int value);
 #endif
-//                                                                                      
 
 #define DRIVER_NAME "mhl_virtual_kbmouse"
 #define DISABLE_CURSOR	10000
@@ -1252,16 +1252,16 @@ static void sii9244_cfg_gpio()
     SII_LOG_FUNCTION_NAME_ENTRY;
 	gpio_request(GPIO_MHL_INT, "MHL_INT");
 	gpio_direction_input(GPIO_MHL_INT);
-	tegra_gpio_enable(GPIO_MHL_INT);
+//	tegra_gpio_enable(GPIO_MHL_INT);
 	gpio_request(GPIO_MHL_SEL, "MUIC/MHL SEL");
 	gpio_direction_output(GPIO_MHL_SEL, GPIO_LEVEL_LOW);
-	tegra_gpio_enable(GPIO_MHL_SEL);
+//	tegra_gpio_enable(GPIO_MHL_SEL);
 
 
 	gpio_request(GPIO_MHL_RST, "MHL_RESET_N");
 	gpio_direction_output(GPIO_MHL_RST, GPIO_LEVEL_LOW);
-	tegra_gpio_enable(GPIO_MHL_RST);
-//                                                                    
+//	tegra_gpio_enable(GPIO_MHL_RST);
+
 	//gpio_set_value(GPIO_MHL_RST, GPIO_LEVEL_HIGH);
 //                                         
 #if defined(MHL_REGULATOR) /* convert gpio to regulator */
@@ -1291,7 +1291,7 @@ static void sii9244_cfg_gpio()
 #else
 	gpio_request(GPIO_MHL_EN, "MHL_EN");
 	gpio_direction_output(GPIO_MHL_EN, GPIO_LEVEL_LOW);
-	tegra_gpio_enable(GPIO_MHL_EN);
+//	tegra_gpio_enable(GPIO_MHL_EN);
 #endif 
 
 #if defined(MHL_REGULATOR)

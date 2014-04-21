@@ -344,6 +344,6 @@ enum mux_frametype {
 	MUX_DISC	= 0x43,
 	MUX_UIH		= 0xef,
 	MUX_UI		= 0x03,
-    MUX_PN		= 0x20,
+	MUX_PN		= 0x20,
+	MUX_ACK		= 0x4f,
 };
-

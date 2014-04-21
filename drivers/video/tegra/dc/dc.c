@@ -272,6 +272,7 @@ static struct tegra_dc_cmu default_cmu = {
 		253,  253,  254,  254,  254,  254,  255,  255,
 	},
 };
+#endif
 
 #if defined(CONFIG_MACH_LGE)
 extern struct lcd_gamma_rgb cmdlineRGBvalue;

@@ -23,10 +23,12 @@
 #include <linux/slab.h>
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
-#include <linux/android_alarm.h>
+//#include <linux/android_alarm.h>
 #include <linux/syscalls.h>
 #include <linux/fcntl.h>
+
 #include <asm/uaccess.h>
+#include <asm/system_info.h>
 
 #include <linux/power/lge_battery.h>
 #include "../../arch/arm/mach-tegra/board.h"

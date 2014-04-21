@@ -17,6 +17,7 @@
  *  along with this program; if not, you can find it at http://www.fsf.org
  */
 
+#include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/input.h>
 #include <linux/workqueue.h>
@@ -109,7 +110,6 @@ static void mtc_eta_event_log_disconnect(struct input_handle *handle)
 	input_unregister_handle(handle);
 	kfree(handle);
 }
-
 
 static const struct input_device_id mtc_eta_event_log_ids[] = {
 	{
@@ -225,7 +225,6 @@ static void mtc_eta_event_log_event(struct input_handle *handle, unsigned int ty
 			}
 			break;
 	}
-
 }
 
 int hub_start_touch_logging(void)
@@ -252,4 +251,3 @@ void hub_stop_touch_logging(void)
 {
 	input_unregister_handler(&input_handler);
 }
-

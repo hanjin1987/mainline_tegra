@@ -693,12 +693,11 @@ int tegra30_dam_set_acif(int ifc, int chid, unsigned int audio_channels,
 	if ((chid == dam_ch_in0) &&
 		((client_channels != 1) || (client_bits != 16)))
 #if defined(CONFIG_MACH_PEGASUS)
-		{
-			client_channels = 1;
-			client_bits = 16;
-		}
+		client_channels = 1;
+		client_bits = 16;
 #else
 		return -EINVAL;
+#endif
 #endif
 
 	value |= TEGRA30_CIF_MONOCONV_COPY;

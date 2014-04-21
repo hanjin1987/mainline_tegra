@@ -5,7 +5,7 @@
  * 'tty.h' defines some structures used by tty_io.c and some defines.
  */
 
-#ifndef CONFIG_MACH_X3
+#if 1 //ndef CONFIG_MACH_X3
 #define NR_LDISCS		30
 #endif
 
@@ -33,7 +33,7 @@
 #define N_V253		19	/* Codec control over voice modem */
 #define N_CAIF		20      /* CAIF protocol for talking to modems */
 #define N_GSM0710	21	/* GSM 0710 Mux */
-#ifdef CONFIG_MACH_X3
+#if 0 //def CONFIG_MACH_X3
 #define N_RIN		22
 #define NR_LDISCS	23
 #define N_TI_WL		24	/* for TI's WL BT, FM, GPS combo chips */

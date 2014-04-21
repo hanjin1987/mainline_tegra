@@ -17,8 +17,7 @@
  * Foundation, Inc., 
  */
 
-
-
+#include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/i2c.h>
 #include <linux/miscdevice.h>
@@ -28,34 +27,34 @@
 #include <linux/list.h>
 #include <linux/regulator/consumer.h>
 #include <linux/gpio.h>
+
 #include <media/lm3559.h>
 
-#define LM3559_I2C_NAME  				"lm3559"
+#define LM3559_I2C_NAME  			"lm3559"
 
-#if 1 //                 
+#if 1
 #define LGE_X3_LM3559_FLASH_TORCH_CURRENT_FIXED 1
 #endif
 
 /* Register Descriptions */
-#define LM3559_REG_ENABLE				      0x10
-#define LM3559_REG_GPIO					      0x20
-#define LM3559_REG_VLED_MONITOR			  0x30
-#define LM3559_REG_ADC_DELAY			    0x31
-#define LM3559_REG_VIN_MONITOR			  0x80
-#define LM3559_REG_LAST_FLASH			    0x81
-#define LM3559_REG_TORCH_BRIGHTNESS	  0xA0
-#define LM3559_REG_FLASH_BRIGHTNESS	  0xB0
-#define LM3559_REG_FLASH_DURATION		  0xC0
-#define LM3559_REG_FLAGS				      0xD0
-#define LM3559_REG_CONFIGURATION1		  0xE0
-#define LM3559_REG_CONFIGURATION2		  0xF0
-#define LM3559_REG_PRIVACY				    0x11
+#define LM3559_REG_ENABLE		0x10
+#define LM3559_REG_GPIO			0x20
+#define LM3559_REG_VLED_MONITOR		0x30
+#define LM3559_REG_ADC_DELAY		0x31
+#define LM3559_REG_VIN_MONITOR		0x80
+#define LM3559_REG_LAST_FLASH		0x81
+#define LM3559_REG_TORCH_BRIGHTNESS	0xA0
+#define LM3559_REG_FLASH_BRIGHTNESS	0xB0
+#define LM3559_REG_FLASH_DURATION	0xC0
+#define LM3559_REG_FLAGS		0xD0
+#define LM3559_REG_CONFIGURATION1	0xE0
+#define LM3559_REG_CONFIGURATION2	0xF0
+#define LM3559_REG_PRIVACY		0x11
 #define LM3559_REG_MESSAGE_INDICATOR	0x12
 #define LM3559_REG_INDICATOR_BLINKING	0x13
-#define LM3559_REG_PRIVACY_PWM			  0x14
+#define LM3559_REG_PRIVACY_PWM		0x14
 
-
-enum{
+enum {
    LM3559_LED_OFF,
    LM3559_LED_LOW,
    LM3559_LED_HIGH,
@@ -71,10 +70,8 @@ struct lm3559_info {
 static struct lm3559_info *info;
 static int lm3559_onoff_state;
 
-
 #ifndef LGE_X3_LM3559_FLASH_TORCH_CURRENT_FIXED
 static unsigned char lm3559_flash_lvl[16] = {  
-		
       0x00, //0000 0000 
       0x11, //0001 0001
       0x22, //0010 0010
@@ -94,7 +91,6 @@ static unsigned char lm3559_flash_lvl[16] = {
 };
 
 static unsigned char lm3559_torch_lvl[8] = {  
-		
       0x00, //000 000 
       0x09, //001 001
       0x12, //010 010 
@@ -110,8 +106,7 @@ int lm3559_write_reg(struct i2c_client *client, unsigned char addr, unsigned cha
 {
 	int err = 0;  
 	int retry = 0;
-
-	unsigned char buf[2] ={0,};
+	unsigned char buf[2] = { 0 };
 	
 	struct i2c_msg msg[] = {
 		{
@@ -125,12 +120,12 @@ int lm3559_write_reg(struct i2c_client *client, unsigned char addr, unsigned cha
 	buf[0] = addr;
 	buf[1] = data;
 
-#if 0	//                 
+#if 0
 	if ((err = i2c_transfer(client->adapter, &msg[0], 1)) < 0) {
 		dev_err(&client->dev, "i2c write error [%d]\n",err);
 	}
 #else
-  do {
+	do {
 		err = i2c_transfer(client->adapter, &msg[0], 1);
 		if (err == 1)
 			return 0;
@@ -140,13 +135,12 @@ int lm3559_write_reg(struct i2c_client *client, unsigned char addr, unsigned cha
 	} while (retry <= 3);
 #endif	
 	return err;
-
 }
 
 int lm3559_read_reg(struct i2c_client *client, unsigned char addr, unsigned char *data)
 {
 	int err = 0;
-	unsigned char buf[1] ={0};
+	unsigned char buf[1] = { 0 };
 	
 	struct i2c_msg msgs[] = {	
 		{ 
@@ -166,7 +160,6 @@ int lm3559_read_reg(struct i2c_client *client, unsigned char addr, unsigned char
 	*data = buf[0];
 	
 	return err;
-	
 }
 
 void lm3559_led_shutdown(struct lm3559_info *info)
@@ -183,27 +176,25 @@ void lm3559_led_shutdown(struct lm3559_info *info)
 void lm3559_enable_torch_mode(struct lm3559_info *info, int state, struct lm3559_param param)
 {
 #ifndef LGE_X3_LM3559_FLASH_TORCH_CURRENT_FIXED  
-  unsigned char level_value;
+	unsigned char level_value;
 #endif
 
 	//pr_info("%s: state=%d, arg=%d\n",__func__, state, param.value);
 
 #ifdef LGE_X3_LM3559_FLASH_TORCH_CURRENT_FIXED			
-  pr_info("%s:[LGE fixed]  Level: 140.625 (Total 281.25) mA \n",__func__);
+	pr_info("%s:[LGE fixed]  Level: 140.625 (Total 281.25) mA \n",__func__);
 
-  // 0x24 : 100 100 -> 140.625
-  lm3559_write_reg(info->i2c_client,LM3559_REG_TORCH_BRIGHTNESS,0x24);  
-  udelay(10);
+	// 0x24 : 100 100 -> 140.625
+	lm3559_write_reg(info->i2c_client, LM3559_REG_TORCH_BRIGHTNESS, 0x24);
+	udelay(10);
 #else
-  level_value = (unsigned char)param.value-1;
-  lm3559_write_reg(info->i2c_client,LM3559_REG_TORCH_BRIGHTNESS,lm3559_torch_lvl[level_value]);  
-  pr_info("%s: Level: %d \n",__func__, level_value);
+	level_value = (unsigned char)param.value - 1;
+	lm3559_write_reg(info->i2c_client, LM3559_REG_TORCH_BRIGHTNESS, lm3559_torch_lvl[level_value]);
+	pr_info("%s: Level: %d \n", __func__, level_value);
 #endif
 
-	lm3559_write_reg(info->i2c_client,LM3559_REG_ENABLE,0x1A);
-  udelay(10);
-
-
+	lm3559_write_reg(info->i2c_client, LM3559_REG_ENABLE, 0x1A);
+	udelay(10);
 }
 
 /*	 Flash Current
@@ -219,21 +210,21 @@ void lm3559_enable_torch_mode(struct lm3559_info *info, int state, struct lm3559
 void lm3559_enable_flash_mode(struct lm3559_info *info, int state, struct lm3559_param param)
 {
 #ifndef LGE_X3_LM3559_FLASH_TORCH_CURRENT_FIXED  	
-  unsigned char data = 0;
-  unsigned char level_value;
+	unsigned char data = 0;
+	unsigned char level_value;
 #endif
 
-  //pr_info("%s: state=%d, arg=%d\n",__func__, state, param.value);
+	//pr_info("%s: state=%d, arg=%d\n",__func__, state, param.value);
 
 #ifdef LGE_X3_LM3559_FLASH_TORCH_CURRENT_FIXED			 
-		pr_info("%s:[LGE fixed] Duration: 512ms, Level: 393.75 (Total 787.5) mA \n",__func__);
+	pr_info("%s:[LGE fixed] Duration: 512ms, Level: 393.75 (Total 787.5) mA \n",__func__);
 
-    lm3559_write_reg(info->i2c_client,LM3559_REG_FLASH_DURATION,0x1f); //                              
-    udelay(10);
-		//pr_info("[LM3559_LED_HIGH]LM3559_REG_FLASH_BRIGHTNESS \n");
-    // 0x66 : 0110 0110 : 393.75 mA 
-		lm3559_write_reg(info->i2c_client,LM3559_REG_FLASH_BRIGHTNESS,0x88);	//800mA-->1Achangho.ahn_0314
-    udelay(10);
+	lm3559_write_reg(info->i2c_client, LM3559_REG_FLASH_DURATION, 0x1f);
+	udelay(10);
+	//pr_info("[LM3559_LED_HIGH]LM3559_REG_FLASH_BRIGHTNESS \n");
+	// 0x66 : 0110 0110 : 393.75 mA 
+	lm3559_write_reg(info->i2c_client, LM3559_REG_FLASH_BRIGHTNESS, 0x88); // 800mA-->1Achangho.ahn_0314
+	udelay(10);
 #else
 	lm3559_read_reg(info->i2c_client,LM3559_REG_FLASH_DURATION,&data);	
 
@@ -243,14 +234,13 @@ void lm3559_enable_flash_mode(struct lm3559_info *info, int state, struct lm3559
 	
 	lm3559_write_reg(info->i2c_client,LM3559_REG_FLASH_DURATION,data);
 
-  //pr_info("[LM3559_LED_LOW]LM3559_REG_FLASH_BRIGHTNESS : %d\n",lm3559_flash_lvl[param.p_value+1]);  
-  level_value = (unsigned char)param.value-1;  
-  lm3559_write_reg(info->i2c_client,LM3559_REG_FLASH_BRIGHTNESS,lm3559_flash_lvl[level_value]);  
-  pr_info("%s: Level: %d \n",__func__, level_value);
+	//pr_info("[LM3559_LED_LOW]LM3559_REG_FLASH_BRIGHTNESS : %d\n", lm3559_flash_lvl[param.p_value + 1]);
+	level_value = (unsigned char)param.value - 1;
+	lm3559_write_reg(info->i2c_client, LM3559_REG_FLASH_BRIGHTNESS, lm3559_flash_lvl[level_value]);
+	pr_info("%s: Level: %d \n", __func__, level_value);
 #endif
 	lm3559_write_reg(info->i2c_client,LM3559_REG_ENABLE,0x1B);
 	udelay(10);
-
 }
 
 void lm3559_power_onoff(struct lm3559_info *info, int onoff){
@@ -284,10 +274,10 @@ static long lm3559_ioctl(struct file *file,
 //  	pr_info("%s,cmd=%x, arg=%d\n", __func__,cmd,arg);
 
 	switch (cmd){
-    case LM3559_IOCTL_P0WER_CONT:
+    case LM3559_IOCTL_POWER_CONT:
     {
       int is_onoff = (int)arg;
-      //pr_info("[LM3559]LM3559_IOCTL_P0WER_CONT : %d\n",is_onoff);
+      //pr_info("[LM3559]LM3559_IOCTL_POWER_CONT : %d\n",is_onoff);
       if(is_onoff == LM3559_POWER_OFF)
       {
         lm3559_power_onoff(info, LM3559_POWER_OFF);
@@ -420,7 +410,7 @@ static int lm3559_probe(
 	info = devm_kzalloc(&client->dev, sizeof(*info), GFP_KERNEL);
 	if (info == NULL) {
 		//dev_err(&client->dev, "%s: kzalloc error\n", __func__);
-    pr_info("%s: kzalloc error\n", __func__);
+		pr_info("%s: kzalloc error\n", __func__);
 		return -ENOMEM;
 	}
 
@@ -432,18 +422,17 @@ static int lm3559_probe(
 	}
 
 	info->i2c_client = client;
-  info->pdata = client->dev.platform_data;
+	info->pdata = client->dev.platform_data;
 	i2c_set_clientdata(client, info);
 
-
-	tegra_gpio_enable(info->pdata->gpio_act);
+//	tegra_gpio_enable(info->pdata->gpio_act);
 	err = gpio_request(info->pdata->gpio_act, "lm3559");
-  if (err < 0)
-    pr_err("%s: gpio_request failed for gpio %s\n",
-      __func__, "lm3559");
+	if (err < 0)
+		pr_err("%s: gpio_request failed for gpio %s\n",
+			__func__, "lm3559");
 
-  //gpio_direction_output(info->pdata->gpio_act, 1);	
-  //gpio_set_value(info->pdata->gpio_act, 0);	
+	//gpio_direction_output(info->pdata->gpio_act, 1);	
+	//gpio_set_value(info->pdata->gpio_act, 0);	
 	return 0;
 }
 
@@ -476,4 +465,3 @@ static void __exit lm3559_exit(void)
 
 module_init(lm3559_init);
 module_exit(lm3559_exit);
-

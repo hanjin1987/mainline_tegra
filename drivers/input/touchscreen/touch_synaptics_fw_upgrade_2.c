@@ -28,16 +28,17 @@
  */
 #include <linux/delay.h>
 #include <linux/slab.h>
-#include <mach/gpio.h>
 #include <linux/syscalls.h>
 #include <linux/fs.h>
 #include <linux/uaccess.h>
 #include <linux/i2c.h>
 
+#include <asm/gpio.h>
+
 #include <linux/input/lge_touch_core.h>
 #include <linux/input/touch_synaptics.h>
 
-#define PAGE_SELECT_REG			0xFF
+#define PAGE_SELECT_REG		0xFF
 #define BLOCK_NUMBER_LOW_REG	0x00
 
 struct RMI4FunctionDescriptor {

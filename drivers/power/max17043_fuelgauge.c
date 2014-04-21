@@ -20,8 +20,10 @@
 #include <linux/delay.h>
 #include <linux/power_supply.h>
 #include <linux/power/max17043_fuelgauge.h>
-#include <mach/gpio.h>
 #include <linux/slab.h>
+
+#include <asm/gpio.h>
+
 #include "../../arch/arm/mach-tegra/gpio-names.h"
 #include "../../arch/arm/mach-tegra/lge/x3/include/lge/board-x3.h"
 
@@ -335,20 +337,19 @@ static int max17043_need_quickstart(struct max17043_chip *chip, int charging)
 static int max17043_next_alert_level(int level)
 {
 	int next_level;
-	printk(KERN_DEBUG " [MAX17043] SOC_level = %d\n",level);
+	printk(KERN_DEBUG " [MAX17043] SOC_level = %d\n", level);
 
-
-	if(level >= 15){
-		next_level = 30; //15
-	}else if(level <15 && level >=5){
-		next_level = 10; //5
-	}else if(level <5 && level >=0){
-		next_level = 1;  //0
-	}else{
+	if (level >= 15) {
+		next_level = 30; // 15
+	} else if (level <15 && level >= 5) {
+		next_level = 10; // 5
+	} else if (level <5 && level >= 0) {
+		next_level = 1;  // 0
+	} else {
 		next_level = 0;
 	}
 
-	printk(KERN_DEBUG " [MAX17043] Next_alert_level = %d\n", next_level/2);
+	printk(KERN_DEBUG " [MAX17043] Next_alert_level = %d\n", next_level / 2);
 	return next_level;
 }
 
@@ -949,7 +950,7 @@ static int __devinit max17043_probe(struct i2c_client *client,
 	max17043_update(client);
 	schedule_delayed_work(&chip->work, MAX17043_WORK_DELAY);
 #if defined(CONFIG_MACH_VU10)
-	tegra_gpio_enable(GAUGE_INT);
+//	tegra_gpio_enable(GAUGE_INT);
 
 	ret = enable_irq_wake(client->irq);
 	if (ret < 0) {
@@ -971,9 +972,8 @@ static int __devinit max17043_probe(struct i2c_client *client,
 		goto err_request_irq_failed;
 	}
 #else
-	if(x3_get_hw_rev_pcb_version() > hw_rev_pcb_type_E) // Rev 1.0
-	{
-		tegra_gpio_enable(GAUGE_INT);
+	if (x3_get_hw_rev_pcb_version() > hw_rev_pcb_type_E) { // Rev 1.0
+//		tegra_gpio_enable(GAUGE_INT);
 
 		ret = enable_irq_wake(client->irq);
 		if (ret < 0) {

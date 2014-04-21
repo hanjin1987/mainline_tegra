@@ -345,9 +345,9 @@ int tegra_dc_update_windows(struct tegra_dc_win *windows[], int n)
 	tegra_dc_io_start(dc);
 
 #ifdef CONFIG_MACH_X3
-	val = tegra_dc_readl(dc, DC_CMD_INT_MASK);
-	val &= ~(FRAME_END_INT | V_BLANK_INT | ALL_UF_INT);
-	tegra_dc_writel(dc, val, DC_CMD_INT_MASK);
+	win_options = tegra_dc_readl(dc, DC_CMD_INT_MASK);
+	win_options &= ~(FRAME_END_INT | V_BLANK_INT | ALL_UF_INT);
+	tegra_dc_writel(dc, win_options, DC_CMD_INT_MASK);
 #endif
 
 	tegra_dc_hold_dc_out(dc);

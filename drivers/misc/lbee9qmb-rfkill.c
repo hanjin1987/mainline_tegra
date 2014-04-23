@@ -138,7 +138,6 @@ static int lbee9qmb_rfkill_set_power(void *data, bool blocked)
 	lpm->blocked = blocked;
 
 	if (blocked) {
-		/*                                                             */
 		if (lpm->chip_disable) {
 			if (lpm->chip_disable())
 				dev_err(lpm->dev, "%s: uart disable failed\n",
@@ -148,7 +147,6 @@ static int lbee9qmb_rfkill_set_power(void *data, bool blocked)
 		dev_dbg(lpm->dev, "%s: reset low\n", __func__);
 	}
 	else {
-		/*                                                            */
 		if (lpm->chip_enable) {
 			if (lpm->chip_enable())
 				dev_err(lpm->dev, "%s: uart enable failed\n",
@@ -159,7 +157,7 @@ static int lbee9qmb_rfkill_set_power(void *data, bool blocked)
 		msleep(lpm->reset_delay);
 		gpio_set_value(lpm->gpio_reset, 1);
 		dev_dbg(lpm->dev, "%s: reset high\n", __func__);
-		msleep(20); //BRCM recommend
+		msleep(20); // BRCM recommendation
 	}
 	mutex_unlock(&lpm->mlock);
 
@@ -419,8 +417,10 @@ static int lbee9qmb_rfkill_suspend(struct platform_device *pdev,
 		pm_message_t state)
 {
 	struct bcm_bt_lpm *lpm = platform_get_drvdata(pdev);
+#ifdef CONFIG_BRCM_HOST_WAKE
 	int v;
 	int wake;
+#endif
 	int ret = 0;
 	dev_dbg(&pdev->dev, "****** %s\n", __func__);
 
@@ -435,7 +435,7 @@ static int lbee9qmb_rfkill_suspend(struct platform_device *pdev,
 			wake = v;
 
 		if (wake) {
-			dev_warn(&pdev->dev, "host waked\n");
+			dev_warn(&pdev->dev, "host woken\n");
 			ret = -EBUSY;
 			goto failed;
 		}
@@ -445,7 +445,7 @@ static int lbee9qmb_rfkill_suspend(struct platform_device *pdev,
 		if (lpm->chip_disable) {
 			ret = lpm->chip_disable();
 			if (ret < 0) {
-				dev_warn(&pdev->dev, "failed uart disabe\n");
+				dev_warn(&pdev->dev, "uart disable failed\n");
 				goto failed;
 			}
 		}
@@ -462,15 +462,16 @@ failed:
 static int lbee9qmb_rfkill_resume(struct platform_device *pdev)
 {
 	struct bcm_bt_lpm *lpm = platform_get_drvdata(pdev);
+#if defined(CONFIG_BRCM_HOST_WAKE) && defined(CHECK_HOST_WAKE_ON_RESUME)
 	unsigned long flags;
+#endif
 	dev_dbg(&pdev->dev, "****** %s\n", __func__);
-
 
 	if (!lpm->blocked) {
 		/* re-enable uart */
 		if (lpm->chip_enable) {
 			if (lpm->chip_enable()) {
-				dev_err(&pdev->dev, "failed uart enable\n");
+				dev_err(&pdev->dev, "uart enable failed\n");
 			}
 		}
 #ifdef CONFIG_BRCM_HOST_WAKE

@@ -176,7 +176,7 @@ static __initdata struct tegra_pingroup_config x3_pinmux[] = {
 	DEFAULT_PINMUX(SDMMC4_RST_N,    POPSDMMC4,       NORMAL,     NORMAL,    INPUT),
 #endif
 	/* SDMMC4 pinmux */
-	DEFAULT_PINMUX(SDMMC4_CLK,      SDMMC4,          NORMAL,    NORMAL,     INPUT),		//eMMC_CLK
+	DEFAULT_PINMUX(SDMMC4_CLK,      SDMMC4,          NORMAL,     NORMAL,     INPUT),	//eMMC_CLK
 	DEFAULT_PINMUX(SDMMC4_CMD,      SDMMC4,          PULL_UP,    NORMAL,     INPUT),	//eMMC_CMD
 	DEFAULT_PINMUX(SDMMC4_DAT0,     SDMMC4,          PULL_UP,    NORMAL,     INPUT),	//eMMC_DAT0
 	DEFAULT_PINMUX(SDMMC4_DAT1,     SDMMC4,          PULL_UP,    NORMAL,     INPUT),	//eMMC_DAT1
@@ -186,7 +186,7 @@ static __initdata struct tegra_pingroup_config x3_pinmux[] = {
 	DEFAULT_PINMUX(SDMMC4_DAT5,     SDMMC4,          PULL_UP,    NORMAL,     INPUT),	//eMMC_DAT5
 	DEFAULT_PINMUX(SDMMC4_DAT6,     SDMMC4,          PULL_UP,    NORMAL,     INPUT),	//eMMC_DAT6
 	DEFAULT_PINMUX(SDMMC4_DAT7,     SDMMC4,          PULL_UP,    NORMAL,     INPUT),	//eMMC_DAT7
-	DEFAULT_PINMUX(SDMMC4_RST_N,    RSVD1,           PULL_DOWN,    NORMAL,     INPUT),	//eMMC_RST_N
+	DEFAULT_PINMUX(SDMMC4_RST_N,    RSVD1,           PULL_DOWN,  NORMAL,     INPUT),	//eMMC_RST_N
 
 	/* I2C1 pinmux */
 	I2C_PINMUX(GEN1_I2C_SCL,        I2C1,            NORMAL,     NORMAL,    INPUT,	DEFAULT,	DEFAULT),
@@ -206,12 +206,12 @@ static __initdata struct tegra_pingroup_config x3_pinmux[] = {
 	I2C_PINMUX(CAM_I2C_SDA,         I2C3,            NORMAL,    NORMAL,   INPUT,	DEFAULT,	DEFAULT),
 
 	/* I2C4 pinmux */
-	I2C_PINMUX(DDC_SCL,             I2C4,            NORMAL,    NORMAL,  INPUT,	DEFAULT,	DEFAULT),//HDMI_EDID
-	I2C_PINMUX(DDC_SDA,             I2C4,            NORMAL,    NORMAL,  INPUT,	DEFAULT,	DEFAULT),//HDMI_EDID
+	I2C_PINMUX(DDC_SCL,             I2C4,            NORMAL,    NORMAL,   INPUT,	DEFAULT,	DEFAULT),//HDMI_EDID
+	I2C_PINMUX(DDC_SDA,             I2C4,            NORMAL,    NORMAL,   INPUT,	DEFAULT,	DEFAULT),//HDMI_EDID
 
 	/* Power I2C pinmux */
-	I2C_PINMUX(PWR_I2C_SCL,         I2CPWR,          NORMAL,    NORMAL,     INPUT,	DEFAULT,	DEFAULT),
-	I2C_PINMUX(PWR_I2C_SDA,         I2CPWR,          NORMAL,    NORMAL,     INPUT,	DEFAULT,	DEFAULT),
+	I2C_PINMUX(PWR_I2C_SCL,         I2CPWR,          NORMAL,    NORMAL,   INPUT,	DEFAULT,	DEFAULT),
+	I2C_PINMUX(PWR_I2C_SDA,         I2CPWR,          NORMAL,    NORMAL,   INPUT,	DEFAULT,	DEFAULT),
 
 	DEFAULT_PINMUX(ULPI_DATA0,      SPI3,            PULL_UP,   TRISTATE,   OUTPUT),     //TOUCH_RESET_N
 //	DEFAULT_PINMUX(ULPI_DATA1,      ULPI,      PULL_UP,      NORMAL,      OUTPUT),		//LCD_BRIDGE_RESET_N

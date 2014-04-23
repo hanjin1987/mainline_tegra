@@ -91,7 +91,7 @@ static int status = 0;
 #define SYS_API_VDDP_OFF // todo - define to something
 #define SLEEP(_ms_time) msleep(_ms_time)// todo - define to something
 
-#define DEBUG_MSG //printk	// todo - define to something
+#define DEBUG_MSG(...) do { } while (0)	//printk	// todo - define to something
 
 #define PWM_PERIOD_DEFAULT              44000 //20.3KHz
 //#define PWM_DUTY_DEFAULT              (PWM_PERIOD_DEFAULT >> 1) //50%

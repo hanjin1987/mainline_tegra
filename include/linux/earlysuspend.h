@@ -1,4 +1,4 @@
-+/* include/linux/earlysuspend.h
+/* include/linux/earlysuspend.h
  *
  * Copyright (C) 2007-2008 Google, Inc.
  *

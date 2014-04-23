@@ -346,26 +346,25 @@ static long lm3559_ioctl(struct file *file,
 
 static int lm3559_open(struct inode *inode, struct file *file)
 {
-  pr_info("%s\n", __func__);
+	pr_info("%s\n", __func__);
 
-  if(info == NULL)
-        pr_info("lm3559_info is NULL\n");
+	if (info == NULL)
+		pr_info("lm3559_info is NULL\n");
 
 	file->private_data = info;
 
-  
-  if(file->private_data == NULL)
-        pr_info("file->private_data is NULL\n");
+	if (file->private_data == NULL)
+		pr_info("file->private_data is NULL\n");
 
 	return 0;
 }
 
 static int lm3559_release(struct inode *inode, struct file *file)
 {
-  pr_info("%s\n", __func__);
+	pr_info("%s\n", __func__);
   
-  if(lm3559_onoff_state == LM3559_POWER_ON)
-    lm3559_power_onoff(info, LM3559_POWER_OFF);
+	if (lm3559_onoff_state == LM3559_POWER_ON)
+		lm3559_power_onoff(info, LM3559_POWER_OFF);
     
 	file->private_data = NULL;
 	return 0;
@@ -384,19 +383,18 @@ static struct miscdevice lm3559_device = {
 	.fops = &lm3559_fileops,
 };
 
-
 static ssize_t torch_store(struct device* dev,
 		struct device_attribute* attr, const char* buf, size_t count)
 {
 	int val;
-	sscanf(buf, "%ld", &val );
+	sscanf(buf, "%d", &val);
 
 	if (val <= 0) {
 		lm3559_power_onoff(info, LM3559_POWER_OFF);
 		lm3559_onoff_state = LM3559_POWER_OFF;
 	} else {
         	struct lm3559_param param;
-		if(lm3559_onoff_state == LM3559_POWER_OFF){    
+		if (lm3559_onoff_state == LM3559_POWER_OFF) {
 			param.param = LM3559_TORCH_LEVEL;
 			param.value = (val == 2 ? 666 : 1);
 			lm3559_power_onoff(info, LM3559_POWER_ON);

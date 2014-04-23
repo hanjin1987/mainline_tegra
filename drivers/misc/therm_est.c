@@ -271,7 +271,7 @@ static int btemp_get(long *btemp)
         set_fs(old_fs);
 		return ret;
 #else
-	if (batt_Temp_C!=0x10000) {
+	if (batt_Temp_C != 0x10000) {
 		*btemp = batt_Temp_C;
 		return 0;
 	}

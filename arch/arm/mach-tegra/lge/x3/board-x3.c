@@ -592,7 +592,7 @@ static void __init tegra_x3_init(void)
 	tegra_register_fuse();
 }
 
-static void __init tegra_x3_dt_init(void)
+/*static void __init tegra_x3_dt_init(void)
 {
 	tegra_x3_init();
 
@@ -600,7 +600,7 @@ static void __init tegra_x3_dt_init(void)
 	of_platform_populate(NULL,
 		of_default_bus_match_table, NULL, NULL);
 #endif
-}
+}*/
 
 static void __init tegra_x3_reserve(void)
 {
@@ -626,7 +626,7 @@ MACHINE_START(X3, "x3")
 	.init_irq       = tegra_init_irq,
 	.handle_irq	= gic_handle_irq,
 	.timer          = &tegra_timer,
-	.init_machine   = tegra_x3_dt_init,
+	.init_machine   = tegra_x3_init,
 	.restart	= tegra_assert_system_reset,
 	.dt_compat	= x3_dt_board_compat,
 MACHINE_END

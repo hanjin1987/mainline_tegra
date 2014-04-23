@@ -28,6 +28,9 @@
 #include <linux/nvhost.h>
 #include <linux/nvmap.h>
 //#include <linux/spi/spi.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
 
 #include <asm/mach-types.h>
 #include <asm/atomic.h>
@@ -740,10 +743,10 @@ static void x3_panel_early_suspend(struct early_suspend *h)
 
 	for (i = 0; i < ARRAY_SIZE(rgb_bridge_gpios); i++) {
 		tegra_pinmux_set_tristate(
-			gpio_to_pingroup[rgb_bridge_gpios[i].gpio],
+			tegra_pinmux_get_pingroup(rgb_bridge_gpios[i].gpio),
 			TEGRA_TRI_TRISTATE);
 		gpio_direction_input(rgb_bridge_gpios[i].gpio);
-		//tegra_gpio_enable(rgb_bridge_gpios[i].gpio);
+//		tegra_gpio_enable(rgb_bridge_gpios[i].gpio);
 	}
 }
 
@@ -752,9 +755,9 @@ static void x3_panel_late_resume(struct early_suspend *h)
 	unsigned i;
 	for (i = 0; i < ARRAY_SIZE(rgb_bridge_gpios); i++) {
 		tegra_pinmux_set_tristate(
-			gpio_to_pingroup[rgb_bridge_gpios[i].gpio],
+			tegra_pinmux_get_pingroup(rgb_bridge_gpios[i].gpio),
 			TEGRA_TRI_NORMAL);
-		tegra_gpio_disable(rgb_bridge_gpios[i].gpio);
+//		tegra_gpio_disable(rgb_bridge_gpios[i].gpio);
 	}
 
 	for (i = 0; i < num_registered_fb; i++) {
@@ -818,7 +821,7 @@ int __init x3_panel_init(void)
 	x3_carveouts[1].size = tegra_carveout_size;
 #endif
 
-	//tegra_gpio_enable(x3_hdmi_hpd);
+//	tegra_gpio_enable(x3_hdmi_hpd);
 	err = gpio_request(x3_hdmi_hpd, "hdmi_hpd");
 	if (err < 0) {
 		pr_err("%s: gpio_request failed %d\n", __func__, err);

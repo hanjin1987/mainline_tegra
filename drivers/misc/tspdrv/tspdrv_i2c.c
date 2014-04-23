@@ -144,7 +144,7 @@ static int tspdrv_i2c_probe(struct i2c_client *client,
 
 	tspdrv_pwm = pwm_request(pdata->pwm_id, "vibrator");
 	if (IS_ERR(tspdrv_pwm)) {
-		goto	err_pwm;
+		goto err_pwm;
 	}
 
 	pwm_disable(tspdrv_pwm);

@@ -339,9 +339,9 @@ static __initdata struct tegra_clk_init_table tegra30_clk_init_table[] = {
 	{ "sdmmc1",	"pll_p",	48000000,	false},
 	{ "sdmmc3",	"pll_p",	48000000,	false},
 	{ "sdmmc4",	"pll_p",	48000000,	false},
-#ifdef CONFIG_MACH_LGE
+#ifdef CONFIG_MACH_X3
 	{ "vi_sensor",	"pll_p",	0,		false },
-#endif	
+#endif
 	{ "sbc1.sclk",	NULL,		40000000,	false},
 	{ "sbc2.sclk",	NULL,		40000000,	false},
 	{ "sbc3.sclk",	NULL,		40000000,	false},
